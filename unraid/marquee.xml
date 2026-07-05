@@ -1,14 +1,15 @@
 <?xml version="1.0"?>
 <Container version="2">
   <Name>Marquee</Name>
-  <Repository>jamisonfitz/plex-marquee:latest</Repository>
-  <Registry>https://hub.docker.com/r/jamisonfitz/plex-marquee</Registry>
+  <Repository>jamisonfitz/marquee:latest</Repository>
+  <Registry>https://hub.docker.com/r/jamisonfitz/marquee</Registry>
   <Network>host</Network>
   <Privileged>false</Privileged>
-  <Support>https://github.com/Jamisonfitz/plex-marquee/issues</Support>
-  <Project>https://github.com/Jamisonfitz/plex-marquee</Project>
-  <Overview>Plex now-playing marquee for Google Nest Hubs with configurable colors and snap-grid layouts.</Overview>
+  <Support>https://github.com/Jamisonfitz/marquee/issues</Support>
+  <Project>https://github.com/Jamisonfitz/marquee</Project>
+  <Overview>Cinematic Plex now-playing display for smart screens with presets, live layout control, and Nest Hub casting.</Overview>
   <Category>MediaApp:Other</Category>
+  <Icon>https://raw.githubusercontent.com/Jamisonfitz/marquee/main/assets/marquee-icon.png</Icon>
   <WebUI>http://[IP]:[PORT:8084]/</WebUI>
   <ExtraParams>--restart unless-stopped</ExtraParams>
   <Config Name="Settings" Target="/config" Default="/mnt/user/appdata/marquee" Mode="rw" Description="Persistent settings." Type="Path" Display="always" Required="true" Mask="false"/>
