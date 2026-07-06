@@ -1,5 +1,35 @@
 # Changelog
 
+## 1.1.0 — 2026-07-06
+
+### Templates
+
+- Rebuilt the card around self-contained blocks (title/logo identity, grouped
+  ratings, metadata chips, plot, progress, clock, poster) and added five
+  hand-designed templates that arrange them into genuinely different
+  compositions: Spotlight, Split, Hero, Lower Third, and Big Clock.
+- Template picker in settings with sketch thumbnails and instant live preview —
+  changes preview in the demo frame without touching the Hub until saved.
+
+### Customization
+
+- Custom accent color picker alongside the four themes.
+- Clock styles: 12/24-hour format and optional seconds.
+- Block editor now moves and resizes whole blocks: position, width, and a new
+  size control; every block can be shown or hidden independently.
+
+### UI
+
+- Release notes moved into a slide-over panel ("What's new") instead of a
+  page-bottom section.
+- Demo art is embedded in the card, so the settings preview always renders
+  fully even before anything has played.
+
+### Fixes
+
+- Metadata strings are now HTML-escaped on the card, so titles or ratings
+  containing &, <, or quotes render correctly.
+
 ## 1.0.1 — 2026-07-06
 
 ### Reliability

@@ -11,9 +11,12 @@ Marquee turns a Google Nest Hub into a clean Plex now-playing display. It shows 
 
 ## Features
 
-- Live Plex now-playing card with poster or backdrop layouts.
-- Curated theme presets with polished default box positions.
-- A snap-grid editor for moving and resizing each card element.
+- Live Plex now-playing card with five designed templates: Spotlight, Split,
+  Hero, Lower Third, and Big Clock.
+- Four themes plus a custom accent color, 12/24-hour clock styles, and
+  per-block show/hide toggles.
+- A drag-and-slider editor for moving, sizing, and scaling each card block,
+  with an instant demo preview.
 - Persisted settings, health checks, and a Docker-first deployment path.
 - Google Nest Hub casting with clean idle handoff back to ambient mode.
 
