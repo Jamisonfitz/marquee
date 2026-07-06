@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.1 — 2026-07-06
+
+### Reliability
+
+- Fixed a crash loop on first start when `/config` is a host-owned bind mount
+  (e.g. Unraid appdata, which arrives root-owned): the container now starts as
+  root, chowns `/config` to the `marquee` user via an entrypoint, then drops
+  privileges with `su-exec` before running the app. No more manual `chmod` on
+  the appdata folder.
+
 ## 1.0.0 — 2026-07-05
 
 ### Features
