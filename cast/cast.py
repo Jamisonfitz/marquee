@@ -15,6 +15,7 @@ SERVE_PORT, DATA_DIR. Optional TMDB_API_KEY enables the credits-scene badge.
 import json
 import mimetypes
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -25,7 +26,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.0.1"
+VERSION = "1.1.0"
 HUB_IP = os.environ.get("HUB_IP", "")
 PAGE_URL = os.environ.get("PAGE_URL", "")
 PLEX = os.environ.get("PLEX_HOST", "").rstrip("/")
@@ -41,30 +42,24 @@ DATA_DIR = os.environ.get("DATA_DIR", OUTPUT)
 SETTINGS_PATH = os.path.join(DATA_DIR, "settings.json")
 
 THEMES = ("amber", "ice", "crimson", "emerald")
-LAYOUTS = ("poster", "backdrop")
+TEMPLATES = ("spotlight", "split", "hero", "lowerthird", "bigclock")
+ACCENT_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 DEFAULT_SETTINGS = {
+    "template": "spotlight",
     "theme": "amber",
-    "layout": "poster",
-    "posterSide": "left",
+    "accent": "",
+    "posterSide": "right",
+    "clockFormat": "12h",
+    "clockSeconds": False,
     "showPlot": True, "showGenres": True, "showScores": True,
     "showMediaInfo": True, "showContentRating": True, "showRuntime": True,
     "showProgress": True, "showClock": True,
     "backdrop": True, "logo": True,
-    "elementLayout": {
-        "clock": {"x": 52, "y": -28, "width": 18, "height": 10},
-        "eyebrow": {"x": 0, "y": 0, "width": 38},
-        "logo": {"x": 0, "y": 0, "width": 56},
-        "title": {"x": 0, "y": -2, "width": 62},
-        "subtitle": {"x": 0, "y": -2, "width": 54},
-        "meta": {"x": 0, "y": 0, "width": 58},
-        "plot": {"x": 0, "y": 0, "width": 54},
-        "scores": {"x": 0, "y": 0, "width": 54},
-        "progress": {"x": 0, "y": 0, "width": 72},
-    },
+    "blockLayout": {},
 }
 
-EDITABLE_ELEMENTS = ("clock", "eyebrow", "logo", "title", "subtitle", "meta",
-                     "plot", "scores", "progress", "poster")
+EDITABLE_BLOCKS = ("clock", "identity", "meta", "plot", "ratings",
+                   "progress", "poster")
 
 _meta_cache = {}  # ratingKey -> extras dict
 
@@ -244,17 +239,17 @@ def load_settings():
         return dict(DEFAULT_SETTINGS)
 
 
-def clean_element_layout(value):
-    """Keep layout overrides small, numeric, and limited to known card elements."""
+def clean_block_layout(value):
+    """Keep layout overrides small, numeric, and limited to known card blocks."""
     if not isinstance(value, dict):
         return {}
     cleaned = {}
     for name, position in value.items():
-        if name not in EDITABLE_ELEMENTS or not isinstance(position, dict):
+        if name not in EDITABLE_BLOCKS or not isinstance(position, dict):
             continue
         item = {}
         for key, low, high in (("x", -100, 100), ("y", -100, 100),
-                               ("width", 5, 100), ("height", 5, 100)):
+                               ("width", 5, 100), ("scale", 0.3, 3)):
             number = position.get(key)
             if isinstance(number, (int, float)) and not isinstance(number, bool):
                 item[key] = round(max(low, min(high, number)), 2)
@@ -311,9 +306,15 @@ class WebHandler(BaseHTTPRequestHandler):
                 merged["posterSide"] = "right"
             if merged["theme"] not in THEMES:
                 merged["theme"] = "amber"
-            if merged["layout"] not in LAYOUTS:
-                merged["layout"] = "poster"
-            merged["elementLayout"] = clean_element_layout(merged["elementLayout"])
+            if merged["template"] not in TEMPLATES:
+                merged["template"] = "spotlight"
+            if merged["clockFormat"] not in ("12h", "24h"):
+                merged["clockFormat"] = "12h"
+            merged["clockSeconds"] = bool(merged["clockSeconds"])
+            if not (isinstance(merged["accent"], str)
+                    and (merged["accent"] == "" or ACCENT_RE.match(merged["accent"]))):
+                merged["accent"] = ""
+            merged["blockLayout"] = clean_block_layout(merged["blockLayout"])
             atomic_write(SETTINGS_PATH, json.dumps(merged))
             self._send(json.dumps({"ok": True}), "application/json")
         except Exception as e:
@@ -395,10 +396,14 @@ def selftest():
     assert info["subtitle"] == "S2 · E5 · The Devil Wears Prada 2"
     merged = {**DEFAULT_SETTINGS, **{"posterSide": "left", "bogus": 1, "showPlot": False}}
     assert "bogus" not in DEFAULT_SETTINGS and merged["posterSide"] == "left" \
-        and merged["showPlot"] is False and merged["showClock"] is True
-    layout = clean_element_layout({"title": {"x": 12.345, "y": -200, "width": 140},
-                                   "unknown": {"x": 1}, "plot": "bad"})
-    assert layout == {"title": {"x": 12.35, "y": -100, "width": 100}}
+        and merged["showPlot"] is False and merged["showClock"] is True \
+        and merged["template"] == "spotlight"
+    layout = clean_block_layout({"identity": {"x": 12.345, "y": -200, "width": 140,
+                                              "scale": 9, "height": 50},
+                                 "unknown": {"x": 1}, "plot": "bad"})
+    assert layout == {"identity": {"x": 12.35, "y": -100, "width": 100, "scale": 3}}
+    assert ACCENT_RE.match("#A1b2C3") and not ACCENT_RE.match("red") \
+        and not ACCENT_RE.match("#12345")
     print("selftest ok")
 
 
