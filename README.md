@@ -9,6 +9,21 @@
 
 Marquee turns a Google Nest Hub into a clean Plex now-playing display. It shows artwork, title, plot, genres, ratings, media details, progress, and a clock, then returns the Hub to ambient mode when playback stops.
 
+![Marquee Split template](docs/screenshots/split.jpg)
+
+## Templates
+
+Five designed layouts, switchable live from the settings page:
+
+| | |
+|:---:|:---:|
+| ![Spotlight](docs/screenshots/spotlight.jpg) **Spotlight** — poster beside the full metadata stack | ![Hero](docs/screenshots/hero.jpg) **Hero** — big centered title over the backdrop |
+| ![Lower Third](docs/screenshots/lowerthird.jpg) **Lower Third** — broadcast-style chyron over full-bleed art | ![Big Clock](docs/screenshots/bigclock.jpg) **Big Clock** — ambient timepiece with a now-playing strip |
+
+Every template is built from the same blocks — title/logo identity, grouped ratings, metadata chips, plot, progress, clock, poster — so your show/hide toggles, themes, custom accent color, and block position tweaks carry across all of them.
+
+![Settings UI](docs/screenshots/settings.jpg)
+
 ## Features
 
 - Live Plex now-playing card with five designed templates: Spotlight, Split,
