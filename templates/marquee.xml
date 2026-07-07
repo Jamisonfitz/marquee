@@ -3,6 +3,7 @@
   <Name>Marquee</Name>
   <Repository>jamisonfitz/marquee:latest</Repository>
   <Registry>https://hub.docker.com/r/jamisonfitz/marquee</Registry>
+  <TemplateURL>https://raw.githubusercontent.com/Jamisonfitz/marquee/main/templates/marquee.xml</TemplateURL>
   <Network>host</Network>
   <Privileged>false</Privileged>
   <Support>https://github.com/Jamisonfitz/marquee/issues</Support>

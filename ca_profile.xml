@@ -1,0 +1,13 @@
+<CommunityApplications>
+  <Profile>
+Apps by Jamison Fitz. Currently home to **Marquee** — a cinematic Plex now-playing display for Google Nest Hubs. Press play and it casts a designed card with the poster, title logo, ratings, and live progress; when the credits roll your Hub goes back to being a photo frame. Five hand-designed templates, four themes plus custom accents, and a drag-and-drop layout editor. Open source (MIT), self-hosted, LAN-only.
+
+Support: https://github.com/Jamisonfitz/marquee/issues
+  </Profile>
+  <Icon>https://raw.githubusercontent.com/Jamisonfitz/marquee/main/assets/marquee-icon.png</Icon>
+  <WebPage>https://jamisonfitz.github.io/marquee/</WebPage>
+  <Photo>https://raw.githubusercontent.com/Jamisonfitz/marquee/main/docs/screenshots/split.jpg</Photo>
+  <Photo>https://raw.githubusercontent.com/Jamisonfitz/marquee/main/docs/screenshots/spotlight.jpg</Photo>
+  <Photo>https://raw.githubusercontent.com/Jamisonfitz/marquee/main/docs/screenshots/bigclock.jpg</Photo>
+  <Photo>https://raw.githubusercontent.com/Jamisonfitz/marquee/main/docs/screenshots/settings.jpg</Photo>
+</CommunityApplications>
