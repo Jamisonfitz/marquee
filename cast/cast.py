@@ -423,9 +423,9 @@ def selftest():
     assert ACCENT_RE.match("#A1b2C3") and not ACCENT_RE.match("red") \
         and not ACCENT_RE.match("#12345")
     v = ET.fromstring(SAMPLE_SESSION)
-    assert session_allowed(v, set()) and not session_allowed(v, {"dad"})
-    v.append(ET.Element("User", {"id": "1", "title": "Dad"}))
-    assert session_allowed(v, {"dad"}) and not session_allowed(v, {"kid"})
+    assert session_allowed(v, set()) and not session_allowed(v, {"alice"})
+    v.append(ET.Element("User", {"id": "1", "title": "Alice"}))
+    assert session_allowed(v, {"alice"}) and not session_allowed(v, {"bob"})
     print("selftest ok")
 
 
