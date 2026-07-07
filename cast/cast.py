@@ -9,9 +9,11 @@ when idle it releases the Hub.
 Frontend (one HTTP server on :8084): serves the card page and art from
 output/, the settings UI at /settings, /save, and /release-notes.
 
-Env knobs: HUB_IP, PAGE_URL, PLEX_HOST, PLEX_TOKEN, POLL_SECONDS, REPO_DIR,
+Env knobs: PAGE_URL, PLEX_HOST, PLEX_TOKEN, POLL_SECONDS, REPO_DIR,
 SERVE_PORT, DATA_DIR. Optional TMDB_API_KEY enables the credits-scene badge;
-optional PLEX_USERS limits which Plex users trigger the marquee.
+optional PLEX_USERS limits which Plex users trigger the marquee. The cast
+device comes from the settings page (auto-discovered via catt scan) or the
+HUB_IP env fallback.
 """
 import json
 import mimetypes
@@ -27,7 +29,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 HUB_IP = os.environ.get("HUB_IP", "")
 PAGE_URL = os.environ.get("PAGE_URL", "")
 PLEX = os.environ.get("PLEX_HOST", "").rstrip("/")
@@ -48,7 +50,9 @@ SETTINGS_PATH = os.path.join(DATA_DIR, "settings.json")
 THEMES = ("amber", "ice", "crimson", "emerald")
 TEMPLATES = ("spotlight", "split", "hero", "lowerthird", "bigclock")
 ACCENT_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
+IP_RE = re.compile(r"^\d{1,3}(\.\d{1,3}){3}$")
 DEFAULT_SETTINGS = {
+    "hubIp": "",
     "template": "spotlight",
     "theme": "amber",
     "accent": "",
@@ -85,13 +89,45 @@ def atomic_write(path, data, mode="w"):
     os.chmod(path, 0o644)
 
 
+def hub_ip():
+    """Device picked in settings wins; HUB_IP env is the fallback."""
+    return load_settings().get("hubIp") or HUB_IP
+
+
 def catt(*args):
-    result = subprocess.run(["catt", "-d", HUB_IP, *args],
+    result = subprocess.run(["catt", "-d", hub_ip(), *args],
                             capture_output=True, text=True, timeout=90)
     if result.returncode:
         detail = (result.stderr or result.stdout or "unknown catt error").strip()
         raise RuntimeError(f"catt {' '.join(args)} failed: {detail}")
     return result
+
+
+_scan_cache = {"at": 0.0, "devices": []}
+
+
+def parse_scan(text):
+    """catt scan lines look like: '192.168.1.50 - Living Room - Google Nest Hub'."""
+    devices = []
+    for line in text.splitlines():
+        m = re.match(r"\s*(\d{1,3}(?:\.\d{1,3}){3})\s+-\s+(.+?)\s+-\s+(.*)", line)
+        if m:
+            devices.append({"ip": m.group(1), "name": m.group(2),
+                            "model": m.group(3).strip()})
+    return devices
+
+
+def scan_devices(refresh=False):
+    """Google Cast devices announce over mDNS; catt scan collects them."""
+    if refresh or time.time() - _scan_cache["at"] > 300:
+        try:
+            result = subprocess.run(["catt", "scan"], capture_output=True,
+                                    text=True, timeout=45)
+            _scan_cache.update(at=time.time(),
+                               devices=parse_scan(result.stdout))
+        except Exception as e:
+            print(f"device scan failed: {e}", flush=True)
+    return {"devices": _scan_cache["devices"], "current": hub_ip()}
 
 
 def dashcast_active():
@@ -301,6 +337,9 @@ class WebHandler(BaseHTTPRequestHandler):
         path = self.path.split("?")[0]
         if path == "/settings.json":
             self._send(json.dumps(load_settings()), "application/json")
+        elif path == "/devices":
+            self._send(json.dumps(scan_devices("refresh" in self.path)),
+                       "application/json")
         elif path == "/healthz":
             self._send(json.dumps({"ok": True, "version": VERSION}), "application/json")
         elif path == "/release-notes":
@@ -332,6 +371,9 @@ class WebHandler(BaseHTTPRequestHandler):
             if not (isinstance(merged["accent"], str)
                     and (merged["accent"] == "" or ACCENT_RE.match(merged["accent"]))):
                 merged["accent"] = ""
+            if not (isinstance(merged["hubIp"], str)
+                    and (merged["hubIp"] == "" or IP_RE.match(merged["hubIp"]))):
+                merged["hubIp"] = ""
             merged["blockLayout"] = clean_block_layout(merged["blockLayout"])
             atomic_write(SETTINGS_PATH, json.dumps(merged))
             self._send(json.dumps({"ok": True}), "application/json")
@@ -345,7 +387,7 @@ def serve_web():
 
 def loop():
     os.makedirs(DATA_DIR, exist_ok=True)
-    missing = [name for name, value in (("HUB_IP", HUB_IP), ("PAGE_URL", PAGE_URL),
+    missing = [name for name, value in (("PAGE_URL", PAGE_URL),
                                         ("PLEX_HOST", PLEX), ("PLEX_TOKEN", TOKEN))
                if not value]
     if missing:
@@ -364,14 +406,19 @@ def loop():
             atomic_write(JSON_PATH, json.dumps(info or {"playing": False}))
             playing = bool(info)
             if playing != last_playing or tick % 6 == 0:
-                dash = dashcast_active()
-                if playing and not dash:
-                    print(f"plex playing ({info['title']}) -> casting", flush=True)
-                    sep = "&" if "?" in PAGE_URL else "?"
-                    catt("cast_site", f"{PAGE_URL}{sep}cb={int(time.time())}")
-                elif not playing and dash:
-                    print("plex idle -> releasing hub", flush=True)
-                    catt("stop")
+                if not hub_ip():
+                    if playing and playing != last_playing:
+                        print("no cast device configured — pick one on the "
+                              "settings page or set HUB_IP", flush=True)
+                else:
+                    dash = dashcast_active()
+                    if playing and not dash:
+                        print(f"plex playing ({info['title']}) -> casting", flush=True)
+                        sep = "&" if "?" in PAGE_URL else "?"
+                        catt("cast_site", f"{PAGE_URL}{sep}cb={int(time.time())}")
+                    elif not playing and dash:
+                        print("plex idle -> releasing hub", flush=True)
+                        catt("stop")
             last_playing = playing
             tick += 1
         except Exception as e:
@@ -426,6 +473,12 @@ def selftest():
     assert session_allowed(v, set()) and not session_allowed(v, {"alice"})
     v.append(ET.Element("User", {"id": "1", "title": "Alice"}))
     assert session_allowed(v, {"alice"}) and not session_allowed(v, {"bob"})
+    scan = parse_scan("Scanning Chromecasts...\n"
+                      "192.168.1.50 - Living Room - Google Inc. Google Nest Hub\n"
+                      "not a device line")
+    assert scan == [{"ip": "192.168.1.50", "name": "Living Room",
+                     "model": "Google Inc. Google Nest Hub"}]
+    assert IP_RE.match("10.0.0.2") and not IP_RE.match("nest.local")
     print("selftest ok")
 
 

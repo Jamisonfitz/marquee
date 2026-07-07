@@ -73,6 +73,11 @@
     width: 18px; height: 18px; border-radius: 50%; background: #6B7280; transition: .15s; }
   input[type=checkbox]:checked { background: rgba(229,168,59,.35); }
   input[type=checkbox]:checked::after { left: 21px; background: var(--amber); }
+  .devpick { display: flex; gap: 8px; align-items: center; min-width: 0; }
+  .devpick select { max-width: 200px; min-height: 40px; color: var(--text);
+    background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+    padding: 6px 8px; font-size: 14px; }
+  .devpick .secondary { padding: 8px 14px; }
   .seg { display: flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
   .seg button { background: none; border: 0; color: var(--mut); padding: 7px 16px;
     font-size: 14px; font-weight: 600; cursor: pointer; }
@@ -169,6 +174,12 @@
   <div class="cols">
     <div class="panel">
       <h2>Look</h2>
+      <div class="row"><label>Cast device<small>Scan finds Google Cast devices on your LAN</small></label>
+        <div class="devpick">
+          <select id="hub"><option value="">Use HUB_IP setting</option></select>
+          <button class="secondary" id="scan" type="button">Scan</button>
+        </div>
+      </div>
       <div class="row"><label>Theme<small>Card palette; pick the circle for a custom accent</small></label>
         <div class="swatches" id="theme">
           <button data-v="amber" style="--swatch:#E5A83B"></button>
@@ -250,8 +261,8 @@
 <script>
   const $ = s => document.querySelector(s);
   const TEMPLATES = ['spotlight', 'split', 'hero', 'lowerthird', 'bigclock'];
-  let cfg = { template: 'spotlight', theme: 'amber', accent: '', posterSide: 'right',
-    clockFormat: '12h', blockLayout: {} };
+  let cfg = { hubIp: '', template: 'spotlight', theme: 'amber', accent: '',
+    posterSide: 'right', clockFormat: '12h', blockLayout: {} };
   const cardBase = '/image';
 
   function scaleFrame() {
@@ -312,6 +323,30 @@
   document.querySelectorAll('input[data-k]').forEach(i =>
     i.addEventListener('change', sendCfg));
 
+  async function loadDevices(refresh) {
+    try {
+      const { devices } = await (await fetch('/devices' + (refresh ? '?refresh=1' : ''))).json();
+      const sel = $('#hub'), cur = cfg.hubIp || '';
+      sel.innerHTML = '<option value="">Use HUB_IP setting</option>' +
+        devices.map(d => `<option value="${d.ip}">${d.name} (${d.ip})</option>`).join('');
+      if (cur && ![...sel.options].some(o => o.value === cur))
+        sel.insertAdjacentHTML('beforeend', `<option value="${cur}">${cur}</option>`);
+      sel.value = cur;
+      return devices.length;
+    } catch (e) { return 0; }
+  }
+  $('#hub').addEventListener('change', () => {
+    cfg.hubIp = $('#hub').value;
+    $('#status').textContent = 'Cast device changed — save to apply.';
+  });
+  $('#scan').addEventListener('click', async () => {
+    $('#scan').disabled = true; $('#scan').textContent = 'Scanning…';
+    const n = await loadDevices(true);
+    $('#scan').disabled = false; $('#scan').textContent = 'Scan';
+    $('#status').textContent = n ? `Found ${n} device${n > 1 ? 's' : ''}.`
+      : 'No devices found — the scan needs the container on the same network as the Hub.';
+  });
+
   async function load() {
     try {
       const s = await (await fetch('/settings.json')).json();
@@ -326,6 +361,7 @@
     segSet('side', cfg.posterSide || 'right');
     segSet('clockfmt', cfg.clockFormat || '12h');
     markTheme(); markTemplates(); loadFrame();
+    loadDevices(false);
   }
 
   $('#save').addEventListener('click', async () => {

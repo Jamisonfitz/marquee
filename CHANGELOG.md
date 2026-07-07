@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.2.0 — 2026-07-07
+
+### Device discovery
+
+- The settings page now finds Google Cast devices on your LAN (mDNS via
+  `catt scan`) — press Scan and pick your Hub from a dropdown instead of
+  typing an IP. `HUB_IP` remains as an env fallback and is no longer
+  required, so the container starts fine before a device is chosen.
+
+### Cleanup
+
+- Removed one-time repo bootstrap scripts.
+- `PLEX_HOST` defaults to `http://localhost:32400`; field descriptions now
+  explain why `PAGE_URL` must be a LAN IP the Hub can reach.
+
 ## 1.1.0 — 2026-07-06
 
 ### Templates
