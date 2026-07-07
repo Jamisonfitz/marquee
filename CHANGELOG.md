@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.3.0 — 2026-07-07
+
+### Layout & type
+
+- Every block can now be justified left, center, or right from the editor.
+- Title fonts: Bebas Neue, Oswald, Playfair Display, Cinzel, and Space
+  Grotesk (free Google fonts, system fallback when offline).
+- Themes go deeper: each theme now tints panels, chips, and progress tracks,
+  and the accent glows through the title and progress bar.
+
+### Feel
+
+- Saves reach the Hub in ~2 seconds — the card polls settings on a fast
+  loop instead of waiting for the next now-playing cycle.
+- Template picker cards show real screenshots of each layout.
+- The demo movie now includes a title logo, so the clear-logo look
+  (pulled from Plex metadata on real playback) is visible in the preview.
+
 ## 1.2.0 — 2026-07-07
 
 ### Device discovery
