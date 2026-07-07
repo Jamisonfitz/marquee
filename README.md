@@ -60,7 +60,6 @@ If you prefer plain Docker:
 ```sh
 docker build -t marquee:local .
 docker run -d --name marquee --restart unless-stopped --network host \
-  -e HUB_IP=192.168.1.50 \
   -e PAGE_URL=http://192.168.1.10:8084/image \
   -e PLEX_HOST=http://localhost:32400 \
   -e PLEX_TOKEN=replace-me \
@@ -74,12 +73,16 @@ Settings persist under `./data` in Compose mode or `/config` in the container.
 
 Required environment variables:
 
-- `HUB_IP` — the Nest Hub's LAN IP
 - `PAGE_URL` — this server's LAN IP + `/image`. The Hub loads this URL, so
   `localhost` will not work here.
 - `PLEX_HOST` — keep `http://localhost:32400` when Plex runs on the same
   machine; otherwise its LAN IP
 - `PLEX_TOKEN`
+
+Cast device: open the settings page and press **Scan** — Marquee discovers
+Google Cast devices on your LAN and you pick your Hub from a dropdown.
+(`HUB_IP` still works as an env fallback; discovery needs the container on
+the same network/VLAN as the Hub, which host networking gives you.)
 
 Optional settings:
 

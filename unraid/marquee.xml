@@ -13,7 +13,7 @@
   <WebUI>http://[IP]:[PORT:8084]/</WebUI>
   <ExtraParams>--restart unless-stopped</ExtraParams>
   <Config Name="Settings" Target="/config" Default="/mnt/user/appdata/marquee" Mode="rw" Description="Persistent settings." Type="Path" Display="always" Required="true" Mask="false"/>
-  <Config Name="Nest Hub IP" Target="HUB_IP" Default="" Mode="" Description="Static LAN IP of the Google Nest Hub." Type="Variable" Display="always" Required="true" Mask="false"/>
+  <Config Name="Nest Hub IP" Target="HUB_IP" Default="" Mode="" Description="Optional — leave empty and pick your Hub with Scan on the settings page, or set the Hub's static LAN IP here." Type="Variable" Display="always" Required="false" Mask="false"/>
   <Config Name="Card URL" Target="PAGE_URL" Default="http://[SERVER-IP]:8084/image" Mode="" Description="URL the Hub loads, so it must be this server's LAN IP — localhost will not work here." Type="Variable" Display="always" Required="true" Mask="false"/>
   <Config Name="Plex URL" Target="PLEX_HOST" Default="http://localhost:32400" Mode="" Description="Plex Media Server URL. Keep localhost if Plex runs on this Unraid server; otherwise use its LAN IP." Type="Variable" Display="always" Required="true" Mask="false"/>
   <Config Name="Plex Token" Target="PLEX_TOKEN" Default="" Mode="" Description="Plex X-Plex-Token; treat it like a password." Type="Variable" Display="always" Required="true" Mask="true"/>

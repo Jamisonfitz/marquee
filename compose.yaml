@@ -6,7 +6,7 @@ services:
     network_mode: host
     restart: unless-stopped
     environment:
-      HUB_IP: "192.168.1.50"                       # your Nest Hub's LAN IP
+      HUB_IP: ""                                   # optional — pick your Hub in the settings UI instead
       PAGE_URL: "http://192.168.1.10:8084/image"   # this server's LAN IP — the Hub loads this, so localhost won't work
       PLEX_HOST: "http://localhost:32400"          # keep localhost if Plex runs on this machine
       PLEX_TOKEN: "replace-me"
