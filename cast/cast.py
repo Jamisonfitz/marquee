@@ -29,7 +29,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 HUB_IP = os.environ.get("HUB_IP", "")
 PAGE_URL = os.environ.get("PAGE_URL", "")
 PLEX = os.environ.get("PLEX_HOST", "").rstrip("/")
@@ -49,6 +49,7 @@ SETTINGS_PATH = os.path.join(DATA_DIR, "settings.json")
 
 THEMES = ("amber", "ice", "crimson", "emerald")
 TEMPLATES = ("spotlight", "split", "hero", "lowerthird", "bigclock")
+TITLE_FONTS = ("system", "bebas", "oswald", "playfair", "cinzel", "grotesk")
 ACCENT_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 IP_RE = re.compile(r"^\d{1,3}(\.\d{1,3}){3}$")
 DEFAULT_SETTINGS = {
@@ -56,6 +57,7 @@ DEFAULT_SETTINGS = {
     "template": "spotlight",
     "theme": "amber",
     "accent": "",
+    "titleFont": "system",
     "posterSide": "right",
     "clockFormat": "12h",
     "clockSeconds": False,
@@ -307,6 +309,8 @@ def clean_block_layout(value):
             number = position.get(key)
             if isinstance(number, (int, float)) and not isinstance(number, bool):
                 item[key] = round(max(low, min(high, number)), 2)
+        if position.get("align") in ("left", "center", "right"):
+            item["align"] = position["align"]
         if item:
             cleaned[name] = item
     return cleaned
@@ -367,6 +371,8 @@ class WebHandler(BaseHTTPRequestHandler):
                 merged["template"] = "spotlight"
             if merged["clockFormat"] not in ("12h", "24h"):
                 merged["clockFormat"] = "12h"
+            if merged["titleFont"] not in TITLE_FONTS:
+                merged["titleFont"] = "system"
             merged["clockSeconds"] = bool(merged["clockSeconds"])
             if not (isinstance(merged["accent"], str)
                     and (merged["accent"] == "" or ACCENT_RE.match(merged["accent"]))):
@@ -464,9 +470,12 @@ def selftest():
         and merged["showPlot"] is False and merged["showClock"] is True \
         and merged["template"] == "spotlight"
     layout = clean_block_layout({"identity": {"x": 12.345, "y": -200, "width": 140,
-                                              "scale": 9, "height": 50},
-                                 "unknown": {"x": 1}, "plot": "bad"})
-    assert layout == {"identity": {"x": 12.35, "y": -100, "width": 100, "scale": 3}}
+                                              "scale": 9, "height": 50,
+                                              "align": "center"},
+                                 "plot": {"align": "diagonal"},
+                                 "unknown": {"x": 1}})
+    assert layout == {"identity": {"x": 12.35, "y": -100, "width": 100,
+                                   "scale": 3, "align": "center"}}
     assert ACCENT_RE.match("#A1b2C3") and not ACCENT_RE.match("red") \
         and not ACCENT_RE.match("#12345")
     v = ET.fromstring(SAMPLE_SESSION)
