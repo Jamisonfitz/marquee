@@ -7,7 +7,7 @@
   <Privileged>false</Privileged>
   <Support>https://github.com/Jamisonfitz/marquee/issues</Support>
   <Project>https://github.com/Jamisonfitz/marquee</Project>
-  <Overview>Cinematic Plex now-playing display for smart screens with presets, live layout control, and Nest Hub casting.</Overview>
+  <Overview>Marquee turns a Google Nest Hub into a cinematic Plex now-playing display. When you press play it casts a designed card with the poster, title logo, plot, Rotten Tomatoes and IMDb scores, media details, and live progress; when the credits roll the Hub returns to ambient mode automatically.&#10;&#10;Five hand-designed templates (Spotlight, Split, Hero, Lower Third, Big Clock), four themes plus a custom accent color, and a drag-and-drop block editor with instant preview. Cast devices are auto-discovered on your LAN, so setup is: add your Plex token, open the settings page, press Scan, pick your Hub.&#10;&#10;Requires Plex Media Server and a Google Cast device (Nest Hub, Chromecast with a screen) on the same LAN. Runs LAN-only with no login and no cloud; your Plex token never leaves the server. Settings page at port 8084.</Overview>
   <Category>MediaApp:Other</Category>
   <Icon>https://raw.githubusercontent.com/Jamisonfitz/marquee/main/assets/marquee-icon.png</Icon>
   <WebUI>http://[IP]:[PORT:8084]/</WebUI>
