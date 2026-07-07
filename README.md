@@ -62,7 +62,7 @@ docker build -t marquee:local .
 docker run -d --name marquee --restart unless-stopped --network host \
   -e HUB_IP=192.168.1.50 \
   -e PAGE_URL=http://192.168.1.10:8084/image \
-  -e PLEX_HOST=http://192.168.1.10:32400 \
+  -e PLEX_HOST=http://localhost:32400 \
   -e PLEX_TOKEN=replace-me \
   -v marquee-config:/config \
   marquee:local
@@ -74,9 +74,11 @@ Settings persist under `./data` in Compose mode or `/config` in the container.
 
 Required environment variables:
 
-- `HUB_IP`
-- `PAGE_URL`
-- `PLEX_HOST`
+- `HUB_IP` — the Nest Hub's LAN IP
+- `PAGE_URL` — this server's LAN IP + `/image`. The Hub loads this URL, so
+  `localhost` will not work here.
+- `PLEX_HOST` — keep `http://localhost:32400` when Plex runs on the same
+  machine; otherwise its LAN IP
 - `PLEX_TOKEN`
 
 Optional settings:

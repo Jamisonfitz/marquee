@@ -14,8 +14,8 @@
   <ExtraParams>--restart unless-stopped</ExtraParams>
   <Config Name="Settings" Target="/config" Default="/mnt/user/appdata/marquee" Mode="rw" Description="Persistent settings." Type="Path" Display="always" Required="true" Mask="false"/>
   <Config Name="Nest Hub IP" Target="HUB_IP" Default="" Mode="" Description="Static LAN IP of the Google Nest Hub." Type="Variable" Display="always" Required="true" Mask="false"/>
-  <Config Name="Card URL" Target="PAGE_URL" Default="http://[SERVER-IP]:8084/image" Mode="" Description="LAN URL reachable by the Hub." Type="Variable" Display="always" Required="true" Mask="false"/>
-  <Config Name="Plex URL" Target="PLEX_HOST" Default="http://[PLEX-IP]:32400" Mode="" Description="LAN URL of Plex Media Server." Type="Variable" Display="always" Required="true" Mask="false"/>
+  <Config Name="Card URL" Target="PAGE_URL" Default="http://[SERVER-IP]:8084/image" Mode="" Description="URL the Hub loads, so it must be this server's LAN IP — localhost will not work here." Type="Variable" Display="always" Required="true" Mask="false"/>
+  <Config Name="Plex URL" Target="PLEX_HOST" Default="http://localhost:32400" Mode="" Description="Plex Media Server URL. Keep localhost if Plex runs on this Unraid server; otherwise use its LAN IP." Type="Variable" Display="always" Required="true" Mask="false"/>
   <Config Name="Plex Token" Target="PLEX_TOKEN" Default="" Mode="" Description="Plex X-Plex-Token; treat it like a password." Type="Variable" Display="always" Required="true" Mask="true"/>
   <Config Name="Plex Users" Target="PLEX_USERS" Default="" Mode="" Description="Comma-separated Plex usernames that trigger the marquee. Leave empty to react to everyone streaming from the server, including shared users." Type="Variable" Display="always" Required="false" Mask="false"/>
   <Config Name="TMDb API Key" Target="TMDB_API_KEY" Default="" Mode="" Description="Optional key for credits-scene badges." Type="Variable" Display="advanced" Required="false" Mask="true"/>
