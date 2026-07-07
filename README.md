@@ -9,11 +9,29 @@
 
 Marquee turns a Google Nest Hub into a clean Plex now-playing display. It shows artwork, title, plot, genres, ratings, media details, progress, and a clock, then returns the Hub to ambient mode when playback stops.
 
+![Marquee Split template](docs/screenshots/split.jpg)
+
+## Templates
+
+Five designed layouts, switchable live from the settings page:
+
+| | |
+|:---:|:---:|
+| ![Spotlight](docs/screenshots/spotlight.jpg) **Spotlight** — poster beside the full metadata stack | ![Hero](docs/screenshots/hero.jpg) **Hero** — big centered title over the backdrop |
+| ![Lower Third](docs/screenshots/lowerthird.jpg) **Lower Third** — broadcast-style chyron over full-bleed art | ![Big Clock](docs/screenshots/bigclock.jpg) **Big Clock** — ambient timepiece with a now-playing strip |
+
+Every template is built from the same blocks — title/logo identity, grouped ratings, metadata chips, plot, progress, clock, poster — so your show/hide toggles, themes, custom accent color, and block position tweaks carry across all of them.
+
+![Settings UI](docs/screenshots/settings.jpg)
+
 ## Features
 
-- Live Plex now-playing card with poster or backdrop layouts.
-- Curated theme presets with polished default box positions.
-- A snap-grid editor for moving and resizing each card element.
+- Live Plex now-playing card with five designed templates: Spotlight, Split,
+  Hero, Lower Third, and Big Clock.
+- Four themes plus a custom accent color, 12/24-hour clock styles, and
+  per-block show/hide toggles.
+- A drag-and-slider editor for moving, sizing, and scaling each card block,
+  with an instant demo preview.
 - Persisted settings, health checks, and a Docker-first deployment path.
 - Google Nest Hub casting with clean idle handoff back to ambient mode.
 
@@ -63,6 +81,9 @@ Required environment variables:
 
 Optional settings:
 
+- `PLEX_USERS` — comma-separated Plex usernames that trigger the marquee.
+  Leave empty to react to everyone on the server, including shared and home
+  users (the sessions API is server-wide).
 - `TMDB_API_KEY`
 - `POLL_SECONDS` default `5`
 - `SERVE_PORT` default `8084`
