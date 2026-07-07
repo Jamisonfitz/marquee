@@ -250,7 +250,7 @@
   const TEMPLATES = ['spotlight', 'split', 'hero', 'lowerthird', 'bigclock'];
   let shownKey = null, prog = null, state = 'playing', fetchedAt = 0;
   let baseCfg = null, draftCfg = null, draftLayout = null, lastD = null;
-  let selectedLayout = 'identity';
+  let selectedLayout = 'identity', announced = false;
 
   const esc = s => String(s).replace(/[&<>"']/g, ch =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
@@ -363,6 +363,13 @@
     show('progress', !!d.progress && c.showProgress !== false);
     show('poster', !!d.poster);
     applyBlockLayout();
+    if (EDIT && !announced) {
+      // First render: blocks finally have real sizes, so the settings sliders
+      // can show true values instead of zeros.
+      announced = true;
+      const el = document.querySelector(`[data-layout="${selectedLayout}"]`);
+      if (el) requestAnimationFrame(() => announceSelection(el, selectedLayout));
+    }
   }
 
   function applyBlockLayout() {
