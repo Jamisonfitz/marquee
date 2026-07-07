@@ -10,7 +10,8 @@ Frontend (one HTTP server on :8084): serves the card page and art from
 output/, the settings UI at /settings, /save, and /release-notes.
 
 Env knobs: HUB_IP, PAGE_URL, PLEX_HOST, PLEX_TOKEN, POLL_SECONDS, REPO_DIR,
-SERVE_PORT, DATA_DIR. Optional TMDB_API_KEY enables the credits-scene badge.
+SERVE_PORT, DATA_DIR. Optional TMDB_API_KEY enables the credits-scene badge;
+optional PLEX_USERS limits which Plex users trigger the marquee.
 """
 import json
 import mimetypes
@@ -35,6 +36,9 @@ POLL = int(os.environ.get("POLL_SECONDS", "5"))
 REPO = os.environ.get("REPO_DIR", "/repo")
 TMDB_KEY = os.environ.get("TMDB_API_KEY", "")
 SERVE_PORT = int(os.environ.get("SERVE_PORT", "8084"))
+# Comma-separated Plex usernames that may trigger the marquee; empty = everyone.
+USERS = {u.strip().lower()
+         for u in os.environ.get("PLEX_USERS", "").split(",") if u.strip()}
 
 OUTPUT = os.path.join(REPO, "output")
 JSON_PATH = os.path.join(OUTPUT, "now-playing.json")
@@ -222,10 +226,24 @@ def parse_session(video, extras=library_extras):
     return info
 
 
+def session_allowed(video, users=None):
+    """True when the session's Plex user is on the allow-list (empty = everyone).
+
+    /status/sessions is server-wide: with the owner token it includes every
+    shared and home user, so without a filter the marquee reacts to anyone
+    streaming from the library.
+    """
+    users = USERS if users is None else users
+    if not users:
+        return True
+    user = video.find("User")
+    return user is not None and (user.get("title") or "").lower() in users
+
+
 def current_session():
     root = fetch_xml("/status/sessions")
     for video in root.findall("Video"):
-        if video.get("type") in ("movie", "episode"):
+        if video.get("type") in ("movie", "episode") and session_allowed(video):
             return parse_session(video)
     return None
 
@@ -404,6 +422,10 @@ def selftest():
     assert layout == {"identity": {"x": 12.35, "y": -100, "width": 100, "scale": 3}}
     assert ACCENT_RE.match("#A1b2C3") and not ACCENT_RE.match("red") \
         and not ACCENT_RE.match("#12345")
+    v = ET.fromstring(SAMPLE_SESSION)
+    assert session_allowed(v, set()) and not session_allowed(v, {"dad"})
+    v.append(ET.Element("User", {"id": "1", "title": "Dad"}))
+    assert session_allowed(v, {"dad"}) and not session_allowed(v, {"kid"})
     print("selftest ok")
 
 

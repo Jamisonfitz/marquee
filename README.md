@@ -81,6 +81,9 @@ Required environment variables:
 
 Optional settings:
 
+- `PLEX_USERS` — comma-separated Plex usernames that trigger the marquee.
+  Leave empty to react to everyone on the server, including shared and home
+  users (the sessions API is server-wide).
 - `TMDB_API_KEY`
 - `POLL_SECONDS` default `5`
 - `SERVE_PORT` default `8084`

@@ -27,6 +27,9 @@
 
 ### Fixes
 
+- New `PLEX_USERS` setting limits which Plex users trigger the marquee.
+  Previously any session on the server — including shared and home users —
+  would take over the Hub.
 - Metadata strings are now HTML-escaped on the card, so titles or ratings
   containing &, <, or quotes render correctly.
 
