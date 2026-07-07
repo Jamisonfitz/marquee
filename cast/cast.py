@@ -10,11 +10,13 @@ Frontend (one HTTP server on :8084): serves the card page and art from
 output/, the settings UI at /settings, /save, and /release-notes.
 
 Env knobs: HUB_IP, PAGE_URL, PLEX_HOST, PLEX_TOKEN, POLL_SECONDS, REPO_DIR,
-SERVE_PORT, DATA_DIR. Optional TMDB_API_KEY enables the credits-scene badge.
+SERVE_PORT, DATA_DIR. Optional TMDB_API_KEY enables the credits-scene badge;
+optional PLEX_USERS limits which Plex users trigger the marquee.
 """
 import json
 import mimetypes
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -25,7 +27,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.0.1"
+VERSION = "1.1.0"
 HUB_IP = os.environ.get("HUB_IP", "")
 PAGE_URL = os.environ.get("PAGE_URL", "")
 PLEX = os.environ.get("PLEX_HOST", "").rstrip("/")
@@ -34,6 +36,9 @@ POLL = int(os.environ.get("POLL_SECONDS", "5"))
 REPO = os.environ.get("REPO_DIR", "/repo")
 TMDB_KEY = os.environ.get("TMDB_API_KEY", "")
 SERVE_PORT = int(os.environ.get("SERVE_PORT", "8084"))
+# Comma-separated Plex usernames that may trigger the marquee; empty = everyone.
+USERS = {u.strip().lower()
+         for u in os.environ.get("PLEX_USERS", "").split(",") if u.strip()}
 
 OUTPUT = os.path.join(REPO, "output")
 JSON_PATH = os.path.join(OUTPUT, "now-playing.json")
@@ -41,30 +46,24 @@ DATA_DIR = os.environ.get("DATA_DIR", OUTPUT)
 SETTINGS_PATH = os.path.join(DATA_DIR, "settings.json")
 
 THEMES = ("amber", "ice", "crimson", "emerald")
-LAYOUTS = ("poster", "backdrop")
+TEMPLATES = ("spotlight", "split", "hero", "lowerthird", "bigclock")
+ACCENT_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 DEFAULT_SETTINGS = {
+    "template": "spotlight",
     "theme": "amber",
-    "layout": "poster",
-    "posterSide": "left",
+    "accent": "",
+    "posterSide": "right",
+    "clockFormat": "12h",
+    "clockSeconds": False,
     "showPlot": True, "showGenres": True, "showScores": True,
     "showMediaInfo": True, "showContentRating": True, "showRuntime": True,
     "showProgress": True, "showClock": True,
     "backdrop": True, "logo": True,
-    "elementLayout": {
-        "clock": {"x": 52, "y": -28, "width": 18, "height": 10},
-        "eyebrow": {"x": 0, "y": 0, "width": 38},
-        "logo": {"x": 0, "y": 0, "width": 56},
-        "title": {"x": 0, "y": -2, "width": 62},
-        "subtitle": {"x": 0, "y": -2, "width": 54},
-        "meta": {"x": 0, "y": 0, "width": 58},
-        "plot": {"x": 0, "y": 0, "width": 54},
-        "scores": {"x": 0, "y": 0, "width": 54},
-        "progress": {"x": 0, "y": 0, "width": 72},
-    },
+    "blockLayout": {},
 }
 
-EDITABLE_ELEMENTS = ("clock", "eyebrow", "logo", "title", "subtitle", "meta",
-                     "plot", "scores", "progress", "poster")
+EDITABLE_BLOCKS = ("clock", "identity", "meta", "plot", "ratings",
+                   "progress", "poster")
 
 _meta_cache = {}  # ratingKey -> extras dict
 
@@ -227,10 +226,24 @@ def parse_session(video, extras=library_extras):
     return info
 
 
+def session_allowed(video, users=None):
+    """True when the session's Plex user is on the allow-list (empty = everyone).
+
+    /status/sessions is server-wide: with the owner token it includes every
+    shared and home user, so without a filter the marquee reacts to anyone
+    streaming from the library.
+    """
+    users = USERS if users is None else users
+    if not users:
+        return True
+    user = video.find("User")
+    return user is not None and (user.get("title") or "").lower() in users
+
+
 def current_session():
     root = fetch_xml("/status/sessions")
     for video in root.findall("Video"):
-        if video.get("type") in ("movie", "episode"):
+        if video.get("type") in ("movie", "episode") and session_allowed(video):
             return parse_session(video)
     return None
 
@@ -244,17 +257,17 @@ def load_settings():
         return dict(DEFAULT_SETTINGS)
 
 
-def clean_element_layout(value):
-    """Keep layout overrides small, numeric, and limited to known card elements."""
+def clean_block_layout(value):
+    """Keep layout overrides small, numeric, and limited to known card blocks."""
     if not isinstance(value, dict):
         return {}
     cleaned = {}
     for name, position in value.items():
-        if name not in EDITABLE_ELEMENTS or not isinstance(position, dict):
+        if name not in EDITABLE_BLOCKS or not isinstance(position, dict):
             continue
         item = {}
         for key, low, high in (("x", -100, 100), ("y", -100, 100),
-                               ("width", 5, 100), ("height", 5, 100)):
+                               ("width", 5, 100), ("scale", 0.3, 3)):
             number = position.get(key)
             if isinstance(number, (int, float)) and not isinstance(number, bool):
                 item[key] = round(max(low, min(high, number)), 2)
@@ -311,9 +324,15 @@ class WebHandler(BaseHTTPRequestHandler):
                 merged["posterSide"] = "right"
             if merged["theme"] not in THEMES:
                 merged["theme"] = "amber"
-            if merged["layout"] not in LAYOUTS:
-                merged["layout"] = "poster"
-            merged["elementLayout"] = clean_element_layout(merged["elementLayout"])
+            if merged["template"] not in TEMPLATES:
+                merged["template"] = "spotlight"
+            if merged["clockFormat"] not in ("12h", "24h"):
+                merged["clockFormat"] = "12h"
+            merged["clockSeconds"] = bool(merged["clockSeconds"])
+            if not (isinstance(merged["accent"], str)
+                    and (merged["accent"] == "" or ACCENT_RE.match(merged["accent"]))):
+                merged["accent"] = ""
+            merged["blockLayout"] = clean_block_layout(merged["blockLayout"])
             atomic_write(SETTINGS_PATH, json.dumps(merged))
             self._send(json.dumps({"ok": True}), "application/json")
         except Exception as e:
@@ -395,10 +414,18 @@ def selftest():
     assert info["subtitle"] == "S2 · E5 · The Devil Wears Prada 2"
     merged = {**DEFAULT_SETTINGS, **{"posterSide": "left", "bogus": 1, "showPlot": False}}
     assert "bogus" not in DEFAULT_SETTINGS and merged["posterSide"] == "left" \
-        and merged["showPlot"] is False and merged["showClock"] is True
-    layout = clean_element_layout({"title": {"x": 12.345, "y": -200, "width": 140},
-                                   "unknown": {"x": 1}, "plot": "bad"})
-    assert layout == {"title": {"x": 12.35, "y": -100, "width": 100}}
+        and merged["showPlot"] is False and merged["showClock"] is True \
+        and merged["template"] == "spotlight"
+    layout = clean_block_layout({"identity": {"x": 12.345, "y": -200, "width": 140,
+                                              "scale": 9, "height": 50},
+                                 "unknown": {"x": 1}, "plot": "bad"})
+    assert layout == {"identity": {"x": 12.35, "y": -100, "width": 100, "scale": 3}}
+    assert ACCENT_RE.match("#A1b2C3") and not ACCENT_RE.match("red") \
+        and not ACCENT_RE.match("#12345")
+    v = ET.fromstring(SAMPLE_SESSION)
+    assert session_allowed(v, set()) and not session_allowed(v, {"alice"})
+    v.append(ET.Element("User", {"id": "1", "title": "Alice"}))
+    assert session_allowed(v, {"alice"}) and not session_allowed(v, {"bob"})
     print("selftest ok")
 
 

@@ -11,10 +11,6 @@
     --chip-border: #3A414C; --track: #262B33; --pause: #6B7280;
     --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     --radius: 1.4vw;
-    /* layout: outer areas + section order */
-    --areas: "info poster"; --cols: 1fr auto;
-    --o-eyebrow: 1; --o-logo: 2; --o-title: 3; --o-subtitle: 4;
-    --o-meta: 5; --o-plot: 6; --o-scores: 7; --o-progress: 8;
   }
   :root[data-theme="ice"] {
     --bg: #0A0E14; --accent: #7FB8E8; --accent-glow: rgba(127, 184, 232, .16); }
@@ -25,7 +21,6 @@
 
   html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden;
     font-family: var(--font); -webkit-font-smoothing: antialiased; }
-  body { display: flex; align-items: center; justify-content: center; }
 
   .bg { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover;
     opacity: 0; transition: opacity 1s ease; }
@@ -34,41 +29,40 @@
     linear-gradient(90deg, var(--bg) 8%, transparent 130%); opacity: .92; }
   body.flip .bg-shade { transform: scaleX(-1); }
 
-  .clock { position: absolute; top: 3.5vh; right: 5vw; color: var(--faint);
-    font-size: 2vw; font-weight: 600; font-variant-numeric: tabular-nums; z-index: 2; }
-  .clock:empty { display: none; }
-
-  /* ── Grid system ──────────────────────────────────────────────── */
-  .stage { position: relative; display: grid; align-items: center;
-    grid-template-areas: var(--areas); grid-template-columns: var(--cols);
-    gap: 5vw; width: 100%; padding: 6vh 5vw; box-sizing: border-box;
+  /* ── Blocks: each is a self-contained, internally designed group ─ */
+  .stage { position: fixed; inset: 0; display: grid; box-sizing: border-box;
+    padding: 6vh 5vw; column-gap: 4vw; row-gap: 0;
     opacity: 1; transition: opacity .5s ease; }
   .stage.fade { opacity: 0; }
   .stage.hidden { display: none; }
-  .stage.flip { --areas: "poster info"; --cols: auto 1fr; }
+  .block { min-width: 0; position: relative; padding: 1.2vh 0; }
+  .block[hidden] { display: none !important; }
+  .b-clock    { grid-area: clock; }
+  .b-identity { grid-area: identity; display: grid; row-gap: 1.6vh; justify-items: start; }
+  .b-meta     { grid-area: meta; }
+  .b-plot     { grid-area: plot; }
+  .b-ratings  { grid-area: ratings; }
+  .b-progress { grid-area: progress; }
+  .b-poster   { grid-area: poster; }
+  .b-identity > * { margin: 0; }
 
-  .info { grid-area: info; min-width: 0; display: grid; row-gap: 2.4vh;
-    justify-items: start; }
-  .info > * { margin: 0; }
-  .eyebrow { order: var(--o-eyebrow); }  .logo     { order: var(--o-logo); }
-  .title   { order: var(--o-title); }    .subtitle { order: var(--o-subtitle); }
-  .meta    { order: var(--o-meta); }     .plot     { order: var(--o-plot); }
-  .scores  { order: var(--o-scores); }   .progress { order: var(--o-progress); }
-  .poster-wrap { grid-area: poster; }
+  .clock { color: var(--faint); font-size: 2vw; font-weight: 600;
+    font-variant-numeric: tabular-nums; }
+  .clock:empty { display: none; }
 
-  /* ── Sections ─────────────────────────────────────────────────── */
-  .logo { max-height: 24vh; max-width: 42vw; object-fit: contain; display: none;
+  .logo { max-height: 22vh; max-width: 42vw; object-fit: contain; display: none;
     filter: drop-shadow(0 .6vh 2vh rgba(0,0,0,.8)); }
   .has-logo .logo { display: block; }
   .has-logo .title { display: none; }
 
   .eyebrow { color: var(--accent); font-size: 1.5vw; font-weight: 600;
     letter-spacing: .32em; text-transform: uppercase; }
-  .title { color: var(--text); font-size: 5.4vw; font-weight: 800; line-height: 1.05;
+  .title { color: var(--text); font-size: 5.2vw; font-weight: 800; line-height: 1.05;
     letter-spacing: -0.015em;
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .subtitle { color: var(--muted); font-size: 2.2vw; font-weight: 500; }
   .subtitle:empty { display: none; }
+  .eyebrow:empty { display: none; }
 
   .meta { color: var(--muted); font-size: 1.8vw; font-weight: 500;
     display: flex; align-items: center; gap: 1.4vw; flex-wrap: wrap; }
@@ -77,7 +71,6 @@
   .chip.stinger { border-color: var(--accent); color: var(--accent);
     text-transform: uppercase; letter-spacing: .18em; font-size: 1.15vw; }
 
-  /* rating badges: MPAA card + TV parental block */
   .rbadge.mpaa { background: #F4F4F0; color: #111; border: .22vw solid #111;
     border-radius: .4vw; padding: .3vh .8vw; font-weight: 900; font-size: 1.6vw;
     letter-spacing: .02em; }
@@ -88,11 +81,11 @@
     letter-spacing: .18em; }
   .rbadge.tv b { font-size: 1.7vw; font-weight: 900; margin-top: .3vh; }
 
-  .plot { color: var(--text-soft); font-size: 1.9vw; line-height: 1.5; max-width: 48ch;
+  .plot { margin: 0; color: var(--text-soft); font-size: 1.9vw; line-height: 1.5;
+    max-width: 48ch;
     display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-  .plot:empty, .meta:empty, .eyebrow:empty { display: none; }
 
-  .scores { display: flex; align-items: center; gap: 3.6vw; margin-top: 1vh; }
+  .scores { display: flex; align-items: center; gap: 3.4vw; }
   .score { display: flex; align-items: center; gap: .9vw; }
   .score svg { width: 3.4vw; height: 3.4vw; }
   .score .num { color: var(--text); font-size: 3vw; font-weight: 800;
@@ -100,8 +93,7 @@
   .imdb-tag { background: #F5C518; color: #111; font-weight: 800;
     font-size: 1.5vw; padding: .5vh .8vw; border-radius: .5vw; }
 
-  .progress { width: 92%; margin-top: 1vh; }
-  .progress.hidden { display: none; }
+  .b-progress { width: 42vw; }
   .bar { height: .9vh; background: var(--track); border-radius: 1vh; overflow: hidden; }
   .fill { height: 100%; width: 0; background: var(--accent); border-radius: 1vh;
     transition: width 1s linear; }
@@ -110,45 +102,117 @@
     color: var(--faint); font-size: 1.5vw; font-weight: 600;
     font-variant-numeric: tabular-nums; }
 
-  .poster-wrap { position: relative; height: 74vh; aspect-ratio: 2 / 3; }
-  .poster-wrap::before { content: ""; position: absolute; inset: -6%;
+  .b-poster { height: 72vh; aspect-ratio: 2 / 3; padding: 0; align-self: center; }
+  .b-poster::before { content: ""; position: absolute; inset: -6%;
     background: radial-gradient(closest-side, var(--accent-glow), transparent 75%);
     filter: blur(24px); }
   .poster { position: relative; width: 100%; height: 100%; object-fit: cover;
     border-radius: var(--radius); box-shadow: 0 2.5vh 7vh rgba(0,0,0,.65);
     background: var(--panel); }
 
-  /* ── Backdrop layout (no poster): bigger, wider, cleaner ──────── */
-  body.nocover .stage { --areas: "info"; --cols: 1fr; }
-  body.nocover .poster-wrap { display: none; }
-  body.nocover .info { row-gap: 3.2vh; max-width: 74vw; }
-  body.nocover .logo { max-height: 30vh; max-width: 50vw; }
-  body.nocover .title { font-size: 6.6vw; -webkit-line-clamp: 2; }
-  body.nocover .eyebrow { font-size: 1.7vw; }
-  body.nocover .subtitle { font-size: 2.5vw; }
-  body.nocover .meta { font-size: 2.1vw; }
-  body.nocover .chip { font-size: 1.6vw; }
-  body.nocover .rbadge.mpaa { font-size: 1.9vw; }
-  body.nocover .plot { font-size: 2.2vw; max-width: 60ch; -webkit-line-clamp: 3; }
-  body.nocover .scores { gap: 4.2vw; }
-  body.nocover .score svg { width: 4vw; height: 4vw; }
-  body.nocover .score .num { font-size: 3.6vw; }
-  body.nocover .imdb-tag { font-size: 1.8vw; }
-  body.nocover .progress { width: 74vw; max-width: none; }
-  body.nocover .ptime { font-size: 1.7vw; }
-  body.nocover .clock { font-size: 2.4vw; color: var(--muted); }
-  body.nocover .bg.on { opacity: .3; }
+  /* ── Template: Spotlight — poster beside the full metadata stack ─ */
+  body[data-template="spotlight"] .stage {
+    grid-template-columns: 1fr auto; align-content: center;
+    grid-template-areas: "identity poster" "meta poster" "plot poster"
+                         "ratings poster" "progress poster"; }
+  body.flip[data-template="spotlight"] .stage {
+    grid-template-columns: auto 1fr;
+    grid-template-areas: "poster identity" "poster meta" "poster plot"
+                         "poster ratings" "poster progress"; }
+  body[data-template="spotlight"] .b-clock,
+  body[data-template="split"] .b-clock,
+  body[data-template="hero"] .b-clock,
+  body[data-template="lowerthird"] .b-clock {
+    position: absolute; top: 3.5vh; right: 5vw; padding: 0; z-index: 2; }
 
-  .idle { display: none; color: #4A5058; font-size: 1.6vw; font-weight: 500;
+  /* ── Template: Split — hard 50/45 divide, art wall + info column ─ */
+  body[data-template="split"] .stage { padding: 0; column-gap: 0;
+    grid-template-columns: 45fr 55fr;
+    grid-template-rows: 1fr repeat(5, auto) 1fr;
+    grid-template-areas: "poster ." "poster identity" "poster meta" "poster plot"
+                         "poster ratings" "poster progress" "poster ."; }
+  body.flip[data-template="split"] .stage {
+    grid-template-columns: 55fr 45fr;
+    grid-template-areas: ". poster" "identity poster" "meta poster" "plot poster"
+                         "ratings poster" "progress poster" ". poster"; }
+  body[data-template="split"] .b-poster { height: 100%; aspect-ratio: auto;
+    align-self: stretch; }
+  body[data-template="split"] .b-poster::before { display: none; }
+  body[data-template="split"] .b-poster::after { content: ""; position: absolute;
+    top: 0; bottom: 0; right: 0; width: .28vw; background: var(--accent); }
+  body.flip[data-template="split"] .b-poster::after { right: auto; left: 0; }
+  body[data-template="split"] .poster { border-radius: 0; box-shadow: none; }
+  body[data-template="split"] .b-identity, body[data-template="split"] .b-meta,
+  body[data-template="split"] .b-plot, body[data-template="split"] .b-ratings,
+  body[data-template="split"] .b-progress { margin: 0 5vw; }
+  body[data-template="split"] .title { font-size: 4.6vw; }
+  body[data-template="split"] .bg.on { opacity: .14; }
+
+  /* ── Template: Hero — big centered marquee over the backdrop ───── */
+  body[data-template="hero"] .stage { grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto auto auto 1fr auto;
+    grid-template-areas: "." "identity" "meta" "ratings" "." "progress";
+    justify-items: center; text-align: center; }
+  body[data-template="hero"] .b-identity { justify-items: center; row-gap: 2.2vh; }
+  body[data-template="hero"] .b-plot, body[data-template="hero"] .b-poster { display: none; }
+  body[data-template="hero"] .logo { max-height: 32vh; max-width: 56vw; }
+  body[data-template="hero"] .title { font-size: 7vw; }
+  body[data-template="hero"] .subtitle { font-size: 2.5vw; }
+  body[data-template="hero"] .meta { justify-content: center; font-size: 2vw; }
+  body[data-template="hero"] .b-progress { width: 50vw; }
+  body[data-template="hero"] .bg.on { opacity: .34; }
+  body[data-template="hero"] .bg-shade { background:
+    radial-gradient(ellipse at center, transparent 20%, var(--bg) 115%); }
+
+  /* ── Template: Lower Third — chyron bar over full-bleed art ────── */
+  body[data-template="lowerthird"] .stage { padding: 0;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: 1fr auto auto auto;
+    grid-template-areas: ". ." "identity ratings" "meta ratings" "progress progress"; }
+  body[data-template="lowerthird"] .stage::before { content: ""; position: absolute;
+    left: 0; right: 0; bottom: 0; height: 44vh; pointer-events: none;
+    background: linear-gradient(transparent, rgba(4, 5, 7, .88) 62%); }
+  body[data-template="lowerthird"] .b-plot, body[data-template="lowerthird"] .b-poster { display: none; }
+  body[data-template="lowerthird"] .b-identity { margin-left: 5vw; row-gap: .8vh; }
+  body[data-template="lowerthird"] .b-meta { margin-left: 5vw; }
+  body[data-template="lowerthird"] .b-ratings { margin-right: 5vw; align-self: end; }
+  body[data-template="lowerthird"] .b-progress { width: auto; margin: 1.2vh 5vw 3.5vh; }
+  body[data-template="lowerthird"] .logo { max-height: 13vh; max-width: 30vw; }
+  body[data-template="lowerthird"] .title { font-size: 3.8vw; -webkit-line-clamp: 1; }
+  body[data-template="lowerthird"] .subtitle { font-size: 1.9vw; }
+  body[data-template="lowerthird"] .eyebrow { font-size: 1.2vw; }
+  body[data-template="lowerthird"] .bg.on { opacity: .55; }
+  body[data-template="lowerthird"] .bg-shade { background: none; }
+
+  /* ── Template: Big Clock — ambient timepiece with a now-playing strip ─ */
+  body[data-template="bigclock"] .stage { grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto auto;
+    grid-template-areas: "clock" "identity" "progress";
+    justify-items: center; text-align: center; }
+  body[data-template="bigclock"] .b-clock { align-self: center; }
+  body[data-template="bigclock"] .clock { font-size: 15vw; font-weight: 800;
+    color: var(--text); letter-spacing: -.02em;
+    text-shadow: 0 1vh 5vh rgba(0,0,0,.6); }
+  body[data-template="bigclock"] .b-meta, body[data-template="bigclock"] .b-plot,
+  body[data-template="bigclock"] .b-ratings, body[data-template="bigclock"] .b-poster { display: none; }
+  body[data-template="bigclock"] .b-identity { justify-items: center; row-gap: .6vh; }
+  body[data-template="bigclock"] .logo { max-height: 9vh; max-width: 24vw; }
+  body[data-template="bigclock"] .title { font-size: 2.4vw; color: var(--text-soft); }
+  body[data-template="bigclock"] .subtitle { font-size: 1.6vw; }
+  body[data-template="bigclock"] .eyebrow { display: none; }
+  body[data-template="bigclock"] .b-progress { width: 34vw; margin-bottom: 2vh; }
+  body[data-template="bigclock"] .bg.on { opacity: .15; }
+
+  .idle { display: none; position: fixed; inset: 0; align-items: center;
+    justify-content: center; color: #4A5058; font-size: 1.6vw; font-weight: 500;
     letter-spacing: .3em; text-transform: uppercase; z-index: 2; }
-  body.idle .idle { display: block; }
-  body.idle .stage, body.idle .clock, body.idle .bg, body.idle .bg-shade { display: none; }
+  body.idle .idle { display: flex; }
+  body.idle .stage, body.idle .bg, body.idle .bg-shade { display: none; }
 
   /* The settings preview enables this editor with ?edit=1. */
   body.editing [data-layout] { outline: 2px dashed rgba(229,168,59,.7);
     outline-offset: 5px; cursor: move; touch-action: none; }
-  body.editing [data-layout].selected { outline-style: solid; outline-color: var(--accent);
-    box-shadow: inset -5px 0 var(--accent); }
+  body.editing [data-layout].selected { outline-style: solid; outline-color: var(--accent); }
   body.editing::after { content: ""; position: fixed; inset: 0; z-index: 20;
     pointer-events: none; background-image:
     linear-gradient(rgba(229,168,59,.13) 1px, transparent 1px),
@@ -157,24 +221,25 @@
 
   @media (prefers-reduced-motion: reduce) { .stage, .fill, .bg { transition: none; } }
 </style>
+<body data-template="spotlight">
 <img class="bg" id="bg" alt="">
 <div class="bg-shade"></div>
-<div class="clock" id="clock" data-layout="clock"></div>
 <div class="stage hidden">
-  <div class="info">
-    <p class="eyebrow" id="eyebrow" data-layout="eyebrow"></p>
-    <img class="logo" id="logo" data-layout="logo" alt="">
-    <h1 class="title" id="title" data-layout="title"></h1>
-    <p class="subtitle" id="subtitle" data-layout="subtitle"></p>
-    <div class="meta" id="meta" data-layout="meta"></div>
-    <p class="plot" id="plot" data-layout="plot"></p>
-    <div class="scores" id="scores" data-layout="scores"></div>
-    <div class="progress hidden" id="progress" data-layout="progress">
-      <div class="bar"><div class="fill" id="fill"></div></div>
-      <div class="ptime"><span id="elapsed"></span><span id="remain"></span></div>
-    </div>
+  <div class="block b-clock" data-layout="clock"><div class="clock" id="clock"></div></div>
+  <div class="block b-identity" data-layout="identity">
+    <p class="eyebrow" id="eyebrow"></p>
+    <img class="logo" id="logo" alt="">
+    <h1 class="title" id="title"></h1>
+    <p class="subtitle" id="subtitle"></p>
   </div>
-  <div class="poster-wrap" data-layout="poster"><img class="poster" id="poster" alt=""></div>
+  <div class="block b-meta" data-layout="meta"><div class="meta" id="meta"></div></div>
+  <div class="block b-plot" data-layout="plot"><p class="plot" id="plot"></p></div>
+  <div class="block b-ratings" data-layout="ratings"><div class="scores" id="scores"></div></div>
+  <div class="block b-progress" data-layout="progress">
+    <div class="bar"><div class="fill" id="fill"></div></div>
+    <div class="ptime"><span id="elapsed"></span><span id="remain"></span></div>
+  </div>
+  <div class="block b-poster" data-layout="poster"><img class="poster" id="poster" alt=""></div>
 </div>
 <p class="idle">Nothing playing</p>
 <script>
@@ -182,17 +247,33 @@
   const stage = document.querySelector('.stage');
   const DEMO = new URLSearchParams(location.search).has('demo');
   const EDIT = new URLSearchParams(location.search).has('edit');
-  let shownKey = null, prog = null, state = 'playing', fetchedAt = 0, cfg = null;
-  let selectedLayout = 'title', draftLayout = null;
+  const TEMPLATES = ['spotlight', 'split', 'hero', 'lowerthird', 'bigclock'];
+  let shownKey = null, prog = null, state = 'playing', fetchedAt = 0;
+  let baseCfg = null, draftCfg = null, draftLayout = null, lastD = null;
+  let selectedLayout = 'identity', announced = false;
 
+  const esc = s => String(s).replace(/[&<>"']/g, ch =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+
+  // Merged view of saved settings + any live draft from the settings editor.
+  function activeCfg() {
+    const c = { ...(baseCfg || {}), ...(EDIT ? draftCfg || {} : {}) };
+    if (EDIT && draftLayout) c.blockLayout = draftLayout;
+    return c;
+  }
+
+  const DEMO_POSTER = 'data:image/jpeg;base64,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';
+  const DEMO_BACKDROP = 'data:image/jpeg;base64,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';
+  // Demo movie is an original fiction made for Marquee — art lives in-repo,
+  // so the demo never shows copyrighted posters or mismatched metadata.
   const DEMO_DATA = { playing: true, type: 'movie', key: 'demo',
-    title: 'The Devil Wears Prada 2', year: '2026',
-    summary: 'Andy Sachs returns to Runway as Miranda Priestly navigates a new media landscape. The duo reconnect with former assistant Emily Charlton, now the head of a luxury brand whose funding could ensure Runway’s survival.',
-    genres: ['Drama', 'Comedy', 'Romance'], contentRating: 'PG-13',
-    runtime: '1h 59m', media: '1080p · H264 · EAC3',
-    scores: { rtCritic: 77, rtCriticFresh: true, rtAudience: 84, rtAudienceFresh: true, imdb: 6.6 },
-    progress: { offsetMs: 2868000, durationMs: 7141120 }, state: 'playing',
-    stinger: ['after'], backdrop: true, logo: true };
+    title: 'Midnight Signal', year: '2026',
+    summary: 'A late-night radio host picks up a transmission that predicts the city’s blackouts before they happen. As the signal grows clearer, she realizes it is counting down — and that she may be the only one listening.',
+    genres: ['Mystery', 'Thriller', 'Drama'], contentRating: 'PG-13',
+    runtime: '1h 58m', media: '4K · HEVC · TRUEHD',
+    scores: { rtCritic: 92, rtCriticFresh: true, rtAudience: 88, rtAudienceFresh: true, imdb: 7.8 },
+    progress: { offsetMs: 2868000, durationMs: 7080000 }, state: 'playing',
+    stinger: ['after'], poster: true, backdrop: true, logo: false };
 
   const TOMATO_FRESH = `<svg viewBox="0 0 24 24"><path fill="#FA320A" d="M12 6c5.2 0 9 3.5 9 8.2S17.2 22 12 22s-9-3.1-9-7.8S6.8 6 12 6z"/><path fill="#00912D" d="M12 2c1.7 0 2.9.8 2.9.8s-1.3 1-2 2.3C15 4.3 17 5 17 5s-1.7 1.9-4.1 2c-2.4.1-3.9-1.2-3.9-1.2s.9-1.2 2.3-1.7C9.9 3.7 9 3.1 9 3.1S10.3 2 12 2z"/></svg>`;
   const TOMATO_ROTTEN = `<svg viewBox="0 0 24 24"><path fill="#0A9830" d="M12 2.5l1.8 4.1 4.4-1.6-1.2 4.2 4.5 1.3-3.9 2.6 2.6 3.9-4.5-.9.2 4.9-3.9-3-3.4 3.3-.2-4.8-4.7.7 2.9-3.9L2.5 11l4.6-1.4-1.4-4.3 4.5 1.7L12 2.5z"/></svg>`;
@@ -200,25 +281,46 @@
   const POP_SPILLED = `<svg viewBox="0 0 24 24"><g transform="rotate(105 12 14)"><path fill="#7A8494" d="M6 9h12l-1.5 12H7.5L6 9z"/><path fill="#B9C0CC" d="M8.7 9l.8 12h1.4l-.8-12H8.7zm4.4 0l-.2 12h1.4l.8-12h-2z" opacity=".8"/></g><circle cx="5" cy="19" r="1.9" fill="#F7E7C3"/><circle cx="9.5" cy="21" r="1.6" fill="#FBF3DC"/><circle cx="3.5" cy="14.5" r="1.5" fill="#F7E7C3"/></svg>`;
 
   const MPAA = ['G', 'PG', 'PG-13', 'R', 'NC-17'];
-  const ratingBadge = cr => !cr ? '' :
-    cr.toUpperCase().startsWith('TV-')
-      ? `<span class="rbadge tv"><i>TV</i><b>${cr.slice(3)}</b></span>`
-      : MPAA.includes(cr.toUpperCase())
-        ? `<span class="rbadge mpaa">${cr}</span>`
-        : `<span class="chip">${cr}</span>`;
+  const ratingBadge = cr => {
+    if (!cr) return '';
+    const up = String(cr).toUpperCase();
+    return up.startsWith('TV-')
+      ? `<span class="rbadge tv"><i>TV</i><b>${esc(up.slice(3))}</b></span>`
+      : MPAA.includes(up)
+        ? `<span class="rbadge mpaa">${esc(cr)}</span>`
+        : `<span class="chip">${esc(cr)}</span>`;
+  };
 
   const fmt = ms => {
     const m = Math.floor(ms / 60000), h = Math.floor(m / 60);
     return h ? `${h}:${String(m % 60).padStart(2, '0')}` : `${m}m`;
   };
 
+  const hexGlow = hex => {
+    const n = parseInt(hex.slice(1), 16);
+    return `rgba(${n >> 16 & 255}, ${n >> 8 & 255}, ${n & 255}, .16)`;
+  };
+
+  function show(name, on) {
+    const b = document.querySelector(`.block[data-layout="${name}"]`);
+    if (b) b.hidden = !on;
+  }
+
   function render(d) {
-    const c = cfg || {};
+    lastD = d;
+    const c = activeCfg();
     document.documentElement.dataset.theme = c.theme || 'amber';
-    const nocover = c.layout === 'backdrop';
-    document.body.classList.toggle('nocover', nocover);
-    stage.classList.toggle('flip', !nocover && c.posterSide === 'left');
-    document.body.classList.toggle('flip', !nocover && c.posterSide === 'left');
+    const root = document.documentElement.style;
+    if (/^#[0-9a-fA-F]{6}$/.test(c.accent || '')) {
+      root.setProperty('--accent', c.accent);
+      root.setProperty('--accent-glow', hexGlow(c.accent));
+    } else { root.removeProperty('--accent'); root.removeProperty('--accent-glow'); }
+
+    const tpl = TEMPLATES.includes(c.template) ? c.template : 'spotlight';
+    document.body.dataset.template = tpl;
+    document.body.classList.toggle('flip',
+      (tpl === 'spotlight' || tpl === 'split') && c.posterSide === 'left');
+
     $('eyebrow').textContent = c.showGenres !== false ? (d.genres || []).join('  ·  ') : '';
     $('title').textContent = d.title || '';
     $('subtitle').textContent = d.subtitle || '';
@@ -230,51 +332,67 @@
       $('logo').src = '/logo.png?k=' + d.key;
     }
     const useBg = c.backdrop !== false && d.backdrop;
-    if (useBg) { $('bg').src = '/backdrop.jpg?k=' + d.key; }
+    if (useBg) { $('bg').src = DEMO ? DEMO_BACKDROP : '/backdrop.jpg?k=' + d.key; }
     $('bg').classList.toggle('on', useBg);
 
     const meta = [ d.year,
       c.showRuntime !== false ? d.runtime : null,
       c.showMediaInfo !== false ? d.media : null ].filter(Boolean).join('   ·   ');
-    $('meta').innerHTML = (meta ? `<span>${meta}</span>` : '') +
+    const metaHtml = (meta ? `<span>${esc(meta)}</span>` : '') +
       (c.showContentRating !== false ? ratingBadge(d.contentRating) : '') +
       (d.stinger ? `<span class="chip stinger">${
         d.stinger.includes('after') ? 'After-credits scene' : 'During-credits scene'
       }</span>` : '');
+    $('meta').innerHTML = metaHtml;
     $('plot').textContent = c.showPlot !== false ? (d.summary || '') : '';
 
     const s = c.showScores !== false ? (d.scores || {}) : {}, parts = [];
     if (s.rtCritic != null) parts.push(
-      `<div class="score">${s.rtCriticFresh ? TOMATO_FRESH : TOMATO_ROTTEN}<div class="num">${s.rtCritic}%</div></div>`);
+      `<div class="score">${s.rtCriticFresh ? TOMATO_FRESH : TOMATO_ROTTEN}<div class="num">${esc(s.rtCritic)}%</div></div>`);
     if (s.rtAudience != null) parts.push(
-      `<div class="score">${s.rtAudienceFresh ? POP_UP : POP_SPILLED}<div class="num">${s.rtAudience}%</div></div>`);
+      `<div class="score">${s.rtAudienceFresh ? POP_UP : POP_SPILLED}<div class="num">${esc(s.rtAudience)}%</div></div>`);
     if (s.imdb != null) parts.push(
-      `<div class="score"><span class="imdb-tag">IMDb</span><div class="num">${s.imdb}</div></div>`);
+      `<div class="score"><span class="imdb-tag">IMDb</span><div class="num">${esc(s.imdb)}</div></div>`);
     $('scores').innerHTML = parts.join('');
-    $('progress').classList.toggle('hidden', !d.progress || c.showProgress === false);
-    applyElementLayout();
+
+    show('clock', c.showClock !== false);
+    show('identity', true);
+    show('meta', metaHtml !== '');
+    show('plot', c.showPlot !== false && !!d.summary);
+    show('ratings', parts.length > 0);
+    show('progress', !!d.progress && c.showProgress !== false);
+    show('poster', !!d.poster);
+    applyBlockLayout();
+    if (EDIT && !announced) {
+      // First render: blocks finally have real sizes, so the settings sliders
+      // can show true values instead of zeros.
+      announced = true;
+      const el = document.querySelector(`[data-layout="${selectedLayout}"]`);
+      if (el) requestAnimationFrame(() => announceSelection(el, selectedLayout));
+    }
   }
 
-  function applyElementLayout() {
-    const layout = (cfg || {}).elementLayout || {};
+  function applyBlockLayout() {
+    const layout = activeCfg().blockLayout || {};
     document.querySelectorAll('[data-layout]').forEach(el => {
       const p = layout[el.dataset.layout] || {};
-      el.style.transform = `translate(${p.x || 0}vw, ${p.y || 0}vh)`;
+      el.style.transform =
+        `translate(${p.x || 0}vw, ${p.y || 0}vh) scale(${p.scale || 1})`;
       el.style.width = p.width ? p.width + 'vw' : '';
-      el.style.height = p.height ? p.height + 'vh' : '';
     });
   }
 
   function selectionValues(el, name) {
-    const snap = value => Math.round(value / 2.5) * 2.5;
-    const p = (draftLayout || cfg?.elementLayout || {})[name] || {}, rect = el.getBoundingClientRect();
-    return { x:p.x || 0, y:p.y || 0,
-      width:p.width || snap(rect.width / innerWidth * 100),
-      height:p.height || snap(rect.height / innerHeight * 100) };
+    const p = (draftLayout || activeCfg().blockLayout || {})[name] || {};
+    const rect = el.getBoundingClientRect();
+    return { x: p.x || 0, y: p.y || 0,
+      width: p.width || Math.round(rect.width / innerWidth * 100),
+      scale: p.scale || 1 };
   }
 
   function announceSelection(el, name) {
-    parent.postMessage({ type:'marquee-selection', name, values:selectionValues(el, name) }, location.origin);
+    parent.postMessage({ type: 'marquee-selection', name,
+      values: selectionValues(el, name) }, location.origin);
   }
 
   function enableEditor() {
@@ -285,31 +403,20 @@
         event.preventDefault(); event.stopPropagation();
         document.querySelectorAll('[data-layout]').forEach(n => n.classList.remove('selected'));
         el.classList.add('selected');
-        const name = el.dataset.layout, layout = draftLayout ||= structuredClone(cfg.elementLayout || {});
-        cfg.elementLayout = layout;
+        const name = el.dataset.layout;
+        const layout = draftLayout ||= structuredClone(activeCfg().blockLayout || {});
         selectedLayout = name;
         announceSelection(el, name);
         const p = layout[name] ||= {};
-        const start = { x: event.clientX, y: event.clientY, px: p.x || 0, py: p.y || 0,
-          width: p.width || el.getBoundingClientRect().width / innerWidth * 100,
-          height: p.height || el.getBoundingClientRect().height / innerHeight * 100 };
-        const rect = el.getBoundingClientRect();
-        const resizeX = event.clientX >= rect.right - 22;
-        const resizeY = event.clientY >= rect.bottom - 22;
+        const start = { x: event.clientX, y: event.clientY, px: p.x || 0, py: p.y || 0 };
         el.setPointerCapture(event.pointerId);
-        const snap = (value, step) => Math.round(value / step) * step;
+        const snap = v => Math.round(v);
         const move = e => {
-          if (resizeX) p.width = Math.max(5, Math.min(100, snap(
-            start.width + (e.clientX - start.x) / innerWidth * 100, 2.5)));
-          if (resizeY) p.height = Math.max(5, Math.min(100, snap(
-            start.height + (e.clientY - start.y) / innerHeight * 100, 2.5)));
-          if (!resizeX && !resizeY) {
-            p.x = Math.max(-100, Math.min(100, snap(
-              start.px + (e.clientX - start.x) / innerWidth * 100, 2.5)));
-            p.y = Math.max(-100, Math.min(100, snap(
-              start.py + (e.clientY - start.y) / innerHeight * 100, 2.5)));
-          }
-          applyElementLayout();
+          p.x = Math.max(-100, Math.min(100,
+            snap(start.px + (e.clientX - start.x) / innerWidth * 100)));
+          p.y = Math.max(-100, Math.min(100,
+            snap(start.py + (e.clientY - start.y) / innerHeight * 100)));
+          applyBlockLayout();
         };
         const up = () => {
           el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up);
@@ -322,41 +429,45 @@
   }
 
   window.addEventListener('message', event => {
-    if (EDIT && event.origin === location.origin && event.data?.type === 'marquee-layout-preview') {
-      cfg ||= {};
-      draftLayout = structuredClone(event.data.layout || {});
-      cfg.elementLayout = draftLayout;
-      applyElementLayout();
-    } else if (EDIT && event.origin === location.origin && event.data?.type === 'marquee-select') {
-      const el = document.querySelector(`[data-layout="${event.data.name}"]`);
+    if (!EDIT || event.origin !== location.origin) return;
+    const msg = event.data || {};
+    if (msg.type === 'marquee-cfg') {
+      draftCfg = msg.cfg || {};
+      if (lastD) render(lastD), paint();
+    } else if (msg.type === 'marquee-layout-preview') {
+      draftLayout = structuredClone(msg.layout || {});
+      applyBlockLayout();
+    } else if (msg.type === 'marquee-select') {
+      const el = document.querySelector(`[data-layout="${msg.name}"]`);
       if (!el) return;
-      selectedLayout = event.data.name;
+      selectedLayout = msg.name;
       document.querySelectorAll('[data-layout]').forEach(n => n.classList.remove('selected'));
       el.classList.add('selected');
       announceSelection(el, selectedLayout);
-    } else if (EDIT && event.origin === location.origin && event.data?.type === 'marquee-set') {
+    } else if (msg.type === 'marquee-set') {
       const el = document.querySelector(`[data-layout="${selectedLayout}"]`);
-      if (!el || !['x','y','width','height'].includes(event.data.field)) return;
-      const layout = draftLayout ||= structuredClone(cfg.elementLayout || {});
+      if (!el || !['x', 'y', 'width', 'scale'].includes(msg.field)) return;
+      const layout = draftLayout ||= structuredClone(activeCfg().blockLayout || {});
       const p = layout[selectedLayout] ||= selectionValues(el, selectedLayout);
-      p[event.data.field] = Number(event.data.value);
-      cfg.elementLayout = layout;
-      applyElementLayout();
-      parent.postMessage({ type:'marquee-layout', layout }, location.origin);
-      announceSelection(el, selectedLayout);    }
+      p[msg.field] = Number(msg.value);
+      applyBlockLayout();
+      parent.postMessage({ type: 'marquee-layout', layout }, location.origin);
+      announceSelection(el, selectedLayout);
+    }
   });
 
   function refreshPoster(d) {
-    if ((cfg || {}).layout === 'backdrop') return;
     const i = new Image();
     i.onload = () => { $('poster').src = i.src; };
-    i.src = '/poster.jpg?k=' + (DEMO ? 'demo' : d.key);
+    i.src = DEMO ? DEMO_POSTER : '/poster.jpg?k=' + d.key;
   }
 
   function paint() {
-    const c = cfg || {};
+    const c = activeCfg();
+    const opts = { hour: 'numeric', minute: '2-digit', hour12: c.clockFormat !== '24h' };
+    if (c.clockSeconds) opts.second = '2-digit';
     $('clock').textContent = (c.showClock === false || document.body.classList.contains('idle'))
-      ? '' : new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      ? '' : new Date().toLocaleTimeString([], opts);
     if (!prog || c.showProgress === false) return;
     const off = Math.min(
       prog.offsetMs + (state === 'playing' ? Date.now() - fetchedAt : 0),
@@ -365,14 +476,13 @@
     $('elapsed').textContent = fmt(off);
     $('remain').textContent = state === 'paused'
       ? 'Paused' : fmt(prog.durationMs - off) + ' left';
-    $('progress').classList.toggle('paused', state === 'paused');
+    document.querySelector('.b-progress').classList.toggle('paused', state === 'paused');
   }
 
   async function tick() {
     let d = DEMO_DATA;
     try {
-      cfg = await (await fetch('/settings.json?t=' + Date.now())).json();
-      if (EDIT && draftLayout) cfg.elementLayout = draftLayout;
+      baseCfg = await (await fetch('/settings.json?t=' + Date.now())).json();
       if (!DEMO) d = await (await fetch('/now-playing.json?t=' + Date.now())).json();
     } catch (e) { if (!DEMO) return; }
     if (!d.playing) { document.body.classList.add('idle'); shownKey = null; prog = null; return; }
