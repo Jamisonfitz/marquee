@@ -15,6 +15,16 @@
 - `PLEX_DEVICES` env var joins `PLEX_USERS` as a container-level fallback;
   both merge with the settings-page lists.
 
+### Demo reel
+
+- The single demo movie is now a four-film reel of original fictional
+  comedies — *Shaking Hands & Kissing Babies* (campaign-poster style),
+  *Rat King III: Still Gnawing* (graffiti stencil), *Participation Trophy*
+  (sticker bomb), and *B-Sides* (vinyl sleeve). Each has hand-built vector
+  poster, backdrop, and logo art; the preview picks one at random per load,
+  and pure demo mode (`/image?demo`) rotates every 20 seconds.
+  `?demo=N` pins a film. Roughly 70KB lighter than the old embedded art.
+
 ### Preview & accent
 
 - Changing the title font now previews instantly even when a clear-logo is
