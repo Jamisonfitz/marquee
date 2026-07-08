@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.4.0 — 2026-07-08
+
+### Session filters
+
+- New "Who triggers the marquee" section in settings: limit casting to
+  specific Plex **users** and **devices**, editable live — no container
+  restart. Empty fields keep the old behavior (everyone, any device), so a
+  shared user's stream — or your own phone away from home — no longer takes
+  over the Hub.
+- An "Active sessions" check shows exactly who is playing what on which
+  device, with the exact names to copy into the filters, and flags sessions
+  the current filters exclude.
+- `PLEX_DEVICES` env var joins `PLEX_USERS` as a container-level fallback;
+  both merge with the settings-page lists.
+
+### Preview & accent
+
+- Changing the title font now previews instantly even when a clear-logo is
+  shown: the card swaps in the text title for a few seconds so you can see
+  the font.
+- A custom accent color now tints as deeply as the built-in themes: metadata
+  chip borders and the progress track pick it up too.
+- The Big Clock template's clock now glows in the accent color.
+
 ## 1.3.0 — 2026-07-07
 
 ### Layout & type
