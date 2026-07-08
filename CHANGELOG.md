@@ -25,6 +25,19 @@
   and pure demo mode (`/image?demo`) rotates every 20 seconds.
   `?demo=N` pins a film. Roughly 70KB lighter than the old embedded art.
 
+### Street template & vibes
+
+- New **Street** template: a hand-drawn night scene — brick wall, pay phone,
+  and your poster hanging in a bulb-lit **NOW PLAYING** marquee frame. The
+  clear-logo (or title) reads as spray-painted onto the brick, grain and all.
+- Four new themes named for the demo reel: **Campaign** (navy & red tape),
+  **Concrete** (back-alley gold), **Trophy** (gold-star yellow), and
+  **B-Sides** (dollar-bin orange).
+- **Vibes**: one-tap presets bundling theme + font + template — Campaign
+  Trail, Back Alley, Gold Star, Dollar Bin, Simulation ("we're all just
+  programming ourselves"), and Third Act ("the universe is on its final
+  reel"). Tap one, tweak, save.
+
 ### Preview & accent
 
 - Changing the title font now previews instantly even when a clear-logo is

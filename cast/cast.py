@@ -53,8 +53,9 @@ JSON_PATH = os.path.join(OUTPUT, "now-playing.json")
 DATA_DIR = os.environ.get("DATA_DIR", OUTPUT)
 SETTINGS_PATH = os.path.join(DATA_DIR, "settings.json")
 
-THEMES = ("amber", "ice", "crimson", "emerald")
-TEMPLATES = ("spotlight", "split", "hero", "lowerthird", "bigclock")
+THEMES = ("amber", "ice", "crimson", "emerald",
+          "campaign", "concrete", "trophy", "bsides")
+TEMPLATES = ("spotlight", "split", "hero", "lowerthird", "bigclock", "street")
 TITLE_FONTS = ("system", "bebas", "oswald", "playfair", "cinzel", "grotesk")
 ACCENT_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 IP_RE = re.compile(r"^\d{1,3}(\.\d{1,3}){3}$")

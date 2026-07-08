@@ -24,6 +24,19 @@
   :root[data-theme="emerald"] {
     --bg: #0A100D; --panel: #0F1A14; --chip-border: #2C4A3A; --track: #1B342A;
     --accent: #5BC98F; --accent-glow: rgba(91, 201, 143, .16); }
+  /* Themes named after the demo reel — each film's palette as a vibe. */
+  :root[data-theme="campaign"] {
+    --bg: #101623; --panel: #18223A; --chip-border: #3E4E74; --track: #24304E;
+    --accent: #E86A5A; --accent-glow: rgba(232, 106, 90, .16); }
+  :root[data-theme="concrete"] {
+    --bg: #1B1D20; --panel: #26292E; --chip-border: #55595F; --track: #383C42;
+    --accent: #C9973B; --accent-glow: rgba(201, 151, 59, .16); }
+  :root[data-theme="trophy"] {
+    --bg: #161001; --panel: #241B04; --chip-border: #6E5A14; --track: #453807;
+    --accent: #FFD447; --accent-glow: rgba(255, 212, 71, .16); }
+  :root[data-theme="bsides"] {
+    --bg: #142226; --panel: #1C3036; --chip-border: #3E565E; --track: #28404A;
+    --accent: #D96C2C; --accent-glow: rgba(217, 108, 44, .16); }
 
   html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden;
     font-family: var(--font); -webkit-font-smoothing: antialiased; }
@@ -209,9 +222,8 @@
     justify-items: center; text-align: center; }
   body[data-template="bigclock"] .b-clock { align-self: center; }
   body[data-template="bigclock"] .clock { font-size: 15vw; font-weight: 800;
-    color: var(--accent); text-shadow: 0 0 6vh var(--accent-glow);
-    letter-spacing: -.02em;
-    text-shadow: 0 1vh 5vh rgba(0,0,0,.6); }
+    color: var(--accent); letter-spacing: -.02em;
+    text-shadow: 0 0 6vh var(--accent-glow), 0 1vh 5vh rgba(0,0,0,.6); }
   body[data-template="bigclock"] .b-meta, body[data-template="bigclock"] .b-plot,
   body[data-template="bigclock"] .b-ratings, body[data-template="bigclock"] .b-poster { display: none; }
   body[data-template="bigclock"] .b-identity { justify-items: center; row-gap: .6vh; }
@@ -221,6 +233,36 @@
   body[data-template="bigclock"] .eyebrow { display: none; }
   body[data-template="bigclock"] .b-progress { width: 34vw; margin-bottom: 2vh; }
   body[data-template="bigclock"] .bg.on { opacity: .15; }
+
+  /* ── Template: Street — brick wall, pay phone, bulb-lit marquee frame ─ */
+  body[data-template="street"] { background-size: cover; background-position: center; }
+  body[data-template="street"] .bg, body[data-template="street"] .bg-shade { display: none; }
+  body[data-template="street"] .stage { display: block; padding: 0; }
+  body[data-template="street"] .block { position: absolute; }
+  /* The poster hangs inside the marquee frame drawn in the scene. */
+  body[data-template="street"] .b-poster { left: 66.4vw; top: 18.75vh;
+    width: 25vw; height: 60vh; aspect-ratio: auto; }
+  body[data-template="street"] .b-poster::before { display: none; }
+  body[data-template="street"] .poster { border-radius: .3vw;
+    box-shadow: inset 0 0 4vh rgba(0,0,0,.5); }
+  /* The clear-logo reads as sprayed onto the brick. */
+  body[data-template="street"] .b-identity { left: 5.5vw; top: 13vh; width: 46vw; }
+  body[data-template="street"] .logo { max-width: 40vw; max-height: 30vh;
+    opacity: .94; mix-blend-mode: hard-light;
+    filter: contrast(1.2) saturate(1.1) drop-shadow(0 0 .6vh rgba(0,0,0,.55));
+    -webkit-mask-image: var(--spray); mask-image: var(--spray);
+    -webkit-mask-size: 100% 100%; mask-size: 100% 100%; }
+  body[data-template="street"] .title { font-size: 4.6vw;
+    -webkit-mask-image: var(--spray); mask-image: var(--spray);
+    -webkit-mask-size: 100% 100%; mask-size: 100% 100%; }
+  body[data-template="street"] .eyebrow { font-size: 1.3vw; }
+  body[data-template="street"] .b-meta { left: 5.5vw; top: 48.5vh; width: 42vw; }
+  body[data-template="street"] .b-plot { left: 5.5vw; top: 62vh; width: 40vw; }
+  body[data-template="street"] .plot { font-size: 1.7vw; }
+  body[data-template="street"] .b-ratings { left: 5.5vw; top: 75.5vh; }
+  body[data-template="street"] .b-progress { left: 5.5vw; top: 88.5vh; width: 40vw; }
+  body[data-template="street"] .b-clock { left: 5.5vw; top: 3.5vh; }
+  body[data-template="street"] .clock { color: #FFD9A0; opacity: .75; }
 
   .idle { display: none; position: fixed; inset: 0; align-items: center;
     justify-content: center; color: #4A5058; font-size: 1.6vw; font-weight: 500;
@@ -266,7 +308,7 @@
   const stage = document.querySelector('.stage');
   const DEMO = new URLSearchParams(location.search).has('demo');
   const EDIT = new URLSearchParams(location.search).has('edit');
-  const TEMPLATES = ['spotlight', 'split', 'hero', 'lowerthird', 'bigclock'];
+  const TEMPLATES = ['spotlight', 'split', 'hero', 'lowerthird', 'bigclock', 'street'];
   let shownKey = null, prog = null, state = 'playing', fetchedAt = 0;
   let baseCfg = null, draftCfg = null, draftLayout = null, lastD = null;
   let selectedLayout = 'identity', announced = false;
@@ -452,6 +494,62 @@
   // preview keeps one film per load so the block editor stays stable.
   if (DEMO && !EDIT) setInterval(() => { demoIdx = (demoIdx + 1) % DEMOS.length; }, 20000);
 
+  // ── The Street scene: brick wall, pay phone, bulb-lit marquee frame ──
+  // Drawn once at 1280x800; the poster block overlays the frame opening
+  // (x 850..1170, y 150..630 → 66.4vw/18.75vh/25vw/60vh in the CSS).
+  const SCENE = (() => {
+    const bricks = [];
+    for (let r = 0; r < 18; r++) {
+      bricks.push(`<line x1="0" y1="${r * 41}" x2="1280" y2="${r * 41}"/>`);
+      for (let c = 0; c < 12; c++)
+        bricks.push(`<line x1="${c * 112 + (r % 2 ? 56 : 0)}" y1="${r * 41}" x2="${c * 112 + (r % 2 ? 56 : 0)}" y2="${r * 41 + 41}"/>`);
+    }
+    const shade = [];
+    for (let i = 0; i < 46; i++) {
+      const r = (i * 7) % 17, c = (i * 5) % 11;
+      shade.push(`<rect x="${c * 112 + (r % 2 ? 56 : 0) + 3}" y="${r * 41 + 3}" width="106" height="35" fill="${i % 3 ? '#000' : '#FFF'}" opacity="${i % 3 ? '.10' : '.03'}"/>`);
+    }
+    const bulb = (x, y) => `<circle cx="${x}" cy="${y}" r="11" fill="#FFD9A0" opacity=".16"/><circle cx="${x}" cy="${y}" r="5.5" fill="#FFE9C8"/><circle cx="${x-1.5}" cy="${y-1.5}" r="2" fill="#FFF7E8"/>`;
+    const bulbs = [];
+    for (let x = 846; x <= 1174; x += 41) { bulbs.push(bulb(x, 126), bulb(x, 654)); }
+    for (let y = 167; y <= 613; y += 40.5) { bulbs.push(bulb(826, y), bulb(1194, y)); }
+    const chase = [];
+    for (let x = 840; x <= 1180; x += 20) chase.push(`<circle cx="${x}" cy="${104}" r="3" fill="${(x / 20) % 2 ? '#FFE9C8' : '#8A6A42'}"/>`);
+    const coil = [];
+    for (let i = 0; i < 9; i++) coil.push(`<circle cx="${152 + (i % 2 ? 6 : -2)}" cy="${532 + i * 13}" r="7"/>`);
+    return svgU(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 800" font-family="${BLOCKY}">
+<defs><radialGradient id="pool" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFBE78" stop-opacity=".13"/><stop offset="1" stop-color="#FFBE78" stop-opacity="0"/></radialGradient>
+<linearGradient id="night" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#201B18"/><stop offset="1" stop-color="#2A2422"/></linearGradient></defs>
+<rect width="1280" height="800" fill="url(#night)"/>
+<g stroke="#191512" stroke-width="3">${bricks.join('')}</g>
+${shade.join('')}
+<ellipse cx="430" cy="330" rx="470" ry="310" fill="url(#pool)"/>
+<rect x="26" y="0" width="20" height="740" fill="#1E2126"/><rect x="22" y="120" width="28" height="12" rx="3" fill="#181B1F"/><rect x="22" y="430" width="28" height="12" rx="3" fill="#181B1F"/>
+<rect x="0" y="740" width="1280" height="60" fill="#17191D"/>
+<rect x="0" y="732" width="1280" height="8" fill="#3A3E45"/>
+<ellipse cx="1010" cy="768" rx="240" ry="16" fill="#FFD9A0" opacity=".05"/>
+<g transform="translate(538 66)"><rect x="130" y="306" width="116" height="44" rx="6" fill="#1F3A5F"/><text x="188" y="336" text-anchor="middle" font-size="24" fill="#DCE6F2" letter-spacing="6">PHONE</text>
+<rect x="118" y="360" width="140" height="252" rx="10" fill="#23262B"/>
+<rect x="128" y="372" width="120" height="228" rx="8" fill="#2E323A"/>
+<rect x="136" y="384" width="34" height="130" rx="10" fill="#101215"/>
+<circle cx="153" cy="398" r="13" fill="#101215"/><circle cx="153" cy="500" r="13" fill="#101215"/>
+<g fill="#101215">${coil.join('')}</g>
+<rect x="186" y="392" width="52" height="24" rx="4" fill="#1A1D22"/>
+${[0,1,2].map(cx => [0,1,2,3].map(cy => `<rect x="${188 + cx * 17}" y="${428 + cy * 17}" width="12" height="12" rx="2" fill="#4A505A"/>`).join('')).join('')}
+<rect x="186" y="506" width="52" height="6" rx="3" fill="#1A1D22"/>
+<rect x="192" y="548" width="42" height="30" rx="4" fill="#1A1D22"/></g>
+<rect x="812" y="48" width="396" height="60" rx="8" fill="#14161A" stroke="#C9973B" stroke-width="3"/>
+<text x="1010" y="90" text-anchor="middle" font-size="30" fill="#FFD9A0" letter-spacing="10">NOW PLAYING</text>
+${chase.join('')}
+<rect x="814" y="114" width="392" height="552" rx="10" fill="#241A16" stroke="#C9973B" stroke-width="4"/>
+<rect x="842" y="142" width="336" height="496" fill="#0B0C0E"/>
+${bulbs.join('')}
+</svg>`);
+  })();
+  // Grainy alpha mask that makes the logo read as spray paint on brick.
+  const SPRAY = svgU(`<svg xmlns="http://www.w3.org/2000/svg" width="480" height="240"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".5" numOctaves="3" seed="7"/><feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  1.7 1.7 1.7 0 -1.1"/></filter><rect width="480" height="240" filter="url(#n)"/></svg>`);
+  document.documentElement.style.setProperty('--spray', `url("${SPRAY}")`);
+
   const TOMATO_FRESH = `<svg viewBox="0 0 24 24"><path fill="#FA320A" d="M12 6c5.2 0 9 3.5 9 8.2S17.2 22 12 22s-9-3.1-9-7.8S6.8 6 12 6z"/><path fill="#00912D" d="M12 2c1.7 0 2.9.8 2.9.8s-1.3 1-2 2.3C15 4.3 17 5 17 5s-1.7 1.9-4.1 2c-2.4.1-3.9-1.2-3.9-1.2s.9-1.2 2.3-1.7C9.9 3.7 9 3.1 9 3.1S10.3 2 12 2z"/></svg>`;
   const TOMATO_ROTTEN = `<svg viewBox="0 0 24 24"><path fill="#0A9830" d="M12 2.5l1.8 4.1 4.4-1.6-1.2 4.2 4.5 1.3-3.9 2.6 2.6 3.9-4.5-.9.2 4.9-3.9-3-3.4 3.3-.2-4.8-4.7.7 2.9-3.9L2.5 11l4.6-1.4-1.4-4.3 4.5 1.7L12 2.5z"/></svg>`;
   const POP_UP = `<svg viewBox="0 0 24 24"><circle cx="8" cy="5.5" r="2.3" fill="#F7E7C3"/><circle cx="12.5" cy="4" r="2.6" fill="#FBF3DC"/><circle cx="16.5" cy="5.8" r="2.2" fill="#F7E7C3"/><path fill="#E5372B" d="M5 8h14l-1.8 14H6.8L5 8z"/><path fill="#fff" d="M8.2 8l1 14h1.6l-1-14H8.2zm5 0l-.2 14h1.6l1-14h-2.4z" opacity=".85"/></svg>`;
@@ -504,6 +602,7 @@
 
     const tpl = TEMPLATES.includes(c.template) ? c.template : 'spotlight';
     document.body.dataset.template = tpl;
+    document.body.style.backgroundImage = tpl === 'street' ? `url("${SCENE}")` : '';
     document.body.classList.toggle('flip',
       (tpl === 'spotlight' || tpl === 'split') && c.posterSide === 'left');
 
