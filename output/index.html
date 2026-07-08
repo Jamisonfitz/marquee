@@ -69,6 +69,8 @@
     filter: drop-shadow(0 .6vh 2vh rgba(0,0,0,.8)); }
   .has-logo .logo { display: block; }
   .has-logo .title { display: none; }
+  body.font-peek .logo { display: none; }
+  body.font-peek .has-logo .title { display: -webkit-box; }
 
   .eyebrow { color: var(--accent); font-size: 1.5vw; font-weight: 600;
     letter-spacing: .32em; text-transform: uppercase; }
@@ -207,7 +209,8 @@
     justify-items: center; text-align: center; }
   body[data-template="bigclock"] .b-clock { align-self: center; }
   body[data-template="bigclock"] .clock { font-size: 15vw; font-weight: 800;
-    color: var(--text); letter-spacing: -.02em;
+    color: var(--accent); text-shadow: 0 0 6vh var(--accent-glow);
+    letter-spacing: -.02em;
     text-shadow: 0 1vh 5vh rgba(0,0,0,.6); }
   body[data-template="bigclock"] .b-meta, body[data-template="bigclock"] .b-plot,
   body[data-template="bigclock"] .b-ratings, body[data-template="bigclock"] .b-poster { display: none; }
@@ -317,10 +320,11 @@
     return h ? `${h}:${String(m % 60).padStart(2, '0')}` : `${m}m`;
   };
 
-  const hexGlow = hex => {
+  const hexA = (hex, a) => {
     const n = parseInt(hex.slice(1), 16);
-    return `rgba(${n >> 16 & 255}, ${n >> 8 & 255}, ${n & 255}, .16)`;
+    return `rgba(${n >> 16 & 255}, ${n >> 8 & 255}, ${n & 255}, ${a})`;
   };
+  const hexGlow = hex => hexA(hex, .16);
 
   function show(name, on) {
     const b = document.querySelector(`.block[data-layout="${name}"]`);
@@ -335,7 +339,13 @@
     if (/^#[0-9a-fA-F]{6}$/.test(c.accent || '')) {
       root.setProperty('--accent', c.accent);
       root.setProperty('--accent-glow', hexGlow(c.accent));
-    } else { root.removeProperty('--accent'); root.removeProperty('--accent-glow'); }
+      // A custom accent tints as deeply as the built-in themes do.
+      root.setProperty('--chip-border', hexA(c.accent, .45));
+      root.setProperty('--track', hexA(c.accent, .22));
+    } else {
+      ['--accent', '--accent-glow', '--chip-border', '--track']
+        .forEach(p => root.removeProperty(p));
+    }
     if (FONTS[c.titleFont]) root.setProperty('--title-font', FONTS[c.titleFont]);
     else root.removeProperty('--title-font');
 
@@ -453,11 +463,22 @@
     });
   }
 
+  // A clear-logo replaces the text title, which would make a font change
+  // invisible in the preview — show the real text for a few seconds instead.
+  let peekT = 0;
+  function peekTitle() {
+    clearTimeout(peekT);
+    document.body.classList.add('font-peek');
+    peekT = setTimeout(() => document.body.classList.remove('font-peek'), 4000);
+  }
+
   window.addEventListener('message', event => {
     if (!EDIT || event.origin !== location.origin) return;
     const msg = event.data || {};
     if (msg.type === 'marquee-cfg') {
+      const fontChanged = draftCfg && (msg.cfg || {}).titleFont !== draftCfg.titleFont;
       draftCfg = msg.cfg || {};
+      if (fontChanged) peekTitle();
       if (lastD) render(lastD), paint();
     } else if (msg.type === 'marquee-layout-preview') {
       draftLayout = structuredClone(msg.layout || {});
