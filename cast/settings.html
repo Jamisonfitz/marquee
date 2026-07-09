@@ -77,14 +77,16 @@
   .devpick select, select.mini, input.mini { max-width: 200px; min-height: 40px;
     color: var(--text); background: var(--bg); border: 1px solid var(--line);
     border-radius: 8px; padding: 6px 8px; font-size: 14px; }
-  .vibes { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end;
-    max-width: 300px; }
-  .vibes button { background: var(--bg); border: 1px solid var(--line);
-    border-radius: 999px; color: var(--text); font-size: 12.5px; font-weight: 700;
-    padding: 7px 12px; cursor: pointer; }
-  .vibes button:hover { border-color: var(--v, var(--amber)); }
-  .vibes button i { font-style: normal; display: inline-block; width: 9px; height: 9px;
-    border-radius: 50%; background: var(--v); margin-right: 6px; vertical-align: -1px; }
+  .vibes-step { display: flex; gap: 8px; align-items: stretch; }
+  .vibes-step .secondary { padding: 6px 12px; font-size: 13px; }
+  .vibe-now { background: var(--bg); border: 1px solid var(--line); border-radius: 12px;
+    color: var(--text); padding: 6px 14px; cursor: pointer; text-align: left;
+    min-width: 180px; }
+  .vibe-now:hover { border-color: var(--v, var(--amber)); }
+  .vibe-now b { display: block; font-size: 13.5px; }
+  .vibe-now small { color: var(--mut); font-size: 11.5px; }
+  .vibe-now i { float: left; width: 10px; height: 10px; border-radius: 50%;
+    background: var(--v, var(--line)); margin: 5px 9px 0 0; }
   .sessions-list { color: var(--mut); font-size: 13px; text-align: right;
     line-height: 1.6; }
   .sessions-list b { color: var(--text); font-weight: 600; }
@@ -146,6 +148,17 @@
     opacity:0; pointer-events:none; transition:opacity .25s ease; }
   .scrim.on { opacity:1; pointer-events:auto; }
 
+  .layout { display: grid; grid-template-columns: 1fr; gap: 18px; }
+  @media (min-width: 1180px) {
+    .wrap { max-width: 1780px; }
+    .layout { grid-template-columns: minmax(430px, 46%) minmax(0, 1fr);
+      gap: 26px; align-items: start; }
+    .preview-col { position: sticky; top: 14px; }
+    .preview { margin-top: 0; }
+    .preview-col .actions { margin-top: 0; margin-bottom: 14px; }
+  }
+  .controls .panel { margin-bottom: 18px; }
+
   @media (max-width:760px) { .wrap { padding:20px 14px 44px; }
     .top { align-items:flex-start; flex-direction:column; }
     .panel { min-width:0; width:100%; box-sizing:border-box; }
@@ -160,6 +173,9 @@
       <button class="linkbtn" id="notes-btn">What’s new</button>
     </nav></div>
   <p class="sub">Saves reach the Hub in about two seconds. The card lives at <code>/image</code>; the preview below always shows demo data.</p>
+
+  <div class="layout">
+  <div class="controls">
 
   <div class="panel wide">
     <h2>Template</h2>
@@ -185,75 +201,87 @@
     </div>
   </div>
 
-  <div class="cols">
-    <div class="panel">
-      <h2>Look</h2>
-      <div class="row"><label>Vibes<small>One-tap presets: theme + font + template. Tune after; save to keep.</small></label>
-        <div class="vibes" id="vibes"></div>
+  <div class="panel">
+    <h2>Look</h2>
+    <div class="row"><label>Vibes<small>Presets: theme + font + template. Step through, tune after, save to keep.</small></label>
+      <div class="vibes-step">
+        <button class="secondary vprev" id="vibe-prev" type="button" aria-label="Previous vibe">&#9664;</button>
+        <button class="vibe-now" id="vibe-now" type="button"><i id="vibe-dot"></i><b id="vibe-name">Pick a vibe</b><small id="vibe-tag">tap or step through</small></button>
+        <button class="secondary vnext" id="vibe-next" type="button" aria-label="Next vibe">&#9654;</button>
       </div>
-      <div class="row"><label>Cast device<small>Scan finds Google Cast devices on your LAN</small></label>
-        <div class="devpick">
-          <select id="hub"><option value="">Use HUB_IP setting</option></select>
-          <button class="secondary" id="scan" type="button">Scan</button>
-        </div>
-      </div>
-      <div class="row"><label>Theme<small>Card palette; pick the circle for a custom accent</small></label>
-        <div class="swatches" id="theme">
-          <button data-v="amber" style="--swatch:#E5A83B" title="Amber"></button>
-          <button data-v="ice" style="--swatch:#7FB8E8" title="Ice"></button>
-          <button data-v="crimson" style="--swatch:#E85454" title="Crimson"></button>
-          <button data-v="emerald" style="--swatch:#5BC98F" title="Emerald"></button>
-          <button data-v="campaign" style="--swatch:#E86A5A" title="Campaign — navy &amp; red tape"></button>
-          <button data-v="concrete" style="--swatch:#C9973B" title="Concrete — back-alley gold"></button>
-          <button data-v="trophy" style="--swatch:#FFD447" title="Trophy — gold star yellow"></button>
-          <button data-v="bsides" style="--swatch:#D96C2C" title="B-Sides — dollar-bin orange"></button>
-          <input type="color" id="accent" value="#E5A83B" title="Custom accent">
-          <button class="clear" id="accent-clear" type="button">reset</button>
-        </div>
-      </div>
-      <div class="row"><label>Title font<small>Free Google fonts; falls back to system offline</small></label>
-        <select id="font" class="mini">
-          <option value="system">System</option>
-          <option value="bebas">Bebas Neue</option>
-          <option value="oswald">Oswald</option>
-          <option value="playfair">Playfair Display</option>
-          <option value="cinzel">Cinzel</option>
-          <option value="grotesk">Space Grotesk</option>
-        </select>
-      </div>
-      <div class="row"><label>Poster side<small>Spotlight and Split templates</small></label>
-        <div class="seg" id="side">
-          <button data-v="left">Left</button><button data-v="right">Right</button>
-        </div>
-      </div>
-      <div class="row"><label>Backdrop art<small>Plex background art behind the card</small></label>
-        <input type="checkbox" data-k="backdrop"></div>
-      <div class="row"><label>Title logo<small>Movie/show logo cutout instead of text title</small></label>
-        <input type="checkbox" data-k="logo"></div>
-      <div class="row"><label>Clock</label>
-        <input type="checkbox" data-k="showClock"></div>
-      <div class="row"><label>Clock style</label>
-        <div class="seg" id="clockfmt">
-          <button data-v="12h">12h</button><button data-v="24h">24h</button>
-        </div>
-      </div>
-      <div class="row"><label>Clock seconds</label>
-        <input type="checkbox" data-k="clockSeconds"></div>
     </div>
-    <div class="panel">
-      <h2>Card content</h2>
-      <div class="row"><label>Plot</label><input type="checkbox" data-k="showPlot"></div>
-      <div class="row"><label>Genres</label><input type="checkbox" data-k="showGenres"></div>
-      <div class="row"><label>Scores (RT / IMDb)</label><input type="checkbox" data-k="showScores"></div>
-      <div class="row"><label>Media info</label><input type="checkbox" data-k="showMediaInfo"></div>
-      <div class="row"><label>Content rating</label><input type="checkbox" data-k="showContentRating"></div>
-      <div class="row"><label>Runtime</label><input type="checkbox" data-k="showRuntime"></div>
-      <div class="row"><label>Progress bar</label><input type="checkbox" data-k="showProgress"></div>
+    <div class="row"><label>Theme<small>Card palette; pick the circle for a custom accent</small></label>
+      <div class="swatches" id="theme">
+        <button data-v="amber" style="--swatch:#E5A83B" title="Amber"></button>
+        <button data-v="ice" style="--swatch:#7FB8E8" title="Ice"></button>
+        <button data-v="crimson" style="--swatch:#E85454" title="Crimson"></button>
+        <button data-v="emerald" style="--swatch:#5BC98F" title="Emerald"></button>
+        <button data-v="campaign" style="--swatch:#E86A5A" title="Campaign — navy &amp; red tape"></button>
+        <button data-v="concrete" style="--swatch:#C9973B" title="Concrete — back-alley gold"></button>
+        <button data-v="trophy" style="--swatch:#FFD447" title="Trophy — gold star yellow"></button>
+        <button data-v="bsides" style="--swatch:#D96C2C" title="B-Sides — dollar-bin orange"></button>
+        <input type="color" id="accent" value="#E5A83B" title="Custom accent">
+        <button class="clear" id="accent-clear" type="button">reset</button>
+      </div>
+    </div>
+    <div class="row"><label>Title font<small>Free Google fonts; falls back to system offline</small></label>
+      <select id="font" class="mini">
+        <option value="system">System</option>
+        <option value="bebas">Bebas Neue</option>
+        <option value="oswald">Oswald</option>
+        <option value="playfair">Playfair Display</option>
+        <option value="cinzel">Cinzel</option>
+        <option value="grotesk">Space Grotesk</option>
+      </select>
+    </div>
+    <div class="row"><label>Poster side<small>Spotlight and Split templates</small></label>
+      <div class="seg" id="side">
+        <button data-v="left">Left</button><button data-v="right">Right</button>
+      </div>
     </div>
   </div>
 
-  <div class="panel wide">
-    <h2>Who triggers the marquee</h2>
+  <div class="panel">
+    <h2>Card content</h2>
+    <div class="row"><label>Backdrop art<small>Plex background art behind the card</small></label>
+      <input type="checkbox" data-k="backdrop"></div>
+    <div class="row"><label>Title logo<small>Movie/show logo cutout instead of text title</small></label>
+      <input type="checkbox" data-k="logo"></div>
+    <div class="row"><label>Plot</label><input type="checkbox" data-k="showPlot"></div>
+    <div class="row"><label>Genres</label><input type="checkbox" data-k="showGenres"></div>
+    <div class="row"><label>Scores (RT / IMDb)</label><input type="checkbox" data-k="showScores"></div>
+    <div class="row"><label>Media info</label><input type="checkbox" data-k="showMediaInfo"></div>
+    <div class="row"><label>Content rating</label><input type="checkbox" data-k="showContentRating"></div>
+    <div class="row"><label>Runtime</label><input type="checkbox" data-k="showRuntime"></div>
+    <div class="row"><label>Progress bar</label><input type="checkbox" data-k="showProgress"></div>
+    <div class="row"><label>Clock</label>
+      <input type="checkbox" data-k="showClock"></div>
+    <div class="row"><label>Clock style</label>
+      <div class="seg" id="clockfmt">
+        <button data-v="12h">12h</button><button data-v="24h">24h</button>
+      </div>
+    </div>
+    <div class="row"><label>Clock seconds</label>
+      <input type="checkbox" data-k="clockSeconds"></div>
+    <div class="row"><label>Weather<small>Temperature and conditions beside the clock</small></label>
+      <input type="checkbox" data-k="showWeather"></div>
+    <div class="row"><label>ZIP code<small>US ZIP for local weather and day/night; blank = auto-locate from your server's IP</small></label>
+      <input type="text" id="zip" class="mini" placeholder="e.g. 30301" autocomplete="off"></div>
+    <div class="row"><label>Units</label>
+      <div class="seg" id="unitfmt">
+        <button data-v="f">&deg;F</button><button data-v="c">&deg;C</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Casting</h2>
+    <div class="row"><label>Cast device<small>Scan finds Google Cast devices on your LAN</small></label>
+      <div class="devpick">
+        <select id="hub"><option value="">Use HUB_IP setting</option></select>
+        <button class="secondary" id="scan" type="button">Scan</button>
+      </div>
+    </div>
     <div class="row"><label>Plex users<small>Comma-separated usernames. Empty = everyone, including shared and home users.</small></label>
       <input type="text" id="users" class="mini" placeholder="e.g. jamison" autocomplete="off"></div>
     <div class="row"><label>Devices<small>Comma-separated player names — only sessions on these devices cast. Empty = any device (your phone at work included).</small></label>
@@ -266,6 +294,9 @@
     </div>
   </div>
 
+  </div>
+
+  <div class="preview-col">
   <div class="actions">
     <button class="save" id="save">Save changes</button>
     <button class="secondary" id="reset-layout">Reset block positions</button>
@@ -283,6 +314,7 @@
         <option value="plot">Plot</option>
         <option value="ratings">Ratings</option>
         <option value="progress">Progress</option>
+        <option value="stinger">Credits badge</option>
         <option value="poster">Poster</option></select></label>
       <div class="sliders">
         <div class="slider"><label>Horizontal <output data-value="x">0</output></label><input data-layout-field="x" type="range" min="-100" max="100" step="1" value="0"></div>
@@ -298,6 +330,8 @@
       </div>
     </div>
     <div class="frame-box"><iframe id="frame"></iframe></div>
+  </div>
+  </div>
   </div>
 </div>
 
@@ -349,6 +383,9 @@
   }
   document.querySelectorAll('.tpl').forEach(b => b.addEventListener('click', () => {
     cfg.template = b.dataset.template; markTemplates(); sendCfg();
+    // Clicking through templates also steps the demo film, so the preview
+    // shows the reel instead of one movie forever.
+    $('#frame').contentWindow?.postMessage({ type: 'marquee-demo-next' }, location.origin);
     $('#status').textContent = 'Template previewed — save to apply.';
   }));
 
@@ -379,15 +416,22 @@
     { n: 'Simulation', c: '#7FB8E8', theme: 'ice', font: 'grotesk', tpl: 'bigclock', tag: 'we’re all just programming ourselves' },
     { n: 'Third Act', c: '#E85454', theme: 'crimson', font: 'cinzel', tpl: 'lowerthird', tag: 'the universe is on its final reel' },
   ];
-  $('#vibes').innerHTML = VIBES.map((v, i) =>
-    `<button type="button" data-i="${i}" style="--v:${v.c}" title="${v.tag}"><i></i>${v.n}</button>`).join('');
-  document.querySelectorAll('#vibes button').forEach(b => b.addEventListener('click', () => {
-    const v = VIBES[b.dataset.i];
+  let vibeIdx = -1;
+  function applyVibe(i) {
+    vibeIdx = (i + VIBES.length) % VIBES.length;
+    const v = VIBES[vibeIdx];
     cfg.theme = v.theme; cfg.accent = ''; cfg.titleFont = v.font; cfg.template = v.tpl;
     $('#font').value = v.font;
+    $('#vibe-name').textContent = v.n; $('#vibe-tag').textContent = v.tag;
+    $('.vibe-now').style.setProperty('--v', v.c);
     markTheme(); markTemplates(); sendCfg();
+    // each step also flips the demo film, so browsing vibes tours the reel
+    $('#frame').contentWindow?.postMessage({ type: 'marquee-demo-next' }, location.origin);
     $('#status').textContent = `${v.n} — ${v.tag}. Save to keep the vibe.`;
-  }));
+  }
+  $('#vibe-prev').addEventListener('click', () => applyVibe(vibeIdx - 1));
+  $('#vibe-next').addEventListener('click', () => applyVibe(vibeIdx + 1));
+  $('#vibe-now').addEventListener('click', () => applyVibe(vibeIdx < 0 ? 0 : vibeIdx));
 
   function markTheme() {
     document.querySelectorAll('#theme button[data-v]').forEach(b =>
@@ -425,6 +469,13 @@
     cfg[id === 'users' ? 'plexUsers' : 'plexDevices'] = $('#' + id).value;
     $('#status').textContent = 'Filter changed — save to apply.';
   }));
+  $('#zip').addEventListener('input', () => {
+    cfg.weatherZip = $('#zip').value.trim();
+    $('#status').textContent = 'ZIP changed — save to apply.';
+  });
+  document.querySelectorAll('#unitfmt button').forEach(b => b.addEventListener('click', () => {
+    cfg.weatherUnits = b.dataset.v; segSet('unitfmt', b.dataset.v); sendCfg();
+  }));
   $('#sessions-btn').addEventListener('click', async () => {
     $('#sessions').textContent = '…';
     try {
@@ -458,6 +509,8 @@
     $('#font').value = cfg.titleFont || 'system';
     $('#users').value = cfg.plexUsers || '';
     $('#devices').value = cfg.plexDevices || '';
+    $('#zip').value = cfg.weatherZip || '';
+    segSet('unitfmt', cfg.weatherUnits || 'f');
     segSet('side', cfg.posterSide || 'right');
     segSet('clockfmt', cfg.clockFormat || '12h');
     markTheme(); markTemplates(); loadFrame();
