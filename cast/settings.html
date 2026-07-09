@@ -159,12 +159,24 @@
   }
   .controls .panel { margin-bottom: 18px; }
 
+  body { overflow-x: hidden; }
+  .layout, .controls, .preview-col, .panel { min-width: 0; }
   @media (max-width:760px) { .wrap { padding:20px 14px 44px; }
     .top { align-items:flex-start; flex-direction:column; }
     .panel { min-width:0; width:100%; box-sizing:border-box; }
-    .row { align-items:flex-start; }
+    .tpl-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+    .tpl small { display:none; }
+    .row { align-items:flex-start; flex-wrap:wrap; row-gap:8px; }
+    .row label { flex: 1 1 100%; }
+    .row > *:not(label) { margin-left:auto; }
+    .devpick, .swatches, .vibes-step { max-width:100%; flex-wrap:wrap;
+      justify-content:flex-end; }
+    .devpick select, select.mini, input.mini { max-width:100%; }
+    .sessions-list { text-align:left; }
     .editor { grid-template-columns:1fr; }
-    .actions { align-items:stretch; flex-direction:column; } }
+    .sliders { grid-template-columns:1fr; }
+    .actions { align-items:stretch; flex-direction:column; }
+    .actions .save, .actions .secondary { width:100%; } }
 </style>
 <div class="wrap">
   <div class="top"><h1>Marquee <span>settings</span></h1>
@@ -226,6 +238,16 @@
     </div>
     <div class="row"><label>Title font<small>Free Google fonts; falls back to system offline</small></label>
       <select id="font" class="mini">
+        <option value="system">System</option>
+        <option value="bebas">Bebas Neue</option>
+        <option value="oswald">Oswald</option>
+        <option value="playfair">Playfair Display</option>
+        <option value="cinzel">Cinzel</option>
+        <option value="grotesk">Space Grotesk</option>
+      </select>
+    </div>
+    <div class="row"><label>Card font<small>Everything else: plot, metadata, clock. Size per element lives in the block editor below.</small></label>
+      <select id="bodyfont" class="mini">
         <option value="system">System</option>
         <option value="bebas">Bebas Neue</option>
         <option value="oswald">Oswald</option>
@@ -398,6 +420,9 @@
   $('#font').addEventListener('change', () => {
     cfg.titleFont = $('#font').value; sendCfg();
     $('#status').textContent = 'Title font changed — save to apply.'; });
+  $('#bodyfont').addEventListener('change', () => {
+    cfg.bodyFont = $('#bodyfont').value; sendCfg();
+    $('#status').textContent = 'Card font changed — save to apply.'; });
   document.querySelectorAll('#align button').forEach(b => b.addEventListener('click', () => {
     segSet('align', b.dataset.v);
     $('#frame').contentWindow.postMessage(
@@ -507,6 +532,7 @@
     });
     if (cfg.accent) $('#accent').value = cfg.accent;
     $('#font').value = cfg.titleFont || 'system';
+    $('#bodyfont').value = cfg.bodyFont || 'system';
     $('#users').value = cfg.plexUsers || '';
     $('#devices').value = cfg.plexDevices || '';
     $('#zip').value = cfg.weatherZip || '';
