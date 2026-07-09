@@ -27,9 +27,13 @@
 
 ### Street template & vibes
 
-- New **Street** template: a hand-drawn night scene — brick wall, pay phone,
+- New **Street** template: a living night scene — brick wall, pay phone,
   and your poster hanging in a bulb-lit **NOW PLAYING** marquee frame. The
   clear-logo (or title) reads as spray-painted onto the brick, grain and all.
+  The lighting is alive: marquee bulbs twinkle on their own phases, the sign
+  bulbs chase, the neon flickers now and then, the street-lamp pool breathes,
+  and the marquee trim re-lights in your theme's accent. Honors
+  prefers-reduced-motion.
 - Four new themes named for the demo reel: **Campaign** (navy & red tape),
   **Concrete** (back-alley gold), **Trophy** (gold-star yellow), and
   **B-Sides** (dollar-bin orange).
