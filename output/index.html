@@ -514,7 +514,8 @@
   const demoM = () => DEMOS[demoIdx];
   // Pure demo mode (no editor) rotates through the reel; the settings
   // preview keeps one film per load so the block editor stays stable.
-  if (DEMO && !EDIT) setInterval(() => { demoIdx = (demoIdx + 1) % DEMOS.length; }, 20000);
+  if (DEMO && !EDIT && !(Number.isInteger(demoPick) && DEMOS[demoPick]))
+    setInterval(() => { demoIdx = (demoIdx + 1) % DEMOS.length; }, 20000);
 
   // ── The Street scene: brick wall, pay phone, bulb-lit marquee frame ──
   // Drawn once at 1280x800; the poster block overlays the frame opening
@@ -640,6 +641,8 @@ ${bulbs.join('')}
     }
     if (FONTS[c.titleFont]) root.setProperty('--title-font', FONTS[c.titleFont]);
     else root.removeProperty('--title-font');
+    if (FONTS[c.bodyFont]) root.setProperty('--font', FONTS[c.bodyFont]);
+    else root.removeProperty('--font');
 
     const tpl = TEMPLATES.includes(c.template) ? c.template : 'spotlight';
     document.body.dataset.template = tpl;

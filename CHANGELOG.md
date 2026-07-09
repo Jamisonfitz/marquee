@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.6.0 — 2026-07-09
+
+### Share your look
+
+- **Export / Import**: two buttons next to Save. Export copies your whole
+  setup as text; Import pastes someone else's and applies it (your cast
+  device stays yours). Post your look, let people steal it.
+
+### Mobile
+
+- The settings page works properly on phones now — no more sideways
+  overflow — and the **live preview rides the bottom of the screen**, so
+  stepping vibes, flipping toggles, and changing fonts is always visible
+  while you scroll the controls.
+
+### Type
+
+- **Card font** joins Title font: pick a face for everything else — plot,
+  metadata, clock. Per-element size still lives on the block editor's
+  Size slider.
+
+### Odds & ends
+
+- Street's pay phone is retired.
+- `?demo=N` pins a demo film again (and holds through the rotation timer).
+- README leads with a variety collage and real-library screenshots.
+
 ## 1.4.0 — 2026-07-08
 
 ### Session filters
