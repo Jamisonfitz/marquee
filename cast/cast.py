@@ -65,6 +65,7 @@ DEFAULT_SETTINGS = {
     "theme": "amber",
     "accent": "",
     "titleFont": "system",
+    "bodyFont": "system",
     "posterSide": "right",
     "clockFormat": "12h",
     "clockSeconds": False,
@@ -460,6 +461,8 @@ class WebHandler(BaseHTTPRequestHandler):
                 merged["clockFormat"] = "12h"
             if merged["titleFont"] not in TITLE_FONTS:
                 merged["titleFont"] = "system"
+            if merged["bodyFont"] not in TITLE_FONTS:
+                merged["bodyFont"] = "system"
             for k in ("plexUsers", "plexDevices", "weatherZip"):
                 if not isinstance(merged[k], str):
                     merged[k] = ""
