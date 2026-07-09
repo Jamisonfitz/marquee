@@ -106,6 +106,7 @@
   .chip.stinger { border-color: var(--accent); color: var(--accent);
     text-transform: uppercase; letter-spacing: .18em; font-size: 1.15vw;
     display: inline-block; margin-top: .8vh; transform-origin: left center; }
+  .chip.stinger[hidden] { display: none; }
 
   .rbadge.mpaa { background: #F4F4F0; color: #111; border: .22vw solid #111;
     border-radius: .4vw; padding: .3vh .8vw; font-weight: 900; font-size: 1.6vw;
@@ -570,21 +571,7 @@ ${shade.join('')}
 <ellipse cx="1010" cy="762" rx="230" ry="26" fill="url(#refl)" filter="url(#soft)"/>
 <ellipse cx="1010" cy="766" rx="250" ry="17" fill="#FFD9A0" opacity=".07" filter="url(#soft)"/>
 <ellipse cx="705" cy="748" rx="80" ry="7" fill="#8FA6C8" opacity=".05"/>
-<g transform="translate(538 66)">
-<rect x="126" y="368" width="140" height="252" rx="10" fill="#000" opacity=".35" filter="url(#soft)"/>
-<rect x="130" y="306" width="116" height="44" rx="6" fill="#1F3A5F"/><rect x="130" y="306" width="116" height="20" rx="6" fill="#2A4A78" opacity=".6"/><text x="188" y="336" text-anchor="middle" font-size="24" fill="#DCE6F2" letter-spacing="6">PHONE</text>
-<rect x="118" y="360" width="140" height="252" rx="10" fill="url(#metal)"/>
-<rect x="128" y="372" width="120" height="228" rx="8" fill="#2E323A"/>
-<rect x="128" y="372" width="120" height="30" rx="8" fill="#3C424C" opacity=".7"/>
-<rect x="136" y="384" width="34" height="130" rx="10" fill="#0D0F12"/>
-<circle cx="153" cy="398" r="13" fill="#0D0F12"/><circle cx="153" cy="500" r="13" fill="#0D0F12"/>
-<rect x="141" y="404" width="6" height="90" rx="3" fill="#23262C"/>
-<g fill="#0D0F12">${coil.join('')}</g>
-<rect x="186" y="392" width="52" height="24" rx="4" fill="#171A1F"/><rect x="188" y="394" width="48" height="9" rx="3" fill="#0C4A38" opacity=".8"/>
-${[0, 1, 2].map(cx => [0, 1, 2, 3].map(cy => `<rect x="${188 + cx * 17}" y="${428 + cy * 17}" width="12" height="12" rx="2" fill="#4A505A"/><rect x="${188 + cx * 17}" y="${428 + cy * 17}" width="12" height="5" rx="2" fill="#5A616C"/>`).join('')).join('')}
-<rect x="186" y="506" width="52" height="6" rx="3" fill="#171A1F"/>
-<rect x="192" y="548" width="42" height="30" rx="4" fill="#171A1F"/><rect x="194" y="550" width="38" height="12" rx="3" fill="#22262C"/>
-</g>
+
 <g class="np">
 <rect x="812" y="48" width="396" height="60" rx="8" fill="#14161A" stroke="var(--accent, #C9973B)" stroke-width="3"/>
 <rect x="816" y="52" width="388" height="52" rx="6" fill="none" stroke="#C9973B" stroke-width="1" opacity=".35"/>

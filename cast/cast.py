@@ -30,7 +30,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.4.0"
+VERSION = "1.5.0"
 HUB_IP = os.environ.get("HUB_IP", "")
 PAGE_URL = os.environ.get("PAGE_URL", "")
 PLEX = os.environ.get("PLEX_HOST", "").rstrip("/")
