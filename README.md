@@ -9,7 +9,15 @@
 
 Marquee turns a Google Nest Hub into a clean Plex now-playing display. It shows artwork, title, plot, genres, ratings, media details, progress, and a clock, then returns the Hub to ambient mode when playback stops.
 
-![Marquee Split template](docs/screenshots/split.jpg)
+![One app, many looks — templates × themes × fonts](docs/screenshots/variety.jpg)
+
+*Same app, nine looks: six templates × eight themes × six fonts × any accent color.*
+
+With your own library it looks like this — real posters, backdrops, and clear-logos straight from Plex:
+
+| | |
+|:---:|:---:|
+| ![Street with a real library](docs/screenshots/live-street.jpg) | ![Spotlight with a real library](docs/screenshots/live-spotlight.jpg) |
 
 ## Templates
 

@@ -30,7 +30,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.5.0"
+VERSION = "1.6.0"
 HUB_IP = os.environ.get("HUB_IP", "")
 PAGE_URL = os.environ.get("PAGE_URL", "")
 PLEX = os.environ.get("PLEX_HOST", "").rstrip("/")
@@ -65,6 +65,7 @@ DEFAULT_SETTINGS = {
     "theme": "amber",
     "accent": "",
     "titleFont": "system",
+    "bodyFont": "system",
     "posterSide": "right",
     "clockFormat": "12h",
     "clockSeconds": False,
@@ -460,6 +461,8 @@ class WebHandler(BaseHTTPRequestHandler):
                 merged["clockFormat"] = "12h"
             if merged["titleFont"] not in TITLE_FONTS:
                 merged["titleFont"] = "system"
+            if merged["bodyFont"] not in TITLE_FONTS:
+                merged["bodyFont"] = "system"
             for k in ("plexUsers", "plexDevices", "weatherZip"):
                 if not isinstance(merged[k], str):
                     merged[k] = ""
