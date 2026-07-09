@@ -1,5 +1,36 @@
 # Changelog
 
+## 1.5.0 — 2026-07-09
+
+### Weather
+
+- Live local weather on any template: temperature and conditions beside the
+  clock, powered by Open-Meteo (free, no API key). Set your ZIP code in
+  settings — or leave it blank to auto-locate from your server — pick
+  °F or °C, and flip the Weather toggle. Off by default.
+
+### Settings
+
+- The page is reorganized into four panels — Template, Look, Card content,
+  Casting — with Save, the block editor, and the live preview pinned to the
+  right on wide screens, so nothing scrolls the preview out of view.
+- Vibes are a stepper now: arrow through the presets and each one applies
+  live — and flips to the next demo film, so browsing vibes tours the reel.
+  Clicking templates steps the reel too.
+
+### Card
+
+- The credits-scene badge is its own block (thanks @devanteweary): pick
+  "Credits badge" in the editor to move it anywhere and scale it as big as
+  your couch requires. It wears the accent color.
+- Street: the pay phone is retired; the wall breathes better without it.
+
+### Fixes
+
+- The credits chip no longer renders as a tiny empty pill when a title has
+  no credits scene.
+- All README screenshots regenerated with the current demo reel.
+
 ## 1.4.0 — 2026-07-08
 
 ### Session filters
