@@ -73,11 +73,12 @@ DEFAULT_SETTINGS = {
     "showProgress": True, "showClock": True,
     "backdrop": True, "logo": True,
     "plexUsers": "", "plexDevices": "",
+    "showWeather": False, "weatherZip": "", "weatherUnits": "f",
     "blockLayout": {},
 }
 
 EDITABLE_BLOCKS = ("clock", "identity", "meta", "plot", "ratings",
-                   "progress", "poster")
+                   "progress", "poster", "stinger")
 
 _meta_cache = {}  # ratingKey -> extras dict
 
@@ -142,6 +143,44 @@ def scan_devices(refresh=False):
 
 def dashcast_active():
     return "DashCast" in catt("info").stdout
+
+
+_wx_cache = {"at": 0.0, "zip": None, "loc": "", "data": {}}
+
+
+def weather():
+    """Current conditions via Open-Meteo (free, no API key). Location comes
+    from the ZIP in settings (zippopotam.us geocode) or, when blank, from the
+    server's public IP. Refreshes every 15 minutes."""
+    zip_code = re.sub(r"[^0-9]", "", load_settings().get("weatherZip") or "")[:5]
+    fresh = time.time() - _wx_cache["at"] < 900
+    if fresh and _wx_cache["zip"] == zip_code and _wx_cache["data"]:
+        return _wx_cache["data"]
+    try:
+        if _wx_cache["zip"] != zip_code or not _wx_cache["loc"]:
+            if zip_code:
+                with urllib.request.urlopen(
+                        f"https://api.zippopotam.us/us/{zip_code}", timeout=10) as r:
+                    p = json.load(r)["places"][0]
+                    _wx_cache["loc"] = f"{p['latitude']},{p['longitude']}"
+            else:
+                with urllib.request.urlopen(
+                        "http://ip-api.com/json/?fields=lat,lon", timeout=10) as r:
+                    j = json.load(r)
+                    _wx_cache["loc"] = f"{j['lat']},{j['lon']}"
+            _wx_cache["zip"] = zip_code
+        lat, lon = _wx_cache["loc"].split(",")
+        url = (f"https://api.open-meteo.com/v1/forecast?latitude={lat}"
+               f"&longitude={lon}&current=weather_code,is_day,temperature_2m")
+        with urllib.request.urlopen(url, timeout=10) as r:
+            cur = json.load(r)["current"]
+        _wx_cache.update(at=time.time(), data={
+            "code": cur["weather_code"], "isDay": cur["is_day"] == 1,
+            "temp": cur["temperature_2m"]})
+    except Exception as e:
+        print(f"weather fetch failed: {e}", flush=True)
+        _wx_cache["at"] = time.time()  # don't hammer on failure
+    return _wx_cache["data"]
 
 
 def tmdb_stinger(tmdb_id):
@@ -388,6 +427,8 @@ class WebHandler(BaseHTTPRequestHandler):
         elif path == "/devices":
             self._send(json.dumps(scan_devices("refresh" in self.path)),
                        "application/json")
+        elif path == "/weather":
+            self._send(json.dumps(weather()), "application/json")
         elif path == "/sessions":
             self._send(json.dumps({"sessions": LAST_SESSIONS}), "application/json")
         elif path == "/healthz":
@@ -419,9 +460,13 @@ class WebHandler(BaseHTTPRequestHandler):
                 merged["clockFormat"] = "12h"
             if merged["titleFont"] not in TITLE_FONTS:
                 merged["titleFont"] = "system"
-            for k in ("plexUsers", "plexDevices"):
+            for k in ("plexUsers", "plexDevices", "weatherZip"):
                 if not isinstance(merged[k], str):
                     merged[k] = ""
+            merged["weatherZip"] = merged["weatherZip"].strip()[:10]
+            if merged["weatherUnits"] not in ("f", "c"):
+                merged["weatherUnits"] = "f"
+            merged["showWeather"] = bool(merged["showWeather"])
             merged["clockSeconds"] = bool(merged["clockSeconds"])
             if not (isinstance(merged["accent"], str)
                     and (merged["accent"] == "" or ACCENT_RE.match(merged["accent"]))):
