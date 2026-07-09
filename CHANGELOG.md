@@ -1,5 +1,74 @@
 # Changelog
 
+## 1.4.0 — 2026-07-08
+
+### Session filters
+
+- New "Who triggers the marquee" section in settings: limit casting to
+  specific Plex **users** and **devices**, editable live — no container
+  restart. Empty fields keep the old behavior (everyone, any device), so a
+  shared user's stream — or your own phone away from home — no longer takes
+  over the Hub.
+- An "Active sessions" check shows exactly who is playing what on which
+  device, with the exact names to copy into the filters, and flags sessions
+  the current filters exclude.
+- `PLEX_DEVICES` env var joins `PLEX_USERS` as a container-level fallback;
+  both merge with the settings-page lists.
+
+### Demo reel
+
+- The single demo movie is now a four-film reel of original fictional
+  comedies — *Shaking Hands & Kissing Babies* (campaign-poster style),
+  *Rat King III: Still Gnawing* (graffiti stencil), *Participation Trophy*
+  (sticker bomb), and *B-Sides* (vinyl sleeve). Each has hand-built vector
+  poster, backdrop, and logo art; the preview picks one at random per load,
+  and pure demo mode (`/image?demo`) rotates every 20 seconds.
+  `?demo=N` pins a film. Roughly 70KB lighter than the old embedded art.
+- Fifth film: *Justafaze* — a graffiti-nerd documentary where the quotes are
+  part of the tag ("it's ironic because it's not"). Weighted rotation makes it
+  the rare pull — films carry a `weight`, and Justafaze shows a third as
+  often as the rest.
+
+### Street template & vibes
+
+- New **Street** template: a living night scene — brick wall, pay phone,
+  and your poster hanging in a bulb-lit **NOW PLAYING** marquee frame. The
+  clear-logo (or title) reads as spray-painted onto the brick, grain and all.
+  The lighting is alive: marquee bulbs twinkle on their own phases, the sign
+  bulbs chase, the neon flickers now and then, the street-lamp pool breathes,
+  and the marquee trim re-lights in your theme's accent. Honors
+  prefers-reduced-motion.
+- Four new themes named for the demo reel: **Campaign** (navy & red tape),
+  **Concrete** (back-alley gold), **Trophy** (gold-star yellow), and
+  **B-Sides** (dollar-bin orange).
+- **Vibes**: one-tap presets bundling theme + font + template — Campaign
+  Trail, Back Alley, Gold Star, Dollar Bin, Simulation ("we're all just
+  programming ourselves"), and Third Act ("the universe is on its final
+  reel"). Tap one, tweak, save.
+
+### Faze mode (the personal cut)
+
+- `?justafaze=1982` on the card URL unlocks a personal edition of Street:
+  the writer himself is out on the sidewalk spray-painting whatever's
+  playing — the clear-logo on the wall is his work in progress — while the
+  marquee (holding the live Plex poster) hangs at a slight tilt. Smoke
+  creeps from a manhole, heavier in fog.
+- Live local weather, no API key: the container asks Open-Meteo (location
+  auto-detected once from the server IP, cached 15 min, `/weather`
+  endpoint) and the card renders rain, snow, fog, or overcast to match
+  what's outside. Real day/night too — daylight raises the wall and rests
+  the bulbs. `?wx=rain|snow|fog|cloud` and `?day=1|0` force conditions.
+- Justafaze is est. 1982 now, as it always was.
+
+### Preview & accent
+
+- Changing the title font now previews instantly even when a clear-logo is
+  shown: the card swaps in the text title for a few seconds so you can see
+  the font.
+- A custom accent color now tints as deeply as the built-in themes: metadata
+  chip borders and the progress track pick it up too.
+- The Big Clock template's clock now glows in the accent color.
+
 ## 1.3.0 — 2026-07-07
 
 ### Layout & type
