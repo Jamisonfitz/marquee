@@ -24,10 +24,6 @@
   poster, backdrop, and logo art; the preview picks one at random per load,
   and pure demo mode (`/image?demo`) rotates every 20 seconds.
   `?demo=N` pins a film. Roughly 70KB lighter than the old embedded art.
-- Fifth film: *Justafaze* — a graffiti-nerd documentary where the quotes are
-  part of the tag ("it's ironic because it's not"). Weighted rotation makes it
-  the rare pull — films carry a `weight`, and Justafaze shows a third as
-  often as the rest.
 
 ### Street template & vibes
 
