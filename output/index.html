@@ -235,8 +235,21 @@
   body[data-template="bigclock"] .bg.on { opacity: .15; }
 
   /* ── Template: Street — brick wall, pay phone, bulb-lit marquee frame ─ */
-  body[data-template="street"] { background-size: cover; background-position: center; }
+  .scene { position: fixed; inset: 0; display: none; }
+  .scene svg { width: 100%; height: 100%; display: block; }
+  body[data-template="street"] .scene { display: block; }
   body[data-template="street"] .bg, body[data-template="street"] .bg-shade { display: none; }
+  /* Live lighting: lazy bulb twinkle, sign chase, breathing light pool. */
+  @keyframes blb { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+  @keyframes chs { 0%, 49% { opacity: 1; } 50%, 100% { opacity: .2; } }
+  @keyframes npf { 0%, 88%, 94%, 100% { opacity: 1; } 91%, 96% { opacity: .55; } }
+  @keyframes brth { 0%, 100% { opacity: .75; } 50% { opacity: 1; } }
+  .scene .bl { animation: blb 3.4s ease-in-out infinite;
+    animation-delay: calc(var(--i) * -.41s); }
+  .scene .ch { animation: chs 1.1s linear infinite;
+    animation-delay: calc(var(--i) * -.275s); }
+  .scene .np { animation: npf 8s linear infinite; }
+  .scene .pool { animation: brth 6s ease-in-out infinite; }
   body[data-template="street"] .stage { display: block; padding: 0; }
   body[data-template="street"] .block { position: absolute; }
   /* The poster hangs inside the marquee frame drawn in the scene. */
@@ -280,11 +293,14 @@
     linear-gradient(90deg, rgba(229,168,59,.13) 1px, transparent 1px);
     background-size: 2.5vw 2.5vh; }
 
-  @media (prefers-reduced-motion: reduce) { .stage, .fill, .bg { transition: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .stage, .fill, .bg { transition: none; }
+    .scene * { animation: none !important; } }
 </style>
 <body data-template="spotlight">
 <img class="bg" id="bg" alt="">
 <div class="bg-shade"></div>
+<div class="scene" id="scene"></div>
 <div class="stage hidden">
   <div class="block b-clock" data-layout="clock"><div class="clock" id="clock"></div></div>
   <div class="block b-identity" data-layout="identity">
@@ -509,42 +525,75 @@
       const r = (i * 7) % 17, c = (i * 5) % 11;
       shade.push(`<rect x="${c * 112 + (r % 2 ? 56 : 0) + 3}" y="${r * 41 + 3}" width="106" height="35" fill="${i % 3 ? '#000' : '#FFF'}" opacity="${i % 3 ? '.10' : '.03'}"/>`);
     }
-    const bulb = (x, y) => `<circle cx="${x}" cy="${y}" r="11" fill="#FFD9A0" opacity=".16"/><circle cx="${x}" cy="${y}" r="5.5" fill="#FFE9C8"/><circle cx="${x-1.5}" cy="${y-1.5}" r="2" fill="#FFF7E8"/>`;
+    // Marquee bulbs: warm glass over a soft glow halo; each twinkles on its
+    // own phase (class bl + --i) so the frame feels wired, not painted.
+    let bi = 0;
+    const bulb = (x, y) => `<g class="bl" style="--i:${bi++}"><circle cx="${x}" cy="${y}" r="17" fill="url(#bglow)"/><circle cx="${x}" cy="${y}" r="5.5" fill="#FFE9C8"/><circle cx="${x - 1.5}" cy="${y - 1.5}" r="2" fill="#FFF7E8"/></g>`;
     const bulbs = [];
-    for (let x = 846; x <= 1174; x += 41) { bulbs.push(bulb(x, 126), bulb(x, 654)); }
-    for (let y = 167; y <= 613; y += 40.5) { bulbs.push(bulb(826, y), bulb(1194, y)); }
+    for (let x = 846; x <= 1174; x += 41) bulbs.push(bulb(x, 126));
+    for (let y = 167; y <= 613; y += 40.5) bulbs.push(bulb(1194, y));
+    for (let x = 1174; x >= 846; x -= 41) bulbs.push(bulb(x, 654));
+    for (let y = 613; y >= 167; y -= 40.5) bulbs.push(bulb(826, y));
     const chase = [];
-    for (let x = 840; x <= 1180; x += 20) chase.push(`<circle cx="${x}" cy="${104}" r="3" fill="${(x / 20) % 2 ? '#FFE9C8' : '#8A6A42'}"/>`);
+    for (let x = 840, i = 0; x <= 1180; x += 20, i++)
+      chase.push(`<circle class="ch" style="--i:${i % 2}" cx="${x}" cy="104" r="3" fill="#FFE9C8"/>`);
     const coil = [];
     for (let i = 0; i < 9; i++) coil.push(`<circle cx="${152 + (i % 2 ? 6 : -2)}" cy="${532 + i * 13}" r="7"/>`);
-    return svgU(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 800" font-family="${BLOCKY}">
-<defs><radialGradient id="pool" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFBE78" stop-opacity=".13"/><stop offset="1" stop-color="#FFBE78" stop-opacity="0"/></radialGradient>
-<linearGradient id="night" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#201B18"/><stop offset="1" stop-color="#2A2422"/></linearGradient></defs>
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 800" preserveAspectRatio="xMidYMid slice" font-family="${BLOCKY}">
+<defs>
+<linearGradient id="night" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1B1714"/><stop offset=".55" stop-color="#282220"/><stop offset="1" stop-color="#221D1A"/></linearGradient>
+<radialGradient id="pool" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFBE78" stop-opacity=".14"/><stop offset="1" stop-color="#FFBE78" stop-opacity="0"/></radialGradient>
+<radialGradient id="bglow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFD9A0" stop-opacity=".55"/><stop offset=".45" stop-color="#FFD9A0" stop-opacity=".18"/><stop offset="1" stop-color="#FFD9A0" stop-opacity="0"/></radialGradient>
+<radialGradient id="spill" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFD9A0" stop-opacity=".22"/><stop offset="1" stop-color="#FFD9A0" stop-opacity="0"/></radialGradient>
+<radialGradient id="vin" cx=".5" cy=".46" r=".75"><stop offset=".62" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".5"/></radialGradient>
+<linearGradient id="metal" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3A3F48"/><stop offset=".5" stop-color="#2C3038"/><stop offset="1" stop-color="#22252B"/></linearGradient>
+<linearGradient id="frameShade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2E211C"/><stop offset=".5" stop-color="#241A16"/><stop offset="1" stop-color="#1B1310"/></linearGradient>
+<linearGradient id="refl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD9A0" stop-opacity=".16"/><stop offset="1" stop-color="#FFD9A0" stop-opacity="0"/></linearGradient>
+<linearGradient id="walk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1B1E23"/><stop offset="1" stop-color="#101215"/></linearGradient>
+<filter id="grime"><feTurbulence type="fractalNoise" baseFrequency=".012 .02" numOctaves="3" seed="11"/><feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  .9 .9 .9 0 -.85"/><feComposite operator="in" in2="SourceGraphic"/></filter>
+<filter id="soft"><feGaussianBlur stdDeviation="6"/></filter>
+</defs>
 <rect width="1280" height="800" fill="url(#night)"/>
-<g stroke="#191512" stroke-width="3">${bricks.join('')}</g>
+<g stroke="#171310" stroke-width="3">${bricks.join('')}</g>
 ${shade.join('')}
-<ellipse cx="430" cy="330" rx="470" ry="310" fill="url(#pool)"/>
-<rect x="26" y="0" width="20" height="740" fill="#1E2126"/><rect x="22" y="120" width="28" height="12" rx="3" fill="#181B1F"/><rect x="22" y="430" width="28" height="12" rx="3" fill="#181B1F"/>
-<rect x="0" y="740" width="1280" height="60" fill="#17191D"/>
+<rect width="1280" height="740" fill="#000" filter="url(#grime)" opacity=".5"/>
+<ellipse class="pool" cx="430" cy="330" rx="480" ry="320" fill="url(#pool)"/>
+<rect x="26" y="0" width="20" height="740" fill="url(#metal)"/><rect x="30" y="0" width="4" height="740" fill="#4A505A" opacity=".35"/><rect x="22" y="120" width="28" height="12" rx="3" fill="#171A1E"/><rect x="22" y="430" width="28" height="12" rx="3" fill="#171A1E"/>
+<rect x="0" y="740" width="1280" height="60" fill="url(#walk)"/>
 <rect x="0" y="732" width="1280" height="8" fill="#3A3E45"/>
-<ellipse cx="1010" cy="768" rx="240" ry="16" fill="#FFD9A0" opacity=".05"/>
-<g transform="translate(538 66)"><rect x="130" y="306" width="116" height="44" rx="6" fill="#1F3A5F"/><text x="188" y="336" text-anchor="middle" font-size="24" fill="#DCE6F2" letter-spacing="6">PHONE</text>
-<rect x="118" y="360" width="140" height="252" rx="10" fill="#23262B"/>
+<rect x="0" y="731" width="1280" height="2" fill="#575D66" opacity=".5"/>
+<ellipse cx="1010" cy="762" rx="230" ry="26" fill="url(#refl)" filter="url(#soft)"/>
+<ellipse cx="1010" cy="766" rx="250" ry="17" fill="#FFD9A0" opacity=".07" filter="url(#soft)"/>
+<ellipse cx="705" cy="748" rx="80" ry="7" fill="#8FA6C8" opacity=".05"/>
+<g transform="translate(538 66)">
+<rect x="126" y="368" width="140" height="252" rx="10" fill="#000" opacity=".35" filter="url(#soft)"/>
+<rect x="130" y="306" width="116" height="44" rx="6" fill="#1F3A5F"/><rect x="130" y="306" width="116" height="20" rx="6" fill="#2A4A78" opacity=".6"/><text x="188" y="336" text-anchor="middle" font-size="24" fill="#DCE6F2" letter-spacing="6">PHONE</text>
+<rect x="118" y="360" width="140" height="252" rx="10" fill="url(#metal)"/>
 <rect x="128" y="372" width="120" height="228" rx="8" fill="#2E323A"/>
-<rect x="136" y="384" width="34" height="130" rx="10" fill="#101215"/>
-<circle cx="153" cy="398" r="13" fill="#101215"/><circle cx="153" cy="500" r="13" fill="#101215"/>
-<g fill="#101215">${coil.join('')}</g>
-<rect x="186" y="392" width="52" height="24" rx="4" fill="#1A1D22"/>
-${[0,1,2].map(cx => [0,1,2,3].map(cy => `<rect x="${188 + cx * 17}" y="${428 + cy * 17}" width="12" height="12" rx="2" fill="#4A505A"/>`).join('')).join('')}
-<rect x="186" y="506" width="52" height="6" rx="3" fill="#1A1D22"/>
-<rect x="192" y="548" width="42" height="30" rx="4" fill="#1A1D22"/></g>
-<rect x="812" y="48" width="396" height="60" rx="8" fill="#14161A" stroke="#C9973B" stroke-width="3"/>
+<rect x="128" y="372" width="120" height="30" rx="8" fill="#3C424C" opacity=".7"/>
+<rect x="136" y="384" width="34" height="130" rx="10" fill="#0D0F12"/>
+<circle cx="153" cy="398" r="13" fill="#0D0F12"/><circle cx="153" cy="500" r="13" fill="#0D0F12"/>
+<rect x="141" y="404" width="6" height="90" rx="3" fill="#23262C"/>
+<g fill="#0D0F12">${coil.join('')}</g>
+<rect x="186" y="392" width="52" height="24" rx="4" fill="#171A1F"/><rect x="188" y="394" width="48" height="9" rx="3" fill="#0C4A38" opacity=".8"/>
+${[0, 1, 2].map(cx => [0, 1, 2, 3].map(cy => `<rect x="${188 + cx * 17}" y="${428 + cy * 17}" width="12" height="12" rx="2" fill="#4A505A"/><rect x="${188 + cx * 17}" y="${428 + cy * 17}" width="12" height="5" rx="2" fill="#5A616C"/>`).join('')).join('')}
+<rect x="186" y="506" width="52" height="6" rx="3" fill="#171A1F"/>
+<rect x="192" y="548" width="42" height="30" rx="4" fill="#171A1F"/><rect x="194" y="550" width="38" height="12" rx="3" fill="#22262C"/>
+</g>
+<g class="np">
+<rect x="812" y="48" width="396" height="60" rx="8" fill="#14161A" stroke="var(--accent, #C9973B)" stroke-width="3"/>
+<rect x="816" y="52" width="388" height="52" rx="6" fill="none" stroke="#C9973B" stroke-width="1" opacity=".35"/>
 <text x="1010" y="90" text-anchor="middle" font-size="30" fill="#FFD9A0" letter-spacing="10">NOW PLAYING</text>
+<text x="1010" y="90" text-anchor="middle" font-size="30" fill="#FFD9A0" letter-spacing="10" opacity=".55" filter="url(#soft)">NOW PLAYING</text>
+</g>
 ${chase.join('')}
-<rect x="814" y="114" width="392" height="552" rx="10" fill="#241A16" stroke="#C9973B" stroke-width="4"/>
+<ellipse cx="1010" cy="390" rx="330" ry="380" fill="url(#spill)"/>
+<rect x="814" y="114" width="392" height="552" rx="10" fill="url(#frameShade)" stroke="var(--accent, #C9973B)" stroke-width="4"/>
+<rect x="822" y="122" width="376" height="536" rx="8" fill="none" stroke="#C9973B" stroke-width="1.5" opacity=".4"/>
 <rect x="842" y="142" width="336" height="496" fill="#0B0C0E"/>
 ${bulbs.join('')}
-</svg>`);
+<rect width="1280" height="800" fill="url(#vin)"/>
+</svg>`;
   })();
   // Grainy alpha mask that makes the logo read as spray paint on brick.
   const SPRAY = svgU(`<svg xmlns="http://www.w3.org/2000/svg" width="480" height="240"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".5" numOctaves="3" seed="7"/><feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  1.7 1.7 1.7 0 -1.1"/></filter><rect width="480" height="240" filter="url(#n)"/></svg>`);
@@ -602,7 +651,7 @@ ${bulbs.join('')}
 
     const tpl = TEMPLATES.includes(c.template) ? c.template : 'spotlight';
     document.body.dataset.template = tpl;
-    document.body.style.backgroundImage = tpl === 'street' ? `url("${SCENE}")` : '';
+    if (tpl === 'street' && !$('scene').firstChild) $('scene').innerHTML = SCENE;
     document.body.classList.toggle('flip',
       (tpl === 'spotlight' || tpl === 'split') && c.posterSide === 'left');
 
