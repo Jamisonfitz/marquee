@@ -13,12 +13,13 @@ Marquee turns a Google Nest Hub into a clean Plex now-playing display. It shows 
 
 ## Templates
 
-Five designed layouts, switchable live from the settings page:
+Six designed layouts, switchable live from the settings page:
 
 | | |
 |:---:|:---:|
 | ![Spotlight](docs/screenshots/spotlight.jpg) **Spotlight** — poster beside the full metadata stack | ![Hero](docs/screenshots/hero.jpg) **Hero** — big centered title over the backdrop |
 | ![Lower Third](docs/screenshots/lowerthird.jpg) **Lower Third** — broadcast-style chyron over full-bleed art | ![Big Clock](docs/screenshots/bigclock.jpg) **Big Clock** — ambient timepiece with a now-playing strip |
+| ![Street](docs/screenshots/street.jpg) **Street** — a living night scene: your poster in a bulb-lit marquee, the movie logo sprayed on brick | ![Split](docs/screenshots/split.jpg) **Split** — hard split: full-height art wall beside the info column |
 
 Every template is built from the same blocks — title/logo identity, grouped ratings, metadata chips, plot, progress, clock, poster — so your show/hide toggles, themes, custom accent color, and block position tweaks carry across all of them.
 
@@ -26,12 +27,15 @@ Every template is built from the same blocks — title/logo identity, grouped ra
 
 ## Features
 
-- Live Plex now-playing card with five designed templates: Spotlight, Split,
-  Hero, Lower Third, and Big Clock.
-- Four themes plus a custom accent color, 12/24-hour clock styles, and
-  per-block show/hide toggles.
-- A drag-and-slider editor for moving, sizing, and scaling each card block,
-  with an instant demo preview.
+- Live Plex now-playing card with six designed templates: Spotlight, Split,
+  Hero, Lower Third, Big Clock, and Street (animated marquee bulbs and all).
+- Eight themes, one-tap Vibe presets, a custom accent color, five title
+  fonts, 12/24-hour clock styles, and per-block show/hide toggles.
+- Session filters: limit casting to your Plex users and your devices, live
+  from the settings page — shared users no longer take over the display.
+- A drag-and-slider editor for moving, sizing, justifying, and scaling each
+  card block, with an instant demo preview featuring original fictional
+  films (no copyrighted art).
 - Persisted settings, health checks, and a Docker-first deployment path.
 - Google Nest Hub casting with clean idle handoff back to ambient mode.
 
@@ -89,6 +93,9 @@ Optional settings:
 - `PLEX_USERS` — comma-separated Plex usernames that trigger the marquee.
   Leave empty to react to everyone on the server, including shared and home
   users (the sessions API is server-wide).
+- `PLEX_DEVICES` — comma-separated player/device names that trigger the
+  marquee; empty allows any device. Both filters are also editable live on
+  the settings page, which shows the exact names of active sessions.
 - `TMDB_API_KEY`
 - `POLL_SECONDS` default `5`
 - `SERVE_PORT` default `8084`
@@ -116,6 +123,13 @@ Nest Hub plays its connect sound. That chime comes from the device, not from
 Marquee, and there's a switch for it: open the **Google Home** app → tap
 your Hub → **Settings (gear) → Accessibility** → turn off **Play sounds on
 start/end of casting**. One-time change; casting is silent afterwards.
+
+## Community Forks & Related Projects
+
+- [TRusselo's fork](https://github.com/TRusselo/marquee) — exploring Emby
+  support, ESP32/ESPHome displays, Home Assistant integration, and vertical
+  poster views. Independent project, not maintained or supported here, but
+  worth a look if that's your stack.
 
 ## Development
 
