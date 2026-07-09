@@ -77,6 +77,10 @@
   .clock { color: var(--faint); font-size: 2vw; font-weight: 600;
     font-variant-numeric: tabular-nums; }
   .clock:empty { display: none; }
+  .wx { color: var(--faint); font-size: 1.3vw; font-weight: 600;
+    text-align: inherit; margin-top: .3vh; }
+  .wx:empty { display: none; }
+  body[data-template="bigclock"] .wx { font-size: 2vw; text-align: center; }
 
   .logo { max-height: 22vh; max-width: 42vw; object-fit: contain; display: none;
     filter: drop-shadow(0 .6vh 2vh rgba(0,0,0,.8)); }
@@ -302,7 +306,7 @@
 <div class="bg-shade"></div>
 <div class="scene" id="scene"></div>
 <div class="stage hidden">
-  <div class="block b-clock" data-layout="clock"><div class="clock" id="clock"></div></div>
+  <div class="block b-clock" data-layout="clock"><div class="clock" id="clock"></div><div class="wx" id="wx"></div></div>
   <div class="block b-identity" data-layout="identity">
     <p class="eyebrow" id="eyebrow"></p>
     <img class="logo" id="logo" alt="">
@@ -773,6 +777,30 @@ ${bulbs.join('')}
     peekT = setTimeout(() => document.body.classList.remove('font-peek'), 4000);
   }
 
+  // Weather beside the clock (any template): /weather is served by the
+  // container from Open-Meteo, keyed to the ZIP in settings.
+  let lastWx = null;
+  const wxWord = c =>
+    c == null ? '' :
+    c >= 95 ? 'storms' :
+    c >= 85 ? 'snow' : (c >= 80 ? 'showers' : '') ||
+    (c >= 71 ? 'snow' : c >= 51 ? 'rain' : c >= 45 ? 'fog' : c >= 2 ? 'clouds' : 'clear');
+  function paintWx() {
+    const c = activeCfg();
+    if (!c.showWeather || !lastWx || lastWx.temp == null) {
+      $('wx').textContent = ''; return;
+    }
+    const f = (c.weatherUnits || 'f') === 'f';
+    const t = Math.round(f ? lastWx.temp * 9 / 5 + 32 : lastWx.temp);
+    $('wx').textContent = `${t}°${f ? 'F' : 'C'} · ${wxWord(lastWx.code)}`;
+  }
+  async function wxTick() {
+    if (!activeCfg().showWeather) { paintWx(); return; }
+    try { lastWx = await (await fetch('/weather')).json(); } catch (e) {}
+    paintWx();
+  }
+  wxTick(); setInterval(wxTick, 600000);
+
   window.addEventListener('message', event => {
     if (!EDIT || event.origin !== location.origin) return;
     const msg = event.data || {};
@@ -781,6 +809,13 @@ ${bulbs.join('')}
       draftCfg = msg.cfg || {};
       if (fontChanged) peekTitle();
       if (lastD) render(lastD), paint();
+      wxTick();
+    } else if (msg.type === 'marquee-demo-next') {
+      if (DEMO && DEMOS.length) {
+        demoIdx = (demoIdx + 1) % DEMOS.length;
+        const d = demoM().data;
+        lastD = d; render(d); refreshPoster(d); paint();
+      }
     } else if (msg.type === 'marquee-layout-preview') {
       draftLayout = structuredClone(msg.layout || {});
       applyBlockLayout();
@@ -835,6 +870,7 @@ ${bulbs.join('')}
       if (text !== lastCfgText) {
         lastCfgText = text;
         baseCfg = JSON.parse(text);
+        wxTick();
         if (lastD) { render(lastD); paint(); }
       }
     } catch (e) {}
