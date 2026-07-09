@@ -104,7 +104,8 @@
   .chip { border: 2px solid var(--chip-border); border-radius: .5vw; padding: .2vh .7vw;
     font-size: 1.4vw; font-weight: 700; color: var(--text-soft); letter-spacing: .06em; }
   .chip.stinger { border-color: var(--accent); color: var(--accent);
-    text-transform: uppercase; letter-spacing: .18em; font-size: 1.15vw; }
+    text-transform: uppercase; letter-spacing: .18em; font-size: 1.15vw;
+    display: inline-block; margin-top: .8vh; transform-origin: left center; }
 
   .rbadge.mpaa { background: #F4F4F0; color: #111; border: .22vw solid #111;
     border-radius: .4vw; padding: .3vh .8vw; font-weight: 900; font-size: 1.6vw;
@@ -313,7 +314,7 @@
     <h1 class="title" id="title"></h1>
     <p class="subtitle" id="subtitle"></p>
   </div>
-  <div class="block b-meta" data-layout="meta"><div class="meta" id="meta"></div></div>
+  <div class="block b-meta" data-layout="meta"><div class="meta" id="meta"></div><span class="chip stinger" id="stinger" data-layout="stinger" hidden></span></div>
   <div class="block b-plot" data-layout="plot"><p class="plot" id="plot"></p></div>
   <div class="block b-ratings" data-layout="ratings"><div class="scores" id="scores"></div></div>
   <div class="block b-progress" data-layout="progress">
@@ -677,11 +678,12 @@ ${bulbs.join('')}
       c.showRuntime !== false ? d.runtime : null,
       c.showMediaInfo !== false ? d.media : null ].filter(Boolean).join('   ·   ');
     const metaHtml = (meta ? `<span>${esc(meta)}</span>` : '') +
-      (c.showContentRating !== false ? ratingBadge(d.contentRating) : '') +
-      (d.stinger ? `<span class="chip stinger">${
-        d.stinger.includes('after') ? 'After-credits scene' : 'During-credits scene'
-      }</span>` : '');
+      (c.showContentRating !== false ? ratingBadge(d.contentRating) : '');
     $('meta').innerHTML = metaHtml;
+    const st = d.stinger
+      ? (d.stinger.includes('after') ? 'After-credits scene' : 'During-credits scene') : '';
+    $('stinger').textContent = st;
+    $('stinger').hidden = !st;
     $('plot').textContent = c.showPlot !== false ? (d.summary || '') : '';
 
     const s = c.showScores !== false ? (d.scores || {}) : {}, parts = [];

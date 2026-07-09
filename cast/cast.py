@@ -78,7 +78,7 @@ DEFAULT_SETTINGS = {
 }
 
 EDITABLE_BLOCKS = ("clock", "identity", "meta", "plot", "ratings",
-                   "progress", "poster")
+                   "progress", "poster", "stinger")
 
 _meta_cache = {}  # ratingKey -> extras dict
 
