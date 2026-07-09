@@ -176,7 +176,13 @@
     .editor { grid-template-columns:1fr; }
     .sliders { grid-template-columns:1fr; }
     .actions { align-items:stretch; flex-direction:column; }
-    .actions .save, .actions .secondary { width:100%; } }
+    .actions .save, .actions .secondary { width:100%; }
+    /* The live preview rides the bottom of the screen on phones, so every
+       vibe step, toggle, and font change is visible without scrolling. */
+    .frame-box { position:fixed; left:0; right:0; bottom:0; z-index:30;
+      width:100vw; max-width:none; border-radius:12px 12px 0 0;
+      border-bottom:0; box-shadow:0 -8px 30px rgba(0,0,0,.6); }
+    body { padding-bottom:calc(62.5vw + 24px); } }
 </style>
 <div class="wrap">
   <div class="top"><h1>Marquee <span>settings</span></h1>
@@ -322,6 +328,8 @@
   <div class="actions">
     <button class="save" id="save">Save changes</button>
     <button class="secondary" id="reset-layout">Reset block positions</button>
+    <button class="secondary" id="export" title="Copy your whole setup as text to share">Export</button>
+    <button class="secondary" id="import" title="Paste someone's exported setup">Import</button>
     <span class="status" id="status"></span>
   </div>
 
@@ -576,6 +584,28 @@
       $('#frame').contentWindow.postMessage({ type: 'marquee-set',
         field: input.dataset.layoutField, value: Number(input.value) }, location.origin);
     }));
+  // Share your look: export copies the full setup as JSON; import pastes
+  // someone else's. The server validates on save, so junk can't break it.
+  $('#export').addEventListener('click', async () => {
+    document.querySelectorAll('input[data-k]').forEach(i => { cfg[i.dataset.k] = i.checked; });
+    const text = JSON.stringify(cfg);
+    try { await navigator.clipboard.writeText(text);
+      $('#status').textContent = 'Setup copied to clipboard — paste it anywhere.'; }
+    catch (e) { window.prompt('Copy your setup:', text); }
+  });
+  $('#import').addEventListener('click', async () => {
+    const text = window.prompt('Paste an exported Marquee setup:');
+    if (!text) return;
+    try {
+      const incoming = JSON.parse(text);
+      const keep = cfg.hubIp;
+      cfg = { ...cfg, ...incoming, hubIp: keep };
+      const r = await (await fetch('/save', { method: 'POST',
+        body: JSON.stringify(cfg) })).json();
+      if (!r.ok) throw new Error(r.error);
+      location.reload();
+    } catch (e) { $('#status').textContent = 'Import failed: ' + e.message; }
+  });
   $('#reset-layout').addEventListener('click', () => {
     cfg.blockLayout = {};
     sendLayout();
