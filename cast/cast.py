@@ -11,7 +11,8 @@ output/, the settings UI at /settings, /save, and /release-notes.
 
 Env knobs: PAGE_URL, PLEX_HOST, PLEX_TOKEN, POLL_SECONDS, REPO_DIR,
 SERVE_PORT, DATA_DIR. Optional TMDB_API_KEY enables the credits-scene badge;
-optional PLEX_USERS limits which Plex users trigger the marquee. The cast
+optional PLEX_USERS / PLEX_DEVICES limit which Plex users and player devices
+trigger the marquee (also editable live on the settings page). The cast
 device comes from the settings page (auto-discovered via catt scan) or the
 HUB_IP env fallback.
 """
@@ -29,7 +30,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.3.0"
+VERSION = "1.4.0"
 HUB_IP = os.environ.get("HUB_IP", "")
 PAGE_URL = os.environ.get("PAGE_URL", "")
 PLEX = os.environ.get("PLEX_HOST", "").rstrip("/")
@@ -38,17 +39,23 @@ POLL = int(os.environ.get("POLL_SECONDS", "5"))
 REPO = os.environ.get("REPO_DIR", "/repo")
 TMDB_KEY = os.environ.get("TMDB_API_KEY", "")
 SERVE_PORT = int(os.environ.get("SERVE_PORT", "8084"))
-# Comma-separated Plex usernames that may trigger the marquee; empty = everyone.
-USERS = {u.strip().lower()
-         for u in os.environ.get("PLEX_USERS", "").split(",") if u.strip()}
+def csv_set(value):
+    return {v.strip().lower() for v in (value or "").split(",") if v.strip()}
+
+
+# Comma-separated Plex usernames/device names that may trigger the marquee;
+# empty = everyone / any device. Env is the seed; the settings page adds more.
+USERS = csv_set(os.environ.get("PLEX_USERS", ""))
+DEVICES = csv_set(os.environ.get("PLEX_DEVICES", ""))
 
 OUTPUT = os.path.join(REPO, "output")
 JSON_PATH = os.path.join(OUTPUT, "now-playing.json")
 DATA_DIR = os.environ.get("DATA_DIR", OUTPUT)
 SETTINGS_PATH = os.path.join(DATA_DIR, "settings.json")
 
-THEMES = ("amber", "ice", "crimson", "emerald")
-TEMPLATES = ("spotlight", "split", "hero", "lowerthird", "bigclock")
+THEMES = ("amber", "ice", "crimson", "emerald",
+          "campaign", "concrete", "trophy", "bsides")
+TEMPLATES = ("spotlight", "split", "hero", "lowerthird", "bigclock", "street")
 TITLE_FONTS = ("system", "bebas", "oswald", "playfair", "cinzel", "grotesk")
 ACCENT_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 IP_RE = re.compile(r"^\d{1,3}(\.\d{1,3}){3}$")
@@ -65,6 +72,7 @@ DEFAULT_SETTINGS = {
     "showMediaInfo": True, "showContentRating": True, "showRuntime": True,
     "showProgress": True, "showClock": True,
     "backdrop": True, "logo": True,
+    "plexUsers": "", "plexDevices": "",
     "blockLayout": {},
 }
 
@@ -134,6 +142,34 @@ def scan_devices(refresh=False):
 
 def dashcast_active():
     return "DashCast" in catt("info").stdout
+
+
+_wx_cache = {"at": 0.0, "loc": "", "data": {}}
+
+
+def weather():
+    """Current conditions for the card's Faze mode, via Open-Meteo (free, no
+    API key). Location is geolocated once from the server's public IP."""
+    if time.time() - _wx_cache["at"] < 900 and _wx_cache["data"]:
+        return _wx_cache["data"]
+    try:
+        if not _wx_cache["loc"]:
+            with urllib.request.urlopen(
+                    "http://ip-api.com/json/?fields=lat,lon", timeout=10) as r:
+                j = json.load(r)
+                _wx_cache["loc"] = f"{j['lat']},{j['lon']}"
+        lat, lon = _wx_cache["loc"].split(",")
+        url = (f"https://api.open-meteo.com/v1/forecast?latitude={lat}"
+               f"&longitude={lon}&current=weather_code,is_day,temperature_2m")
+        with urllib.request.urlopen(url, timeout=10) as r:
+            cur = json.load(r)["current"]
+        _wx_cache.update(at=time.time(), data={
+            "code": cur["weather_code"], "isDay": cur["is_day"] == 1,
+            "temp": cur["temperature_2m"]})
+    except Exception as e:
+        print(f"weather fetch failed: {e}", flush=True)
+        _wx_cache["at"] = time.time()  # don't hammer on failure
+    return _wx_cache["data"]
 
 
 def tmdb_stinger(tmdb_id):
@@ -264,26 +300,62 @@ def parse_session(video, extras=library_extras):
     return info
 
 
-def session_allowed(video, users=None):
-    """True when the session's Plex user is on the allow-list (empty = everyone).
+def session_names(video):
+    """(user, device) display names for a session; device falls back through
+    Player title -> device -> product."""
+    user = video.find("User")
+    player = video.find("Player")
+    u = (user.get("title") or "") if user is not None else ""
+    d = ""
+    if player is not None:
+        d = player.get("title") or player.get("device") or player.get("product") or ""
+    return u, d
+
+
+def session_allowed(video, users=None, devices=None):
+    """True when the session's Plex user AND device pass the allow-lists
+    (an empty list allows everyone / any device).
 
     /status/sessions is server-wide: with the owner token it includes every
     shared and home user, so without a filter the marquee reacts to anyone
     streaming from the library.
     """
     users = USERS if users is None else users
-    if not users:
-        return True
-    user = video.find("User")
-    return user is not None and (user.get("title") or "").lower() in users
+    devices = DEVICES if devices is None else devices
+    u, d = session_names(video)
+    if users and u.lower() not in users:
+        return False
+    if devices:
+        player = video.find("Player")
+        if player is None:
+            return False
+        names = {(player.get(k) or "").lower()
+                 for k in ("title", "device", "product")} - {""}
+        if not (names & devices):
+            return False
+    return True
+
+
+LAST_SESSIONS = []  # every active session from the last poll, filtered or not
 
 
 def current_session():
+    s = load_settings()
+    users = USERS | csv_set(s.get("plexUsers"))
+    devices = DEVICES | csv_set(s.get("plexDevices"))
     root = fetch_xml("/status/sessions")
+    seen, match = [], None
     for video in root.findall("Video"):
-        if video.get("type") in ("movie", "episode") and session_allowed(video):
-            return parse_session(video)
-    return None
+        if video.get("type") not in ("movie", "episode"):
+            continue
+        u, d = session_names(video)
+        ok = session_allowed(video, users, devices)
+        seen.append({"user": u, "device": d,
+                     "title": video.get("title") or "", "allowed": ok})
+        if ok and match is None:
+            match = parse_session(video)
+    LAST_SESSIONS[:] = seen
+    return match
 
 
 def load_settings():
@@ -344,6 +416,10 @@ class WebHandler(BaseHTTPRequestHandler):
         elif path == "/devices":
             self._send(json.dumps(scan_devices("refresh" in self.path)),
                        "application/json")
+        elif path == "/weather":
+            self._send(json.dumps(weather()), "application/json")
+        elif path == "/sessions":
+            self._send(json.dumps({"sessions": LAST_SESSIONS}), "application/json")
         elif path == "/healthz":
             self._send(json.dumps({"ok": True, "version": VERSION}), "application/json")
         elif path == "/release-notes":
@@ -373,6 +449,9 @@ class WebHandler(BaseHTTPRequestHandler):
                 merged["clockFormat"] = "12h"
             if merged["titleFont"] not in TITLE_FONTS:
                 merged["titleFont"] = "system"
+            for k in ("plexUsers", "plexDevices"):
+                if not isinstance(merged[k], str):
+                    merged[k] = ""
             merged["clockSeconds"] = bool(merged["clockSeconds"])
             if not (isinstance(merged["accent"], str)
                     and (merged["accent"] == "" or ACCENT_RE.match(merged["accent"]))):
@@ -479,9 +558,18 @@ def selftest():
     assert ACCENT_RE.match("#A1b2C3") and not ACCENT_RE.match("red") \
         and not ACCENT_RE.match("#12345")
     v = ET.fromstring(SAMPLE_SESSION)
-    assert session_allowed(v, set()) and not session_allowed(v, {"alice"})
+    assert session_allowed(v, set(), set()) and not session_allowed(v, {"alice"}, set())
     v.append(ET.Element("User", {"id": "1", "title": "Alice"}))
-    assert session_allowed(v, {"alice"}) and not session_allowed(v, {"bob"})
+    assert session_allowed(v, {"alice"}, set()) and not session_allowed(v, {"bob"}, set())
+    assert not session_allowed(v, set(), {"office phone"})  # Player has no names yet
+    player = v.find("Player")
+    player.set("title", "Office Phone")
+    player.set("device", "Pixel 9")
+    player.set("product", "Plex for Android")
+    assert session_allowed(v, {"alice"}, {"office phone"})
+    assert session_allowed(v, set(), {"pixel 9"})
+    assert not session_allowed(v, {"alice"}, {"living room tv"})
+    assert csv_set(" Alice, ,Office Phone ") == {"alice", "office phone"}
     scan = parse_scan("Scanning Chromecasts...\n"
                       "192.168.1.50 - Living Room - Google Inc. Google Nest Hub\n"
                       "not a device line")

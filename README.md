@@ -109,6 +109,14 @@ Never put a real token in Compose files, screenshots, issues, or commits.
 
 For credits-scene badges, create a TMDb account, open **Account Settings → API**, request a key, and set `TMDB_API_KEY`.
 
+## Tips
+
+**Silence the cast chime.** Every time Marquee takes over the display, the
+Nest Hub plays its connect sound. That chime comes from the device, not from
+Marquee, and there's a switch for it: open the **Google Home** app → tap
+your Hub → **Settings (gear) → Accessibility** → turn off **Play sounds on
+start/end of casting**. One-time change; casting is silent afterwards.
+
 ## Development
 
 ```sh
