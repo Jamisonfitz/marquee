@@ -24,10 +24,6 @@
   poster, backdrop, and logo art; the preview picks one at random per load,
   and pure demo mode (`/image?demo`) rotates every 20 seconds.
   `?demo=N` pins a film. Roughly 70KB lighter than the old embedded art.
-- Fifth film: *Justafaze* — a graffiti-nerd documentary where the quotes are
-  part of the tag ("it's ironic because it's not"). Weighted rotation makes it
-  the rare pull — films carry a `weight`, and Justafaze shows a third as
-  often as the rest.
 
 ### Street template & vibes
 
@@ -45,20 +41,6 @@
   Trail, Back Alley, Gold Star, Dollar Bin, Simulation ("we're all just
   programming ourselves"), and Third Act ("the universe is on its final
   reel"). Tap one, tweak, save.
-
-### Faze mode (the personal cut)
-
-- `?justafaze=1982` on the card URL unlocks a personal edition of Street:
-  the writer himself is out on the sidewalk spray-painting whatever's
-  playing — the clear-logo on the wall is his work in progress — while the
-  marquee (holding the live Plex poster) hangs at a slight tilt. Smoke
-  creeps from a manhole, heavier in fog.
-- Live local weather, no API key: the container asks Open-Meteo (location
-  auto-detected once from the server IP, cached 15 min, `/weather`
-  endpoint) and the card renders rain, snow, fog, or overcast to match
-  what's outside. Real day/night too — daylight raises the wall and rests
-  the bulbs. `?wx=rain|snow|fog|cloud` and `?day=1|0` force conditions.
-- Justafaze is est. 1982 now, as it always was.
 
 ### Preview & accent
 

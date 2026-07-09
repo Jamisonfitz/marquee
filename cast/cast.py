@@ -144,34 +144,6 @@ def dashcast_active():
     return "DashCast" in catt("info").stdout
 
 
-_wx_cache = {"at": 0.0, "loc": "", "data": {}}
-
-
-def weather():
-    """Current conditions for the card's Faze mode, via Open-Meteo (free, no
-    API key). Location is geolocated once from the server's public IP."""
-    if time.time() - _wx_cache["at"] < 900 and _wx_cache["data"]:
-        return _wx_cache["data"]
-    try:
-        if not _wx_cache["loc"]:
-            with urllib.request.urlopen(
-                    "http://ip-api.com/json/?fields=lat,lon", timeout=10) as r:
-                j = json.load(r)
-                _wx_cache["loc"] = f"{j['lat']},{j['lon']}"
-        lat, lon = _wx_cache["loc"].split(",")
-        url = (f"https://api.open-meteo.com/v1/forecast?latitude={lat}"
-               f"&longitude={lon}&current=weather_code,is_day,temperature_2m")
-        with urllib.request.urlopen(url, timeout=10) as r:
-            cur = json.load(r)["current"]
-        _wx_cache.update(at=time.time(), data={
-            "code": cur["weather_code"], "isDay": cur["is_day"] == 1,
-            "temp": cur["temperature_2m"]})
-    except Exception as e:
-        print(f"weather fetch failed: {e}", flush=True)
-        _wx_cache["at"] = time.time()  # don't hammer on failure
-    return _wx_cache["data"]
-
-
 def tmdb_stinger(tmdb_id):
     """['during'|'after', ...] from TMDb keywords (aftercreditsstinger etc.)."""
     url = f"https://api.themoviedb.org/3/movie/{tmdb_id}/keywords?api_key={TMDB_KEY}"
@@ -416,8 +388,6 @@ class WebHandler(BaseHTTPRequestHandler):
         elif path == "/devices":
             self._send(json.dumps(scan_devices("refresh" in self.path)),
                        "application/json")
-        elif path == "/weather":
-            self._send(json.dumps(weather()), "application/json")
         elif path == "/sessions":
             self._send(json.dumps({"sessions": LAST_SESSIONS}), "application/json")
         elif path == "/healthz":
