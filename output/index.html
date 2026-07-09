@@ -250,6 +250,53 @@
     animation-delay: calc(var(--i) * -.275s); }
   .scene .np { animation: npf 8s linear infinite; }
   .scene .pool { animation: brth 6s ease-in-out infinite; }
+  /* ── Faze mode (?justafaze=1982): the personal cut of Street ── */
+  .scene .writer, .scene .manhole, .scene .smoke { display: none; }
+  body.faze .scene .writer, body.faze .scene .manhole,
+  body.faze .scene .smoke { display: block; }
+  body.faze .scene .mq { transform: rotate(-2.2deg);
+    transform-origin: 1010px 380px; }
+  body.faze .b-poster { transform: rotate(-2.2deg); }
+  /* Give the writer his lane: the text column tightens up in Faze mode. */
+  body.faze .b-meta { width: 36vw; }
+  body.faze .b-plot { width: 33vw; }
+  body.faze .plot { max-width: 40ch; }
+  body.faze .scores { gap: 2.4vw; }
+  body.faze .score .num { font-size: 2.6vw; }
+  body.faze .score svg { width: 2.9vw; height: 2.9vw; }
+  body.faze .imdb-tag { font-size: 1.3vw; }
+  .scene .smoke { filter: blur(9px); }
+  @keyframes rise { 0% { transform: translate(0, 0) scale(.5); opacity: 0; }
+    12% { opacity: .14; } 70% { opacity: .09; }
+    100% { transform: translate(-70px, -560px) scale(2.6); opacity: 0; } }
+  body.faze .scene .smoke { opacity: 1; }
+  body.faze .scene .smk { animation: rise 16s linear infinite;
+    animation-delay: calc(var(--i) * -3.2s); opacity: 0; }
+  body.faze.wx-fog .scene .smk { animation-duration: 9s; }
+  body.faze.wx-fog .scene .smoke { filter: blur(14px); }
+  /* Daylight: house lights off, wall up. */
+  .scene svg { filter: brightness(var(--sb, 1)); }
+  body.faze-day { --sb: 1.75; }
+  body.faze-day .scene .bl, body.faze-day .scene .ch { animation: none; opacity: .3; }
+  body.faze-day .scene .np text { opacity: .8; }
+  body.faze-day .scene .pool { display: none; }
+  /* Weather layers (body.wx-*): rain streaks, drifting snow, overcast dim. */
+  @keyframes rainfall { to { background-position: -18vw 100vh, -10vw 100vh; } }
+  body.wx-rain::after, body.wx-snow::after { content: ""; position: fixed;
+    inset: -10vh 0 0 0; pointer-events: none; z-index: 3; }
+  body.wx-rain::after { background-image:
+    repeating-linear-gradient(78deg, transparent 0 15px, rgba(178,198,228,.14) 15px 16px),
+    repeating-linear-gradient(78deg, transparent 0 27px, rgba(178,198,228,.09) 27px 28px);
+    animation: rainfall 1.1s linear infinite; }
+  @keyframes snowfall { to { background-position: 4vw 105vh, -3vw 100vh, 2vw 110vh; } }
+  body.wx-snow::after { background-image:
+    radial-gradient(circle, rgba(255,255,255,.55) 1.4px, transparent 2.2px),
+    radial-gradient(circle, rgba(255,255,255,.4) 1.1px, transparent 1.8px),
+    radial-gradient(circle, rgba(255,255,255,.28) .9px, transparent 1.5px);
+    background-size: 6vw 9vh, 9vw 13vh, 13vw 17vh;
+    animation: snowfall 11s linear infinite; }
+  body.wx-cloud { --sb: .82; }
+  body.faze-day.wx-cloud { --sb: 1.35; }
   body[data-template="street"] .stage { display: block; padding: 0; }
   body[data-template="street"] .block { position: absolute; }
   /* The poster hangs inside the marquee frame drawn in the scene. */
@@ -324,6 +371,9 @@
   const stage = document.querySelector('.stage');
   const DEMO = new URLSearchParams(location.search).has('demo');
   const EDIT = new URLSearchParams(location.search).has('edit');
+  // Faze mode: the personal cut of Street. Gated behind ?justafaze=1982.
+  const FAZE = new URLSearchParams(location.search).get('justafaze') === '1982';
+  const WX_FORCE = new URLSearchParams(location.search).get('wx');
   const TEMPLATES = ['spotlight', 'split', 'hero', 'lowerthird', 'bigclock', 'street'];
   let shownKey = null, prog = null, state = 'playing', fetchedAt = 0;
   let baseCfg = null, draftCfg = null, draftLayout = null, lastD = null;
@@ -473,7 +523,7 @@
 <text x="440" y="240" font-size="88" fill="#E85454" opacity=".9">&#8221;</text>
 <text x="300" y="290" text-anchor="middle" font-size="72" font-style="italic" fill="#F4F4F0" stroke="#12091C" stroke-width="4" letter-spacing="-1">JUSTAFAZE</text>
 <path d="M92 306 q3 26 -4 38 M208 310 q4 22 0 36 M348 308 q4 30 -2 44 M482 304 q5 22 0 34" stroke="#F4F4F0" stroke-width="8" fill="none" stroke-linecap="round"/>
-<text x="300" y="346" text-anchor="middle" font-size="21" fill="#9BE86A" font-family="${HAND}">est. 2004 &#183; still &#8220;temporary&#8221;</text>
+<text x="300" y="346" text-anchor="middle" font-size="21" fill="#9BE86A" font-family="${HAND}">est. 1982 &#183; still &#8220;temporary&#8221;</text>
 </g>
 <g fill="#F4F4F0" opacity=".35"><circle cx="452" cy="216" r="2.4"/><circle cx="474" cy="200" r="2"/><circle cx="462" cy="238" r="1.7"/><circle cx="488" cy="226" r="1.4"/></g>
 <g transform="translate(408 500)">
@@ -548,7 +598,7 @@
     { poster: P_FAZE, backdrop: B_FAZE, logo: L_FAZE, weight: 1,
       data: { playing: true, type: 'movie', key: 'demo-faze',
         title: 'Justafaze', year: '2026',
-        summary: 'A graffiti writer with a day job in IT has been telling his family it\u2019s just a phase for twenty-two years. The city has painted over his wall forty-one times. Neither side is quitting, and only one of them is getting better at it.',
+        summary: 'A graffiti writer with a day job in IT has been telling his family it\u2019s just a phase since 1982. The city has painted over his wall forty-one times. Neither side is quitting, and only one of them is getting better at it.',
         genres: ['Documentary', 'Comedy'], contentRating: 'PG-13',
         runtime: '1h 29m', media: '4K \u00b7 HEVC \u00b7 ATMOS',
         scores: { rtCritic: 84, rtCriticFresh: true, rtAudience: 91, rtAudienceFresh: true, imdb: 7.7 },
@@ -639,7 +689,7 @@ ${[0, 1, 2].map(cx => [0, 1, 2, 3].map(cy => `<rect x="${188 + cx * 17}" y="${42
 <rect x="186" y="506" width="52" height="6" rx="3" fill="#171A1F"/>
 <rect x="192" y="548" width="42" height="30" rx="4" fill="#171A1F"/><rect x="194" y="550" width="38" height="12" rx="3" fill="#22262C"/>
 </g>
-<g class="np">
+<g class="mq"><g class="np">
 <rect x="812" y="48" width="396" height="60" rx="8" fill="#14161A" stroke="var(--accent, #C9973B)" stroke-width="3"/>
 <rect x="816" y="52" width="388" height="52" rx="6" fill="none" stroke="#C9973B" stroke-width="1" opacity=".35"/>
 <text x="1010" y="90" text-anchor="middle" font-size="30" fill="#FFD9A0" letter-spacing="10">NOW PLAYING</text>
@@ -650,13 +700,66 @@ ${chase.join('')}
 <rect x="814" y="114" width="392" height="552" rx="10" fill="url(#frameShade)" stroke="var(--accent, #C9973B)" stroke-width="4"/>
 <rect x="822" y="122" width="376" height="536" rx="8" fill="none" stroke="#C9973B" stroke-width="1.5" opacity=".4"/>
 <rect x="842" y="142" width="336" height="496" fill="#0B0C0E"/>
-${bulbs.join('')}
+${bulbs.join('')}</g>
+<g class="manhole"><ellipse cx="420" cy="774" rx="52" ry="12" fill="#0D0F12"/><ellipse cx="420" cy="771" rx="52" ry="12" fill="#23262B"/><ellipse cx="420" cy="771" rx="40" ry="8.5" fill="none" stroke="#15171A" stroke-width="2"/><path d="M394 768 l52 0 M396 772 l48 0 M400 776 l40 0" stroke="#15171A" stroke-width="2"/></g>
+<g class="smoke" opacity="0">${Array.from({length:5},(_,i)=>`<ellipse class="smk" style="--i:${i}" cx="${406+i*9}" cy="762" rx="${30+i*7}" ry="${16+i*4}" fill="#C8CDD6"/>`).join('')}</g>
+<g class="writer" transform="translate(-22 0)">
+<ellipse cx="602" cy="738" rx="64" ry="9" fill="#000" opacity=".4"/>
+<path d="M576 596 q-4 42 -1 66 l22 0 q3 -34 4 -52 q8 1 15 0 q2 18 5 52 l22 0 q2 -24 -4 -66z" fill="#C0392B"/>
+<path d="M572 700 l28 0 q8 9 -1 15 l-33 0 q-6 -8 6 -15z" fill="#111"/><path d="M566 711 l34 1 1 7 -37 -1z" fill="#E85454"/>
+<path d="M628 700 l28 0 q9 9 1 15 l-34 0 q-5 -9 5 -15z" fill="#111"/><path d="M624 711 l36 1 0 7 -37 -1z" fill="#E85454"/>
+<path d="M573 528 q-4 38 3 70 q28 8 56 0 q6 -32 3 -70 q-30 -9 -62 0z" fill="#16181C"/>
+<text x="604" y="574" text-anchor="middle" font-size="15" fill="#9BE86A" font-family="'Courier New',monospace" font-weight="bold" transform="rotate(-2 604 574)">404</text>
+<path d="M576 536 a30 30 0 0 1 58 -2" stroke="#23262B" stroke-width="6" fill="none"/>
+<circle cx="577" cy="540" r="7" fill="#101215"/><circle cx="634" cy="537" r="7" fill="#101215"/>
+<path d="M574 532 q-16 8 -20 30 q-3 18 4 27 l12 -4 q-4 -14 0 -30 q2 -14 8 -18z" fill="#16181C"/>
+<path d="M566 584 q-1 11 7 12 q8 1 10 -7 l-3 -11z" fill="#E8B88A"/>
+<rect x="556" y="570" width="18" height="13" rx="3" fill="#2E323A"/><rect x="558" y="572" width="14" height="9" rx="2" fill="#5A9BD4"/>
+<path d="M632 530 q18 -10 24 -32 q4 -16 -2 -26 l-13 4 q3 14 -3 30 q-3 12 -10 17z" fill="#16181C"/>
+<path d="M648 474 q-1 -10 7 -11 q8 -1 10 7 l-2 9 -13 -1z" fill="#E8B88A"/>
+<g transform="translate(660 452) rotate(-16)"><rect x="-8" y="0" width="16" height="27" rx="3" fill="#C7CBD1"/><rect x="-8" y="9" width="16" height="9" fill="#111"/><rect x="-4" y="-4" width="9" height="5" rx="1.5" fill="#9AA1AB"/><rect x="-2" y="-8" width="4" height="4" rx="1" fill="#E85454"/></g>
+<g fill="#F4F4F0" opacity=".5"><circle cx="640" cy="430" r="2.2"/><circle cx="624" cy="418" r="1.8"/><circle cx="648" cy="414" r="1.5"/><circle cx="630" cy="402" r="1.2"/></g>
+<circle cx="606" cy="510" r="17" fill="#E8B88A"/>
+<path d="M589 507 q0 -17 17 -18 q17 -1 18 14 l-5 2 q-13 -8 -26 -2z" fill="#C0392B"/>
+<path d="M619 494 q14 -5 20 2 l-3 5 q-9 -4 -16 -3z" fill="#8E2A20"/>
+<rect x="591" y="506" width="13" height="9" rx="3" fill="#16181C"/><rect x="607" y="506" width="13" height="9" rx="3" fill="#16181C"/><rect x="602" y="508" width="6" height="2.5" fill="#16181C"/>
+<circle cx="597" cy="510" r="2.8" fill="#5A9BD4"/><circle cx="613" cy="510" r="2.8" fill="#5A9BD4"/>
+<path d="M602 522 q4 3 8 0 l-1 5 q-3 2 -6 0z" fill="#3A2A1E"/>
+</g>
 <rect width="1280" height="800" fill="url(#vin)"/>
 </svg>`;
   })();
   // Grainy alpha mask that makes the logo read as spray paint on brick.
   const SPRAY = svgU(`<svg xmlns="http://www.w3.org/2000/svg" width="480" height="240"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".5" numOctaves="3" seed="7"/><feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  1.7 1.7 1.7 0 -1.1"/></filter><rect width="480" height="240" filter="url(#n)"/></svg>`);
   document.documentElement.style.setProperty('--spray', `url("${SPRAY}")`);
+
+  // Faze mode extras: live local weather (/weather, Open-Meteo WMO codes)
+  // and real day/night. ?wx=rain|snow|fog|cloud and ?day=1|0 force either.
+  if (FAZE) {
+    document.body.classList.add('faze');
+    const wxClass = code =>
+      code == null ? '' :
+      code >= 71 && code <= 86 && !(code >= 80 && code <= 82) ? 'wx-snow' :
+      (code >= 51 && code <= 67) || (code >= 80 && code <= 82) || code >= 95 ? 'wx-rain' :
+      code >= 45 && code <= 48 ? 'wx-fog' :
+      code >= 2 ? 'wx-cloud' : '';
+    const applyWx = w => {
+      document.body.classList.remove('wx-rain', 'wx-snow', 'wx-fog', 'wx-cloud');
+      const cls = WX_FORCE ? 'wx-' + WX_FORCE : wxClass(w.code);
+      if (['wx-rain', 'wx-snow', 'wx-fog', 'wx-cloud'].includes(cls))
+        document.body.classList.add(cls);
+      const dayForce = new URLSearchParams(location.search).get('day');
+      const h = new Date().getHours();
+      document.body.classList.toggle('faze-day', dayForce !== null
+        ? dayForce === '1'
+        : (w.isDay != null ? w.isDay : h >= 7 && h < 19));
+    };
+    const wxTick = async () => {
+      try { applyWx(await (await fetch('/weather')).json()); }
+      catch (e) { applyWx({}); }
+    };
+    wxTick(); setInterval(wxTick, 300000);
+  }
 
   const TOMATO_FRESH = `<svg viewBox="0 0 24 24"><path fill="#FA320A" d="M12 6c5.2 0 9 3.5 9 8.2S17.2 22 12 22s-9-3.1-9-7.8S6.8 6 12 6z"/><path fill="#00912D" d="M12 2c1.7 0 2.9.8 2.9.8s-1.3 1-2 2.3C15 4.3 17 5 17 5s-1.7 1.9-4.1 2c-2.4.1-3.9-1.2-3.9-1.2s.9-1.2 2.3-1.7C9.9 3.7 9 3.1 9 3.1S10.3 2 12 2z"/></svg>`;
   const TOMATO_ROTTEN = `<svg viewBox="0 0 24 24"><path fill="#0A9830" d="M12 2.5l1.8 4.1 4.4-1.6-1.2 4.2 4.5 1.3-3.9 2.6 2.6 3.9-4.5-.9.2 4.9-3.9-3-3.4 3.3-.2-4.8-4.7.7 2.9-3.9L2.5 11l4.6-1.4-1.4-4.3 4.5 1.7L12 2.5z"/></svg>`;
@@ -708,7 +811,8 @@ ${bulbs.join('')}
     if (FONTS[c.titleFont]) root.setProperty('--title-font', FONTS[c.titleFont]);
     else root.removeProperty('--title-font');
 
-    const tpl = TEMPLATES.includes(c.template) ? c.template : 'spotlight';
+    const tpl = FAZE ? 'street'
+      : TEMPLATES.includes(c.template) ? c.template : 'spotlight';
     document.body.dataset.template = tpl;
     if (tpl === 'street' && !$('scene').firstChild) $('scene').innerHTML = SCENE;
     document.body.classList.toggle('flip',
