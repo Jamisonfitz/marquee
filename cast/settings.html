@@ -77,14 +77,16 @@
   .devpick select, select.mini, input.mini { max-width: 200px; min-height: 40px;
     color: var(--text); background: var(--bg); border: 1px solid var(--line);
     border-radius: 8px; padding: 6px 8px; font-size: 14px; }
-  .vibes { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end;
-    max-width: 300px; }
-  .vibes button { background: var(--bg); border: 1px solid var(--line);
-    border-radius: 999px; color: var(--text); font-size: 12.5px; font-weight: 700;
-    padding: 7px 12px; cursor: pointer; }
-  .vibes button:hover { border-color: var(--v, var(--amber)); }
-  .vibes button i { font-style: normal; display: inline-block; width: 9px; height: 9px;
-    border-radius: 50%; background: var(--v); margin-right: 6px; vertical-align: -1px; }
+  .vibes-step { display: flex; gap: 8px; align-items: stretch; }
+  .vibes-step .secondary { padding: 6px 12px; font-size: 13px; }
+  .vibe-now { background: var(--bg); border: 1px solid var(--line); border-radius: 12px;
+    color: var(--text); padding: 6px 14px; cursor: pointer; text-align: left;
+    min-width: 180px; }
+  .vibe-now:hover { border-color: var(--v, var(--amber)); }
+  .vibe-now b { display: block; font-size: 13.5px; }
+  .vibe-now small { color: var(--mut); font-size: 11.5px; }
+  .vibe-now i { float: left; width: 10px; height: 10px; border-radius: 50%;
+    background: var(--v, var(--line)); margin: 5px 9px 0 0; }
   .sessions-list { color: var(--mut); font-size: 13px; text-align: right;
     line-height: 1.6; }
   .sessions-list b { color: var(--text); font-weight: 600; }
@@ -201,8 +203,12 @@
 
   <div class="panel">
     <h2>Look</h2>
-    <div class="row"><label>Vibes<small>One-tap presets: theme + font + template. Tune after; save to keep.</small></label>
-      <div class="vibes" id="vibes"></div>
+    <div class="row"><label>Vibes<small>Presets: theme + font + template. Step through, tune after, save to keep.</small></label>
+      <div class="vibes-step">
+        <button class="secondary vprev" id="vibe-prev" type="button" aria-label="Previous vibe">&#9664;</button>
+        <button class="vibe-now" id="vibe-now" type="button"><i id="vibe-dot"></i><b id="vibe-name">Pick a vibe</b><small id="vibe-tag">tap or step through</small></button>
+        <button class="secondary vnext" id="vibe-next" type="button" aria-label="Next vibe">&#9654;</button>
+      </div>
     </div>
     <div class="row"><label>Theme<small>Card palette; pick the circle for a custom accent</small></label>
       <div class="swatches" id="theme">
@@ -308,6 +314,7 @@
         <option value="plot">Plot</option>
         <option value="ratings">Ratings</option>
         <option value="progress">Progress</option>
+        <option value="stinger">Credits badge</option>
         <option value="poster">Poster</option></select></label>
       <div class="sliders">
         <div class="slider"><label>Horizontal <output data-value="x">0</output></label><input data-layout-field="x" type="range" min="-100" max="100" step="1" value="0"></div>
@@ -409,15 +416,22 @@
     { n: 'Simulation', c: '#7FB8E8', theme: 'ice', font: 'grotesk', tpl: 'bigclock', tag: 'we’re all just programming ourselves' },
     { n: 'Third Act', c: '#E85454', theme: 'crimson', font: 'cinzel', tpl: 'lowerthird', tag: 'the universe is on its final reel' },
   ];
-  $('#vibes').innerHTML = VIBES.map((v, i) =>
-    `<button type="button" data-i="${i}" style="--v:${v.c}" title="${v.tag}"><i></i>${v.n}</button>`).join('');
-  document.querySelectorAll('#vibes button').forEach(b => b.addEventListener('click', () => {
-    const v = VIBES[b.dataset.i];
+  let vibeIdx = -1;
+  function applyVibe(i) {
+    vibeIdx = (i + VIBES.length) % VIBES.length;
+    const v = VIBES[vibeIdx];
     cfg.theme = v.theme; cfg.accent = ''; cfg.titleFont = v.font; cfg.template = v.tpl;
     $('#font').value = v.font;
+    $('#vibe-name').textContent = v.n; $('#vibe-tag').textContent = v.tag;
+    $('.vibe-now').style.setProperty('--v', v.c);
     markTheme(); markTemplates(); sendCfg();
+    // each step also flips the demo film, so browsing vibes tours the reel
+    $('#frame').contentWindow?.postMessage({ type: 'marquee-demo-next' }, location.origin);
     $('#status').textContent = `${v.n} — ${v.tag}. Save to keep the vibe.`;
-  }));
+  }
+  $('#vibe-prev').addEventListener('click', () => applyVibe(vibeIdx - 1));
+  $('#vibe-next').addEventListener('click', () => applyVibe(vibeIdx + 1));
+  $('#vibe-now').addEventListener('click', () => applyVibe(vibeIdx < 0 ? 0 : vibeIdx));
 
   function markTheme() {
     document.querySelectorAll('#theme button[data-v]').forEach(b =>
