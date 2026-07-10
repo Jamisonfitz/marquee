@@ -350,6 +350,33 @@ def session_allowed(video, users=None, devices=None):
 
 LAST_SESSIONS = []  # every active session from the last poll, filtered or not
 
+# The card page fetches /now-playing.json every POLL seconds. When it stops, the
+# page is gone even if the Hub still reports the DashCast app as loaded.
+# `at` is only ever set by a real request, so /healthz reports the truth; the
+# grace window a freshly cast page gets is tracked separately rather than by
+# faking a poll -- seeding `at` would make a card that never polled look alive.
+LAST_CARD_POLL = {"at": 0.0}
+CARD_GRACE = {"until": 0.0}
+CARD_TIMEOUT = max(45, POLL * 6)
+
+
+def card_alive(now, last_poll, timeout=CARD_TIMEOUT):
+    """True when the card fetched now-playing.json recently enough."""
+    return bool(last_poll) and (now - last_poll) < timeout
+
+
+def card_ok(now, last_poll, grace_until, timeout=CARD_TIMEOUT):
+    """Leave the Hub alone: the card is polling, or a freshly cast page is still
+    inside the window we give it to load and check in."""
+    return card_alive(now, last_poll, timeout) or now < grace_until
+
+
+def cast_card():
+    """Load the card on the Hub, and let it be silent for one timeout window."""
+    sep = "&" if "?" in PAGE_URL else "?"
+    catt("cast_site", f"{PAGE_URL}{sep}cb={int(time.time())}")
+    CARD_GRACE["until"] = time.time() + CARD_TIMEOUT
+
 
 def current_session():
     s = load_settings()
@@ -432,8 +459,23 @@ class WebHandler(BaseHTTPRequestHandler):
             self._send(json.dumps(weather()), "application/json")
         elif path == "/sessions":
             self._send(json.dumps({"sessions": LAST_SESSIONS}), "application/json")
+        elif path == "/now-playing.json":
+            # Served explicitly rather than through the static fallthrough so we
+            # can timestamp the card's heartbeat -- see card_alive().
+            LAST_CARD_POLL["at"] = time.time()
+            self._send_file(JSON_PATH)
         elif path == "/healthz":
-            self._send(json.dumps({"ok": True, "version": VERSION}), "application/json")
+            last, now = LAST_CARD_POLL["at"], time.time()
+            self._send(json.dumps({
+                "ok": True, "version": VERSION,
+                # Seconds since the card actually fetched now-playing.json; null
+                # means it has never polled. A number past CARD_TIMEOUT is a Hub
+                # showing a dead page.
+                "cardPollAgo": round(now - last, 1) if last else None,
+                "cardAlive": card_alive(now, last),
+                # True while a freshly cast page is still allowed to be silent.
+                "cardGrace": now < CARD_GRACE["until"],
+            }), "application/json")
         elif path == "/release-notes":
             self._send_file(os.path.join(REPO, "CHANGELOG.md"))
         elif path in ("/", "/settings"):
@@ -500,6 +542,10 @@ def loop():
     threading.Thread(target=serve_web, daemon=True).start()
     print(f"Marquee {VERSION} ready on :{SERVE_PORT} (card: /image, settings: /)",
           flush=True)
+    # A card cast before this restart gets one window to check in, so restarting
+    # the container does not needlessly re-cast a perfectly good page. This must
+    # not touch LAST_CARD_POLL, or /healthz would report it as alive.
+    CARD_GRACE["until"] = time.time() + CARD_TIMEOUT
     # Poll sessions fast (5s) so json/poster/hub flip together on play/stop;
     # talk to the hub only on transitions, plus a slow reconcile pass.
     last_playing, tick = None, 0
@@ -515,10 +561,21 @@ def loop():
                               "settings page or set HUB_IP", flush=True)
                 else:
                     dash = dashcast_active()
+                    # `dash` only means the DashCast app is loaded. A Hub whose
+                    # page died keeps reporting it, so without the card's own
+                    # heartbeat the loop sits here forever in front of a blank
+                    # screen, casting nothing and logging nothing.
+                    ok = card_ok(time.time(), LAST_CARD_POLL["at"],
+                                 CARD_GRACE["until"])
                     if playing and not dash:
                         print(f"plex playing ({info['title']}) -> casting", flush=True)
-                        sep = "&" if "?" in PAGE_URL else "?"
-                        catt("cast_site", f"{PAGE_URL}{sep}cb={int(time.time())}")
+                        cast_card()
+                    elif playing and not ok:
+                        last = LAST_CARD_POLL["at"]
+                        gone = f"{time.time() - last:.0f}s" if last else "ever"
+                        print(f"hub claims to be showing but the card has not "
+                              f"polled in {gone} -> re-casting", flush=True)
+                        cast_card()
                     elif not playing and dash:
                         print("plex idle -> releasing hub", flush=True)
                         catt("stop")
@@ -594,6 +651,26 @@ def selftest():
     assert scan == [{"ip": "192.168.1.50", "name": "Living Room",
                      "model": "Google Inc. Google Nest Hub"}]
     assert IP_RE.match("10.0.0.2") and not IP_RE.match("nest.local")
+
+    # dashcast_active() only proves the DashCast *app* is loaded, not that our
+    # card is drawing. A Hub whose page died keeps reporting DashCast forever,
+    # so the loop never re-casts and the screen stays blank. The card fetches
+    # /now-playing.json every POLL seconds; silence means it is gone.
+    assert card_alive(100.0, 99.0, 45)
+    assert card_alive(100.0, 56.0, 45)          # just inside the window
+    assert not card_alive(100.0, 54.0, 45)      # just outside
+    assert not card_alive(100.0, 0.0, 45)       # never polled at all
+    # "never polled" stays dead even when the clock is younger than the
+    # timeout, which a bare subtraction would misread as alive.
+    assert not card_alive(10.0, 0.0, 45)
+
+    # A freshly cast page is allowed to be silent for one window, but that must
+    # never make a card which has not polled *look* alive on /healthz.
+    assert card_ok(100.0, 0.0, grace_until=140.0, timeout=45)    # silent, in grace
+    assert not card_alive(100.0, 0.0, 45)                        # ...but not alive
+    assert not card_ok(100.0, 0.0, grace_until=0.0, timeout=45)  # grace expired
+    assert card_ok(100.0, 99.0, grace_until=0.0, timeout=45)     # polling, no grace
+    assert card_ok(1000.0, 999.0, grace_until=1.0, timeout=45)   # poll outlives grace
     print("selftest ok")
 
 
