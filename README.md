@@ -104,6 +104,12 @@ Optional settings:
 - `PLEX_DEVICES` — comma-separated player/device names that trigger the
   marquee; empty allows any device. Both filters are also editable live on
   the settings page, which shows the exact names of active sessions.
+
+When more than one allowed session is playing, each takes the display in turn.
+**Rotate between sessions** on the settings page sets how long each gets
+(default 30 seconds; 0 pins the first, ordered by user then device). Sessions
+are always sorted before one is picked, so the card never flips at random
+because the server reordered its session list.
 - `TMDB_API_KEY`
 - `POLL_SECONDS` default `5`
 - `SERVE_PORT` default `8084`
