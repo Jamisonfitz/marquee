@@ -107,8 +107,9 @@ Optional settings:
 - `TMDB_API_KEY`
 - `POLL_SECONDS` default `5`
 - `SERVE_PORT` default `8084`
-- `REPO_DIR` default `/app`
-- `DATA_DIR` default `/config`
+- `REPO_DIR` — the container sets `/app` (the code's own default is `/repo`)
+- `DATA_DIR` — the container sets `/config` (the code's own default is
+  `REPO_DIR/output`)
 
 Health status is available at `/healthz` and includes the version.
 
