@@ -111,6 +111,27 @@ Optional settings:
 - `DATA_DIR` — the container sets `/config` (the code's own default is
   `REPO_DIR/output`)
 
+### Env vars that the settings page can also set
+
+Three settings exist in both places, and they combine differently:
+
+| Setting | Env var | Settings page | How they combine |
+|---|---|---|---|
+| Cast device | `HUB_IP` | Cast device picker | The settings page **wins**; the env var is only a fallback for when no device has been picked. |
+| Users | `PLEX_USERS` | Users | **Both apply.** The two lists are merged. |
+| Devices | `PLEX_DEVICES` | Devices | **Both apply.** The two lists are merged. |
+
+The merge is worth understanding before you use `PLEX_USERS` or `PLEX_DEVICES`.
+The settings page can only **add** names to what the env var already allows — it
+cannot remove them, and it does not display them. If `PLEX_USERS=jamison` is set
+in your Compose file, the Users field on the settings page shows up *empty*, as
+though nobody were being filtered, while every session except `jamison`'s is
+silently ignored. Clearing the field changes nothing.
+
+If you want to manage the filters from the settings page, leave `PLEX_USERS` and
+`PLEX_DEVICES` unset. Use them only for a filter you want pinned at the
+container level, where nobody can lift it from the UI.
+
 Health status is available at `/healthz` and includes the version.
 
 ## Plex Token
