@@ -314,6 +314,8 @@
       <input type="text" id="users" class="mini" placeholder="e.g. jamison" autocomplete="off"></div>
     <div class="row"><label>Devices<small>Comma-separated player names — only sessions on these devices cast. Empty = any device (your phone at work included).</small></label>
       <input type="text" id="devices" class="mini" placeholder="e.g. Living Room TV" autocomplete="off"></div>
+    <div class="row"><label>Rotate between sessions<small>When more than one allowed session is playing, each takes the display for this many seconds. 0 pins the first one (alphabetical by user, then device).</small></label>
+      <input type="number" id="rotate" class="mini" min="0" max="3600" step="5" placeholder="30"></div>
     <div class="row"><label>Active sessions<small>Copy exact user and device names from what's playing right now</small></label>
       <div class="devpick">
         <span class="sessions-list" id="sessions">—</span>
@@ -502,6 +504,12 @@
     cfg[id === 'users' ? 'plexUsers' : 'plexDevices'] = $('#' + id).value;
     $('#status').textContent = 'Filter changed — save to apply.';
   }));
+  $('#rotate').addEventListener('input', () => {
+    // Blank means "leave it alone"; the server clamps to 0 or 5..3600 on save.
+    const n = parseInt($('#rotate').value, 10);
+    cfg.rotateSeconds = Number.isFinite(n) ? n : 30;
+    $('#status').textContent = 'Rotation changed — save to apply.';
+  });
   $('#zip').addEventListener('input', () => {
     cfg.weatherZip = $('#zip').value.trim();
     $('#status').textContent = 'ZIP changed — save to apply.';
@@ -543,6 +551,7 @@
     $('#bodyfont').value = cfg.bodyFont || 'system';
     $('#users').value = cfg.plexUsers || '';
     $('#devices').value = cfg.plexDevices || '';
+    $('#rotate').value = cfg.rotateSeconds ?? 30;
     $('#zip').value = cfg.weatherZip || '';
     segSet('unitfmt', cfg.weatherUnits || 'f');
     segSet('side', cfg.posterSide || 'right');
