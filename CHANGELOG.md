@@ -20,6 +20,24 @@ re-cast. A page cast moments ago gets one window to load before it counts.
 showing a dead page is now visible from outside the container — which matters,
 because per-request logging is suppressed.
 
+### More than one person is watching
+
+When two people stream at once, the card used to flip between their titles at
+random. `/status/sessions` has no defined order, Plex reorders it as sessions
+come and go, and Marquee took whichever session happened to be listed first —
+re-deciding every poll.
+
+Sessions are now sorted by user, then device, then title, so the choice is
+stable. When more than one allowed session is playing, each takes the display
+in turn: a new **Rotate between sessions** setting, 30 seconds by default. Set
+it to 0 to pin the first one instead.
+
+Rotation is a pure function of the clock, so nothing needs to be remembered
+across a restart, and two displays watching the same server show the same
+session at the same time. Your user and device filters still decide who is
+eligible — rotation only orders whoever is left, so filtering to yourself with
+two devices rotates rather than flickering.
+
 ## 1.6.0 — 2026-07-09
 
 ### Share your look
