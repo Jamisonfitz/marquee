@@ -1,5 +1,25 @@
 # Changelog
 
+## Unreleased
+
+### The Hub no longer sits on a blank screen
+
+Marquee decided whether to cast by asking the Hub whether the DashCast app was
+loaded. That answers the wrong question: a Hub whose card page has died — it
+crashed, reloaded into nothing, or was left holding a stale page — keeps
+reporting DashCast forever. Marquee concluded the card was already up and did
+nothing, silently, while the display showed nothing. There was no error, and
+nothing in the log.
+
+The card fetches `/now-playing.json` every `POLL_SECONDS`, so the server already
+knew whether the page was alive; it just wasn't looking. That fetch is now
+timestamped, and a card silent for longer than 45 seconds is treated as gone and
+re-cast. A page cast moments ago gets one window to load before it counts.
+
+`/healthz` reports `cardPollAgo`, `cardAlive`, and `cardGrace`, so a display
+showing a dead page is now visible from outside the container — which matters,
+because per-request logging is suppressed.
+
 ## 1.6.0 — 2026-07-09
 
 ### Share your look
