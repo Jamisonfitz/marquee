@@ -18,6 +18,29 @@ credential-shaped can leak to a browser by default. `selftest` pins the
 override semantics (blank inherits, typed replaces, the env is never unioned
 back in) and the allowlist (no token/key-shaped name may ever join the hints).
 
+### Emby and Jellyfin join Plex
+
+Marquee can now watch an Emby or Jellyfin server instead of Plex. Set
+`MEDIA_BACKEND=emby` (with `EMBY_HOST` / `EMBY_API_KEY`) or
+`MEDIA_BACKEND=jellyfin` (with `JELLYFIN_HOST` / `JELLYFIN_API_KEY`); Plex
+stays the default and the Plex path is untouched.
+
+Both backends produce the same now-playing dict, so every template, theme,
+toggle, and the session filters and rotation work identically — the selftest
+asserts the two parsers emit the same keys. Emby's `/Sessions` omits some of
+the fields the card wants (genres, media streams, ratings, overview), so the
+backend fetches them from `/Items` once per title and caches them, exactly as
+the Plex path caches its metadata lookups. Artwork (poster, backdrop, logo)
+comes from the item image endpoints at the same sizes the Plex transcoder
+delivers.
+
+Jellyfin forked from Emby in 2018 and the handful of APIs Marquee uses —
+`api_key` query auth, `/Sessions`, `/Items`, `/Items/{id}/Images/*` — are
+byte-compatible, so Jellyfin rides the Emby code path unchanged. The
+`JELLYFIN_*` env names are aliases for the `EMBY_*` pair, accepted so a
+compose file can say what it means. Verified end to end against live Emby and
+Jellyfin (10.11) servers, through to the card rendering on a real Nest Hub.
+
 ## 1.8.0 — 2026-07-19
 
 ### The block editor grows up
