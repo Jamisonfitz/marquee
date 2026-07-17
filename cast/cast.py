@@ -23,7 +23,9 @@ Env knobs: PAGE_URL, POLL_SECONDS, REPO_DIR, SERVE_PORT, DATA_DIR.
   Jellyfin: JELLYFIN_HOST, JELLYFIN_API_KEY (or the EMBY_ pair; shared backend)
 Optional TMDB_API_KEY enables the credits-scene badge; optional PLEX_USERS /
 PLEX_DEVICES limit which users and player devices trigger the marquee (also
-editable live on the settings page); both backends honor both filters. The
+editable live on the settings page); both backends honor both filters.
+Optional BLOCK_TAGS lists do-not-cast words: a session whose genres or tags
+contain one is never cast, so the marquee cannot overshare. The
 cast device comes from the settings page (auto-discovered via catt scan) or
 the HUB_IP env fallback.
 """
@@ -77,15 +79,51 @@ def filter_set(saved, env_default):
     return chosen if chosen else csv_set(env_default)
 
 
+# Comma-separated do-not-cast words: a session whose genres or tags contain
+# one of these is never cast, so the marquee cannot overshare. Same
+# default-vs-override rule as the other filters.
+ENV_BLOCK_TAGS = os.environ.get("BLOCK_TAGS", "")
+
+
+def content_blocked(words, terms):
+    """True when any do-not-cast word matches any of the item's genre / tag /
+    content-rating terms, case-insensitive. A word of 3+ characters matches
+    *inside* a term ("adult" blocks "Adult Animation") — for an overshare
+    guard, blocking too much beats leaking. Shorter words must equal the
+    whole term, so blocking the "R" rating does not block "Horror". Empty
+    words block nothing."""
+    lowered = [t.lower() for t in terms if t]
+    return any(w == t or (len(w) >= 3 and w in t)
+               for w in words for t in lowered)
+
+
+def plex_item_terms(video):
+    """Genre, Label, and content-rating terms on a Plex session Video."""
+    return ([g.get("tag") or "" for g in video.findall("Genre")]
+            + [l.get("tag") or "" for l in video.findall("Label")]
+            + [video.get("contentRating") or ""])
+
+
+def emby_item_terms(item):
+    """Genre, tag, and content-rating terms on an Emby/Jellyfin
+    NowPlayingItem. OfficialRating is in the enrich field list, so the
+    post-enrich re-check sees it even when /Sessions omits it."""
+    return ((item.get("Genres") or [])
+            + [t.get("Name") or "" for t in (item.get("TagItems") or [])]
+            + (item.get("Tags") or [])
+            + [item.get("OfficialRating") or ""])
+
+
 # Only these env vars are ever shown to the settings page. An allowlist, not a
 # denylist: a future PLEX_TOKEN-shaped variable must not leak by default.
-ENV_HINT_KEYS = ("hubIp", "plexUsers", "plexDevices")
+ENV_HINT_KEYS = ("hubIp", "plexUsers", "plexDevices", "blockTags")
 
 
 def env_defaults():
     """Container-level defaults the settings page shows as placeholders, so a
     blank field reads as "inheriting this" instead of "nothing is set"."""
-    return {"hubIp": HUB_IP, "plexUsers": ENV_USERS, "plexDevices": ENV_DEVICES}
+    return {"hubIp": HUB_IP, "plexUsers": ENV_USERS,
+            "plexDevices": ENV_DEVICES, "blockTags": ENV_BLOCK_TAGS}
 
 BACKENDS = ("plex", "emby", "jellyfin")
 # MEDIA_BACKEND is the container-level default; the settings-page dropdown
@@ -142,6 +180,7 @@ DEFAULT_SETTINGS = {
     "showProgress": True, "showClock": True,
     "backdrop": True, "logo": True,
     "plexUsers": "", "plexDevices": "",
+    "blockTags": "",
     "rotateSeconds": 30,
     "showWeather": False, "weatherZip": "", "weatherUnits": "f",
     "blockLayout": {},
@@ -684,6 +723,7 @@ def current_session():
         return None   # not configured yet — the settings page can fix it live
     users = filter_set(s.get("plexUsers"), ENV_USERS)
     devices = filter_set(s.get("plexDevices"), ENV_DEVICES)
+    block = filter_set(s.get("blockTags"), ENV_BLOCK_TAGS)
     root = fetch_xml("/status/sessions")
     seen, allowed = [], []
     for video in root.findall("Video"):
@@ -691,7 +731,8 @@ def current_session():
             continue
         u, d = session_names(video)
         title = video.get("title") or ""
-        ok = session_allowed(video, users, devices)
+        ok = (session_allowed(video, users, devices)
+              and not content_blocked(block, plex_item_terms(video)))
         seen.append({"user": u, "device": d, "title": title, "allowed": ok})
         if ok:
             allowed.append((session_sort_key(u, d, title), video))
@@ -809,6 +850,7 @@ def emby_current_session():
         return None   # not configured yet — the settings page can fix it live
     users = filter_set(s.get("plexUsers"), ENV_USERS)
     devices = filter_set(s.get("plexDevices"), ENV_DEVICES)
+    block = filter_set(s.get("blockTags"), ENV_BLOCK_TAGS)
     sessions = emby_fetch_json("/Sessions")
     seen, allowed = [], []
     for session in sessions:
@@ -817,7 +859,8 @@ def emby_current_session():
             continue
         u, d = emby_session_names(session)
         title = item.get("Name") or ""
-        ok = emby_session_allowed(session, users, devices)
+        ok = (emby_session_allowed(session, users, devices)
+              and not content_blocked(block, emby_item_terms(item)))
         seen.append({"user": u, "device": d, "title": title, "allowed": ok})
         if ok:
             allowed.append((session_sort_key(u, d, title), session))
@@ -830,7 +873,12 @@ def emby_current_session():
                         clamp_rotate(s.get("rotateSeconds")))
     if match is None:
         return None
-    emby_enrich(match.get("NowPlayingItem") or {})
+    item = match.get("NowPlayingItem") or {}
+    emby_enrich(item)
+    # /Sessions sometimes omits Genres; the enriched record is authoritative.
+    # Better a blank display than an overshare the pre-filter couldn't see.
+    if content_blocked(block, emby_item_terms(item)):
+        return None
     return parse_emby_session(match, extras=emby_extras)
 
 
@@ -949,7 +997,7 @@ class WebHandler(BaseHTTPRequestHandler):
             if merged["bodyFont"] not in TITLE_FONTS:
                 merged["bodyFont"] = "system"
             merged["rotateSeconds"] = clamp_rotate(merged["rotateSeconds"])
-            for k in ("plexUsers", "plexDevices", "weatherZip",
+            for k in ("plexUsers", "plexDevices", "blockTags", "weatherZip",
                       "plexHost", "embyHost", "jellyfinHost"):
                 if not isinstance(merged[k], str):
                     merged[k] = ""
@@ -1218,6 +1266,42 @@ def selftest():
     assert filter_set("alice", "") == {"alice"}
     assert filter_set("", "") == set()                    # nobody filtered
     assert "jamison" not in filter_set("alice", "jamison")  # env is replaced
+
+    # Do-not-cast words match genres AND tags, case-insensitive, substring —
+    # "adult" must block "Adult Animation"; an empty list blocks nothing.
+    assert content_blocked({"adult"}, ["Adult Animation"])
+    assert content_blocked({"xxx"}, ["Comedy", "XXX"])
+    assert content_blocked({"18+"}, ["Drama", "18+"])
+    assert content_blocked({"adult", "xxx"}, ["Documentary", "ADULT"])
+    assert not content_blocked(set(), ["Adult", "XXX"])     # feature off
+    assert not content_blocked({"adult"}, ["Comedy", "Drama"])
+    assert not content_blocked({"adult"}, [])
+    assert not content_blocked({"adult"}, ["", None])       # junk terms
+    # short words (< 3 chars) must equal the whole term: blocking the "R"
+    # rating must not block every genre containing the letter r
+    assert content_blocked({"r"}, ["R"])
+    assert not content_blocked({"r"}, ["Horror", "Drama", "Adventure"])
+    assert content_blocked({"x"}, ["X"])
+    assert not content_blocked({"x"}, ["XXX"])              # different rating
+    assert content_blocked({"tv-ma"}, ["TV-MA"])
+    assert content_blocked({"nc-17"}, ["NC-17"])
+    assert filter_set("family", "adult") == {"family"}      # same override rule
+    assert filter_set("", "adult, xxx") == {"adult", "xxx"}
+    bv = ET.fromstring('<Video type="movie" title="X" contentRating="NC-17">'
+                       '<Genre tag="Adult Animation"/><Label tag="Kids OK"/>'
+                       '</Video>')
+    assert plex_item_terms(bv) == ["Adult Animation", "Kids OK", "NC-17"]
+    assert content_blocked(csv_set("adult"), plex_item_terms(bv))
+    assert content_blocked(csv_set("nc-17"), plex_item_terms(bv))   # by rating
+    assert not content_blocked(csv_set("horror"), plex_item_terms(bv))
+    bi = {"Genres": ["Comedy"], "TagItems": [{"Name": "18A"}],
+          "Tags": ["late-night"], "OfficialRating": "TV-MA"}
+    assert emby_item_terms(bi) == ["Comedy", "18A", "late-night", "TV-MA"]
+    assert content_blocked(csv_set("18a"), emby_item_terms(bi))
+    assert content_blocked(csv_set("tv-ma"), emby_item_terms(bi))   # by rating
+    assert content_blocked(csv_set("late"), emby_item_terms(bi))
+    assert not content_blocked(csv_set("xxx"), emby_item_terms(bi))
+    assert emby_item_terms({}) == [""]                      # rating slot only
 
     # The env hints the settings page may see are an allowlist. Nothing that
     # looks like a credential may ever join them.
