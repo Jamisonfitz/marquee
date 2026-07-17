@@ -11,6 +11,7 @@ services:
       PLEX_HOST: "http://localhost:32400"          # keep localhost if Plex runs on this machine
       PLEX_TOKEN: ""
       PLEX_USERS: ""   # comma-separated usernames; empty = everyone. A list typed on the settings page replaces this.
+      BLOCK_TAGS: ""   # do-not-cast words matched against genres/tags, e.g. "adult, xxx, 18+"; empty = cast everything
       TMDB_API_KEY: ""
       # --- Media backend (optional) ---
       # All of these can also be set on the settings page (backend dropdown,

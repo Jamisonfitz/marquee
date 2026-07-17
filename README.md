@@ -136,6 +136,14 @@ Optional settings:
 - `PLEX_DEVICES` — comma-separated player/device names that trigger the
   marquee; empty allows any device. Both filters are also editable live on
   the settings page, which shows the exact names of active sessions.
+- `BLOCK_TAGS` — comma-separated **do-not-cast** words, checked against each
+  session's genres, tags, and content rating. A match means that session is
+  never cast, so the marquee cannot overshare what someone is watching —
+  e.g. `adult, xxx, 18+, nc-17, tv-ma`. Matching is case-insensitive; words
+  of three or more characters match inside terms (`adult` also blocks
+  "Adult Animation"), shorter words must match a term exactly (`r` blocks
+  the R rating without blocking Horror). Works on all three backends; also
+  editable on the settings page.
 
 When more than one allowed session is playing, each takes the display in turn.
 **Rotate between sessions** on the settings page sets how long each gets
@@ -159,6 +167,7 @@ one rule:
 | Cast device | `HUB_IP` | Cast device picker | The settings page **wins**; the env var is the default when no device has been picked. |
 | Users | `PLEX_USERS` | Plex users | Same rule: a typed list **replaces** the env var; a blank field inherits it. |
 | Devices | `PLEX_DEVICES` | Devices | Same rule. |
+| Do not cast | `BLOCK_TAGS` | Do not cast | Same rule. |
 
 The settings page shows each inherited env value as a greyed placeholder —
 `jamison (from PLEX_USERS)` — so a blank field reads as *inheriting this*
