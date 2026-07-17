@@ -350,6 +350,8 @@
       <input type="text" id="users" class="mini" placeholder="e.g. jamison" autocomplete="off"></div>
     <div class="row"><label>Devices<small>Comma-separated player names — only sessions on these devices cast. Typing here replaces PLEX_DEVICES; empty inherits it — or any device when unset.</small></label>
       <input type="text" id="devices" class="mini" placeholder="e.g. Living Room TV" autocomplete="off"></div>
+    <div class="row"><label>Do not cast<small>Comma-separated words. A session whose genres, tags, or content rating match one is never cast — the marquee can't overshare. Words of 3+ letters match inside terms ("adult" also blocks "Adult Animation"); shorter ones match exactly, so "r" blocks the R rating, not Horror.</small></label>
+      <input type="text" id="blocktags" class="mini" placeholder="e.g. adult, xxx, 18+" autocomplete="off"></div>
     <div class="row"><label>Rotate between sessions<small>When more than one allowed session is playing, each takes the display for this many seconds. 0 pins the first one (alphabetical by user, then device).</small></label>
       <input type="number" id="rotate" class="mini" min="0" max="3600" step="5" placeholder="30"></div>
     <div class="row"><label>Active sessions<small>Copy exact user and device names from what's playing right now</small></label>
@@ -551,10 +553,12 @@
     $('#status').textContent = 'Cast device changed — save to apply.';
   });
 
-  ['users', 'devices'].forEach(id => $('#' + id).addEventListener('input', () => {
-    cfg[id === 'users' ? 'plexUsers' : 'plexDevices'] = $('#' + id).value;
-    $('#status').textContent = 'Filter changed — save to apply.';
-  }));
+  Object.entries({ users: 'plexUsers', devices: 'plexDevices',
+                   blocktags: 'blockTags' }).forEach(([id, key]) =>
+    $('#' + id).addEventListener('input', () => {
+      cfg[key] = $('#' + id).value;
+      $('#status').textContent = 'Filter changed — save to apply.';
+    }));
   // One host box + one key box; the dropdown picks which backend they edit.
   // Each backend keeps its own stored pair, so switching loses nothing.
   const MS = {
@@ -635,6 +639,7 @@
       const env = await (await fetch('/env-defaults')).json();
       if (env.plexUsers) $('#users').placeholder = env.plexUsers + ' (from PLEX_USERS)';
       if (env.plexDevices) $('#devices').placeholder = env.plexDevices + ' (from PLEX_DEVICES)';
+      if (env.blockTags) $('#blocktags').placeholder = env.blockTags + ' (from BLOCK_TAGS)';
       if (env.hubIp) $('#hub').querySelector('option[value=""]').textContent =
         'Use HUB_IP setting (' + env.hubIp + ')';
     } catch (e) {}
@@ -654,6 +659,7 @@
     msShow();
     $('#users').value = cfg.plexUsers || '';
     $('#devices').value = cfg.plexDevices || '';
+    $('#blocktags').value = cfg.blockTags || '';
     $('#rotate').value = cfg.rotateSeconds ?? 30;
     $('#zip').value = cfg.weatherZip || '';
     segSet('unitfmt', cfg.weatherUnits || 'f');
