@@ -7,7 +7,7 @@
 [![Docker Image Version](https://img.shields.io/docker/v/jamisonfitz/marquee?sort=semver&logo=docker)](https://hub.docker.com/r/jamisonfitz/marquee/tags)
 [![License](https://img.shields.io/github/license/Jamisonfitz/marquee)](LICENSE)
 
-Marquee turns a Google Nest Hub into a clean Plex now-playing display. It shows artwork, title, plot, genres, ratings, media details, progress, and a clock, then returns the Hub to ambient mode when playback stops.
+Marquee turns a Google Nest Hub into a clean now-playing display for Plex, Emby, or Jellyfin. It shows artwork, title, plot, genres, ratings, media details, progress, and a clock, then returns the Hub to ambient mode when playback stops.
 
 ![One app, many looks — templates × themes × fonts](docs/screenshots/variety.jpg)
 
@@ -35,8 +35,9 @@ Every template is built from the same blocks — title/logo identity, grouped ra
 
 ## Features
 
-- Live Plex now-playing card with six designed templates: Spotlight, Split,
-  Hero, Lower Third, Big Clock, and Street (animated marquee bulbs and all).
+- Live now-playing card — from Plex, Emby, or Jellyfin — with six designed
+  templates: Spotlight, Split, Hero, Lower Third, Big Clock, and Street
+  (animated marquee bulbs and all).
 - Eight themes, one-tap Vibe presets, a custom accent color, five title
   fonts, 12/24-hour clock styles, and per-block show/hide toggles.
 - Session filters: limit casting to your Plex users and your devices, live
@@ -50,9 +51,9 @@ Every template is built from the same blocks — title/logo identity, grouped ra
 ## What You Need
 
 - Docker
-- Plex Media Server on the same LAN
+- A Plex, Emby, or Jellyfin server on the same LAN
 - A Google Nest Hub on the same LAN
-- A Plex `X-Plex-Token`
+- A Plex `X-Plex-Token` (or an Emby / Jellyfin API key)
 
 Marquee is designed for a trusted LAN. It has no login and should not be port-forwarded.
 
@@ -90,6 +91,24 @@ Required environment variables:
 - `PLEX_HOST` — keep `http://localhost:32400` when Plex runs on the same
   machine; otherwise its LAN IP
 - `PLEX_TOKEN`
+
+### Choosing the media backend
+
+Plex is the default. Set `MEDIA_BACKEND=emby` or `MEDIA_BACKEND=jellyfin` to
+poll an Emby or Jellyfin server instead — same card, same settings page, same
+session filters and rotation:
+
+- `MEDIA_BACKEND=emby` with `EMBY_HOST` (e.g. `http://localhost:8096`) and
+  `EMBY_API_KEY` (Emby dashboard → Advanced → API Keys). `PLEX_HOST` /
+  `PLEX_TOKEN` are then not required.
+- `MEDIA_BACKEND=jellyfin` with `JELLYFIN_HOST` and `JELLYFIN_API_KEY`
+  (Jellyfin dashboard → API Keys). Jellyfin is an API-compatible fork of
+  Emby, so it rides the same code path — the `EMBY_*` pair works too; the
+  `JELLYFIN_*` names are aliases so your compose file can say what it means.
+
+The backends emit the same now-playing shape, so everything downstream —
+templates, themes, toggles, `/now-playing.json` — behaves identically.
+Verified against Emby 4.9 and Jellyfin 10.11.
 
 Cast device: open the settings page and press **Scan** — Marquee discovers
 Google Cast devices on your LAN and you pick your Hub from a dropdown.

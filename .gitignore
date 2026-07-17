@@ -2,6 +2,10 @@ __pycache__/
 *.py[cod]
 .env
 data/
+# Local secrets: compose merges this over compose.yaml automatically.
+# Keeps EMBY_API_KEY / PLEX_TOKEN out of the tracked compose.yaml.
+compose.override.yaml
+compose.override.yml
 output/now-playing.json
 output/poster.jpg
 output/backdrop.jpg
