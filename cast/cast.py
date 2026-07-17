@@ -6,9 +6,13 @@ Backend: polls the media server every POLL_SECONDS; while something plays it
 downloads poster/backdrop/logo, writes now-playing.json, and casts the card to
 the Hub; when idle it releases the Hub.
 
-The media server is chosen by env, defaulting to the original behavior:
+The media server is chosen on the settings page or by env (settings win,
+env is the container default, plex when neither says otherwise):
   MEDIA_BACKEND=plex|emby|jellyfin -> get_session() -> current_session() /
   emby_current_session() (jellyfin shares the emby path — API-compatible fork)
+Each backend's host and API key/token can also be entered on the settings
+page (one host + key field pair, pointed at the backend the dropdown picks);
+secrets are stored server-side and never served back to a browser.
 
 Frontend (one HTTP server on :8084): serves the card page and art from
 output/, the settings UI at /settings, /save, and /release-notes.
@@ -55,9 +59,12 @@ def csv_set(value):
 USERS = csv_set(os.environ.get("PLEX_USERS", ""))
 DEVICES = csv_set(os.environ.get("PLEX_DEVICES", ""))
 
-BACKEND = os.environ.get("MEDIA_BACKEND", "plex").lower()
-if BACKEND not in ("plex", "emby", "jellyfin"):
-    BACKEND = "plex"
+BACKENDS = ("plex", "emby", "jellyfin")
+# MEDIA_BACKEND is the container-level default; the settings-page dropdown
+# overrides it without a restart. Empty or unknown means plex.
+ENV_BACKEND = os.environ.get("MEDIA_BACKEND", "").lower()
+if ENV_BACKEND not in BACKENDS:
+    ENV_BACKEND = "plex"
 
 
 def uses_emby_backend(backend):
@@ -67,12 +74,19 @@ def uses_emby_backend(backend):
     return backend in ("emby", "jellyfin")
 
 
-EMBY_FAMILY = uses_emby_backend(BACKEND)
+def media_backend(settings=None):
+    """Backend picked in settings wins; MEDIA_BACKEND env is the fallback —
+    the same rule hub_ip() follows. Resolved per poll, so a *saved* change
+    applies on the next poll without a restart."""
+    s = settings if settings is not None else load_settings()
+    chosen = (s.get("mediaBackend") or "").lower()
+    return chosen if chosen in BACKENDS else ENV_BACKEND
 
 
 def get_session():
     """Current now-playing dict from the configured backend, or None."""
-    return emby_current_session() if EMBY_FAMILY else current_session()
+    return (emby_current_session() if uses_emby_backend(media_backend())
+            else current_session())
 
 OUTPUT = os.path.join(REPO, "output")
 JSON_PATH = os.path.join(OUTPUT, "now-playing.json")
@@ -103,7 +117,26 @@ DEFAULT_SETTINGS = {
     "rotateSeconds": 30,
     "showWeather": False, "weatherZip": "", "weatherUnits": "f",
     "blockLayout": {},
+    "mediaBackend": "",       # "" = inherit MEDIA_BACKEND env (plex when unset)
+    "plexHost": "", "plexToken": "",
+    "embyHost": "", "embyKey": "",
+    "jellyfinHost": "", "jellyfinKey": "",
 }
+
+# Keys/tokens are write-only: stored in settings.json but never served back to
+# a browser — /settings.json replaces each with a saved/not-saved hint.
+SECRET_SETTINGS = ("plexToken", "embyKey", "jellyfinKey")
+
+
+def served_settings(settings=None):
+    """Settings as the browser may see them: each secret is swapped for a
+    boolean <name>Set hint, so the page can say "saved" without knowing it.
+    envBackend rides along so the page can show the container's default."""
+    s = dict(settings if settings is not None else load_settings())
+    for k in SECRET_SETTINGS:
+        s[k + "Set"] = bool(s.pop(k, ""))
+    s["envBackend"] = ENV_BACKEND
+    return s
 
 EDITABLE_BLOCKS = ("clock", "identity", "meta", "plot", "ratings",
                    "progress", "poster", "stinger")
@@ -111,8 +144,18 @@ EDITABLE_BLOCKS = ("clock", "identity", "meta", "plot", "ratings",
 _meta_cache = {}  # ratingKey -> extras dict
 
 
+def plex_creds(settings=None):
+    """(host, token) for Plex: the settings page wins, PLEX_HOST/PLEX_TOKEN
+    env is the fallback — the same rule hub_ip() follows."""
+    s = settings if settings is not None else load_settings()
+    host = s.get("plexHost") or PLEX
+    token = s.get("plexToken") or TOKEN
+    return (host or "").rstrip("/"), token or ""
+
+
 def plex_url(path):
-    return f"{PLEX}{path}{'&' if '?' in path else '?'}X-Plex-Token={TOKEN}"
+    host, token = plex_creds()
+    return f"{host}{path}{'&' if '?' in path else '?'}X-Plex-Token={token}"
 
 
 def fetch_xml(path):
@@ -221,9 +264,10 @@ def tmdb_stinger(tmdb_id):
 
 
 def transcode_to(path, plex_path, w, h):
-    inner = urllib.parse.quote(f"{plex_path}?X-Plex-Token={TOKEN}", safe="")
-    url = (f"{PLEX}/photo/:/transcode?width={w}&height={h}&minSize=1"
-           f"&upscale=1&url={inner}&X-Plex-Token={TOKEN}")
+    host, token = plex_creds()
+    inner = urllib.parse.quote(f"{plex_path}?X-Plex-Token={token}", safe="")
+    url = (f"{host}/photo/:/transcode?width={w}&height={h}&minSize=1"
+           f"&upscale=1&url={inner}&X-Plex-Token={token}")
     with urllib.request.urlopen(url, timeout=15) as r:
         atomic_write(os.path.join(OUTPUT, path), r.read(), "wb")
 
@@ -240,15 +284,27 @@ def env_first(*names):
 
 
 # Jellyfin honors the same api_key query auth and endpoint shapes as Emby, so
-# JELLYFIN_HOST/JELLYFIN_API_KEY are accepted as aliases and fall back to the
-# EMBY_ names. Either pair works with either backend value.
-EMBY = env_first("JELLYFIN_HOST", "EMBY_HOST").rstrip("/")
-EMBY_KEY = env_first("JELLYFIN_API_KEY", "EMBY_API_KEY")
+# either env pair works with either backend; the pair matching the backend
+# name wins when both are set. A host/key stored from the settings page wins
+# over env — the same rule hub_ip() follows.
+def emby_creds(backend=None, settings=None):
+    """(host, key) for the emby-family backend in force."""
+    s = settings if settings is not None else load_settings()
+    if backend is None:
+        backend = media_backend(s)
+    if backend == "jellyfin":
+        host = s.get("jellyfinHost") or env_first("JELLYFIN_HOST", "EMBY_HOST")
+        key = s.get("jellyfinKey") or env_first("JELLYFIN_API_KEY", "EMBY_API_KEY")
+    else:
+        host = s.get("embyHost") or env_first("EMBY_HOST", "JELLYFIN_HOST")
+        key = s.get("embyKey") or env_first("EMBY_API_KEY", "JELLYFIN_API_KEY")
+    return (host or "").rstrip("/"), key or ""
 
 
-def emby_url(path):
-    base = EMBY + path
-    return f"{base}{'&' if '?' in base else '?'}api_key={EMBY_KEY}"
+def emby_url(path, creds=None):
+    host, key = creds or emby_creds()
+    base = host + path
+    return f"{base}{'&' if '?' in base else '?'}api_key={key}"
 
 
 def emby_fetch_json(path):
@@ -262,7 +318,8 @@ def emby_image_url(host, key, item_id, kind, w=600, h=900):
 
 
 def emby_save_image(item_id, kind, out_name, w, h):
-    url = emby_image_url(EMBY, EMBY_KEY, item_id, kind, w, h)
+    host, key = emby_creds()
+    url = emby_image_url(host, key, item_id, kind, w, h)
     with urllib.request.urlopen(url, timeout=15) as r:
         atomic_write(os.path.join(OUTPUT, out_name), r.read(), "wb")
 
@@ -594,6 +651,9 @@ def cast_card():
 
 def current_session():
     s = load_settings()
+    host, token = plex_creds(s)
+    if not (host and token):
+        return None   # not configured yet — the settings page can fix it live
     users = USERS | csv_set(s.get("plexUsers"))
     devices = DEVICES | csv_set(s.get("plexDevices"))
     root = fetch_xml("/status/sessions")
@@ -716,6 +776,9 @@ def emby_enrich(item):
 
 def emby_current_session():
     s = load_settings()
+    host, key = emby_creds(settings=s)
+    if not (host and key):
+        return None   # not configured yet — the settings page can fix it live
     users = USERS | csv_set(s.get("plexUsers"))
     devices = DEVICES | csv_set(s.get("plexDevices"))
     sessions = emby_fetch_json("/Sessions")
@@ -799,7 +862,7 @@ class WebHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = self.path.split("?")[0]
         if path == "/settings.json":
-            self._send(json.dumps(load_settings()), "application/json")
+            self._send(json.dumps(served_settings()), "application/json")
         elif path == "/devices":
             self._send(json.dumps(scan_devices("refresh" in self.path)),
                        "application/json")
@@ -854,9 +917,32 @@ class WebHandler(BaseHTTPRequestHandler):
             if merged["bodyFont"] not in TITLE_FONTS:
                 merged["bodyFont"] = "system"
             merged["rotateSeconds"] = clamp_rotate(merged["rotateSeconds"])
-            for k in ("plexUsers", "plexDevices", "weatherZip"):
+            for k in ("plexUsers", "plexDevices", "weatherZip",
+                      "plexHost", "embyHost", "jellyfinHost"):
                 if not isinstance(merged[k], str):
                     merged[k] = ""
+            for k in ("plexHost", "embyHost", "jellyfinHost"):
+                merged[k] = merged[k].strip()
+            if merged["mediaBackend"] not in ("",) + BACKENDS:
+                merged["mediaBackend"] = ""
+            # Keys/tokens are write-only: a blank field keeps the stored value
+            # (the page never sees it, so it cannot echo it back).
+            saved = load_settings()
+            for k in SECRET_SETTINGS:
+                typed = merged[k].strip() if isinstance(merged[k], str) else ""
+                merged[k] = typed or saved.get(k, "")
+            # Refuse to point the marquee at a backend that has no server
+            # configured anywhere — a saved-but-dead backend fails silently.
+            chosen = merged["mediaBackend"] or ENV_BACKEND
+            if chosen == "plex":
+                host, key = plex_creds(merged)
+            else:
+                host, key = emby_creds(chosen, merged)
+            if not (host and key):
+                what = "token" if chosen == "plex" else "API key"
+                raise ValueError(
+                    f"{chosen} backend: enter its server address and {what} "
+                    "(or set them in the container)")
             merged["weatherZip"] = merged["weatherZip"].strip()[:10]
             if merged["weatherUnits"] not in ("f", "c"):
                 merged["weatherUnits"] = "f"
@@ -881,16 +967,19 @@ def serve_web():
 
 def loop():
     os.makedirs(DATA_DIR, exist_ok=True)
-    if EMBY_FAMILY:
-        host_name = "JELLYFIN_HOST" if BACKEND == "jellyfin" else "EMBY_HOST"
-        key_name = "JELLYFIN_API_KEY" if BACKEND == "jellyfin" else "EMBY_API_KEY"
-        required = (("PAGE_URL", PAGE_URL), (host_name, EMBY), (key_name, EMBY_KEY))
-    else:
-        required = (("PAGE_URL", PAGE_URL), ("PLEX_HOST", PLEX),
-                    ("PLEX_TOKEN", TOKEN))
-    missing = [name for name, value in required if not value]
-    if missing:
-        raise SystemExit("Missing required environment variables: " + ", ".join(missing))
+    # Only PAGE_URL is fatal: every media-server credential can be entered on
+    # the settings page, so a missing one warns and keeps serving — a running
+    # settings page beats a crash loop.
+    if not PAGE_URL:
+        raise SystemExit("Missing required environment variables: PAGE_URL")
+    backend = media_backend()
+    ready = all(plex_creds()) if backend == "plex" else all(emby_creds(backend))
+    if not ready:
+        names = {"plex": "PLEX_HOST/PLEX_TOKEN",
+                 "emby": "EMBY_HOST/EMBY_API_KEY",
+                 "jellyfin": "JELLYFIN_HOST/JELLYFIN_API_KEY"}[backend]
+        print(f"{backend}: no server configured yet — set {names}, or enter "
+              "them on the settings page", flush=True)
     if not os.path.exists(SETTINGS_PATH):
         atomic_write(SETTINGS_PATH, json.dumps(DEFAULT_SETTINGS))
     threading.Thread(target=serve_web, daemon=True).start()
@@ -905,6 +994,7 @@ def loop():
     last_playing, tick = None, 0
     while True:
         try:
+            backend = media_backend()
             info = get_session()
             atomic_write(JSON_PATH, json.dumps(info or {"playing": False}))
             playing = bool(info)
@@ -922,7 +1012,7 @@ def loop():
                     ok = card_ok(time.time(), LAST_CARD_POLL["at"],
                                  CARD_GRACE["until"])
                     if playing and not dash:
-                        print(f"{BACKEND} playing ({info['title']}) -> casting", flush=True)
+                        print(f"{backend} playing ({info['title']}) -> casting", flush=True)
                         cast_card()
                     elif playing and not ok:
                         last = LAST_CARD_POLL["at"]
@@ -931,7 +1021,7 @@ def loop():
                               f"polled in {gone} -> re-casting", flush=True)
                         cast_card()
                     elif not playing and dash:
-                        print(f"{BACKEND} idle -> releasing hub", flush=True)
+                        print(f"{backend} idle -> releasing hub", flush=True)
                         catt("stop")
             last_playing = playing
             tick += 1
@@ -972,11 +1062,68 @@ SAMPLE_EMBY_EXTRAS = {"stinger": ["after"],
 
 
 def selftest():
-    assert BACKEND in ("plex", "emby", "jellyfin")
-    assert get_session is not None  # dispatcher exists and is chosen by BACKEND
+    assert ENV_BACKEND in BACKENDS
+    assert get_session is not None  # dispatcher exists, chosen per poll
     # Jellyfin rides the Emby session path; Plex does not.
     assert uses_emby_backend("emby") and uses_emby_backend("jellyfin")
     assert not uses_emby_backend("plex")
+    # the settings dropdown overrides the env default; junk falls back
+    assert media_backend({"mediaBackend": "emby"}) == "emby"
+    assert media_backend({"mediaBackend": "JELLYFIN"}) == "jellyfin"
+    assert media_backend({"mediaBackend": ""}) == ENV_BACKEND
+    assert media_backend({"mediaBackend": "bogus"}) == ENV_BACKEND
+    assert media_backend({}) == ENV_BACKEND
+
+    # keys/tokens are write-only: /settings.json swaps each for a boolean hint
+    served = served_settings({**DEFAULT_SETTINGS, "plexToken": "tok-secret",
+                              "embyKey": "key-secret", "jellyfinKey": ""})
+    for k in SECRET_SETTINGS:
+        assert k not in served, k
+    assert served["plexTokenSet"] is True and served["embyKeySet"] is True
+    assert served["jellyfinKeySet"] is False
+    assert "secret" not in json.dumps(served)
+    assert served["envBackend"] == ENV_BACKEND   # page shows the env default
+
+    # plex creds: settings page wins, env is the fallback
+    _saved_plex = {k: os.environ.get(k) for k in ("PLEX_HOST", "PLEX_TOKEN")}
+    try:
+        os.environ.update(PLEX_HOST="http://p:32400", PLEX_TOKEN="pt")
+        # module-level PLEX/TOKEN were read at import; test the settings side
+        assert plex_creds({"plexHost": "http://s:32400/",
+                           "plexToken": "st"}) == ("http://s:32400", "st")
+        assert plex_creds({"plexHost": "", "plexToken": "st"})[1] == "st"
+    finally:
+        for k, v in _saved_plex.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
+    # per-backend creds: settings win; the env pair matching the backend name
+    # wins over the alias pair when both are set
+    blank = {"mediaBackend": "", "embyHost": "", "embyKey": "",
+             "jellyfinHost": "", "jellyfinKey": ""}
+    assert emby_creds("emby", {**blank, "embyHost": "http://s:1/",
+                               "embyKey": "sk"}) == ("http://s:1", "sk")
+    _envkeys = ("EMBY_HOST", "EMBY_API_KEY", "JELLYFIN_HOST", "JELLYFIN_API_KEY")
+    _saved_env = {k: os.environ.get(k) for k in _envkeys}
+    try:
+        os.environ.update(EMBY_HOST="http://e:1", EMBY_API_KEY="ek",
+                          JELLYFIN_HOST="http://j:2", JELLYFIN_API_KEY="jk")
+        assert emby_creds("emby", blank) == ("http://e:1", "ek")
+        assert emby_creds("jellyfin", blank) == ("http://j:2", "jk")
+        os.environ["JELLYFIN_HOST"] = ""      # alias fallback when its own
+        os.environ["JELLYFIN_API_KEY"] = ""   # pair is absent
+        assert emby_creds("jellyfin", blank) == ("http://e:1", "ek")
+        # settings beat env
+        assert emby_creds("emby", {**blank, "embyHost": "http://s:1",
+                                   "embyKey": "sk"}) == ("http://s:1", "sk")
+    finally:
+        for k, v in _saved_env.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
     info = parse_session(ET.fromstring(SAMPLE_SESSION), extras=lambda k, m: SAMPLE_EXTRAS)
     assert info["title"] == "The Devil Wears Prada 2"
     assert info["key"] == "79372"
@@ -1097,7 +1244,9 @@ def selftest():
     try:
         globals()["parse_session"] = lambda v: {"title": v.get("title")}
         globals()["load_settings"] = lambda: {"plexUsers": "", "plexDevices": "",
-                                              "rotateSeconds": 30}
+                                              "rotateSeconds": 30,
+                                              "plexHost": "http://t:1",
+                                              "plexToken": "tk"}
         picks = {}
         for label, xml in (("normal", two), ("flipped", flipped)):
             globals()["fetch_xml"] = lambda _p, _x=xml: ET.fromstring(_x)
@@ -1116,13 +1265,17 @@ def selftest():
 
         # rotateSeconds = 0 pins the first sorted session forever
         globals()["load_settings"] = lambda: {"plexUsers": "", "plexDevices": "",
-                                              "rotateSeconds": 0}
+                                              "rotateSeconds": 0,
+                                              "plexHost": "http://t:1",
+                                              "plexToken": "tk"}
         globals()["time"].time = lambda: 99999.0
         assert current_session()["title"] == "Alien"
 
         # a device filter narrows the candidates; rotation orders what is left
         globals()["load_settings"] = lambda: {"plexUsers": "", "plexDevices": "apple tv",
-                                              "rotateSeconds": 30}
+                                              "rotateSeconds": 30,
+                                              "plexHost": "http://t:1",
+                                              "plexToken": "tk"}
         globals()["time"].time = lambda: 0.0
         assert current_session()["title"] == "Jaws"
     finally:
@@ -1242,7 +1395,8 @@ def selftest():
         globals()["parse_emby_session"] = lambda s, extras=None: {
             "title": (s.get("NowPlayingItem") or {}).get("Name")}
         globals()["load_settings"] = lambda: {
-            "plexUsers": "", "plexDevices": "", "rotateSeconds": 30}
+            "plexUsers": "", "plexDevices": "", "rotateSeconds": 30,
+            "embyHost": "http://test:1", "embyKey": "k"}
         picks = {}
         for label, order in (("normal", 1), ("flipped", -1)):
             globals()["emby_fetch_json"] = lambda _p, _o=order: emby_two(_o)

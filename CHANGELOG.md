@@ -25,6 +25,31 @@ byte-compatible, so Jellyfin rides the Emby code path unchanged. The
 compose file can say what it means. Verified end to end against live Emby and
 Jellyfin (10.11) servers, through to the card rendering on a real Nest Hub.
 
+### Switch backends from the settings page
+
+A new **Media server** panel picks the backend: one dropdown (Plex / Emby /
+Jellyfin), one server-address field, one key field. The dropdown decides
+which backend the two fields edit; each backend keeps its own stored pair,
+so switching between servers loses nothing. Like every other setting,
+nothing changes until **Save**; the choice is then resolved every poll, so a
+saved change takes effect within ~5 seconds — no container restart. The
+settings page wins and env is the container-level default, exactly the rule
+the cast device field has always followed; with nothing set anywhere, the
+backend is plex, as it has always been.
+
+Keys and tokens are write-only secrets: stored server-side, never served
+back to a browser. `/settings.json` replaces each with a saved/not-saved
+hint, the page shows *saved — blank keeps it*, and Export/Import never
+carries them. Saving a backend that has no server configured anywhere is
+rejected with a clear error rather than stored — a backend that fails
+silently on the next poll would just be a blank display with no explanation.
+
+With that, only `PAGE_URL` is required at startup. A container with no
+media-server credentials at all no longer exits; it warns and serves the
+settings page, where the server address and key finish the job. Every
+credential env var still works exactly as before — it is simply no longer
+the only way in.
+
 ## 1.8.0 — 2026-07-19
 
 ### The block editor grows up

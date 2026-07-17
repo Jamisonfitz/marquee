@@ -94,17 +94,30 @@ Required environment variables:
 
 ### Choosing the media backend
 
-Plex is the default. Set `MEDIA_BACKEND=emby` or `MEDIA_BACKEND=jellyfin` to
-poll an Emby or Jellyfin server instead — same card, same settings page, same
-session filters and rotation:
+Plex is the default. Marquee can poll an **Emby** or **Jellyfin** server
+instead — same card, same settings page, same session filters and rotation.
+Pick the backend either place; the settings page wins, env is the container
+default (the same rule the cast device follows):
 
-- `MEDIA_BACKEND=emby` with `EMBY_HOST` (e.g. `http://localhost:8096`) and
-  `EMBY_API_KEY` (Emby dashboard → Advanced → API Keys). `PLEX_HOST` /
-  `PLEX_TOKEN` are then not required.
-- `MEDIA_BACKEND=jellyfin` with `JELLYFIN_HOST` and `JELLYFIN_API_KEY`
-  (Jellyfin dashboard → API Keys). Jellyfin is an API-compatible fork of
-  Emby, so it rides the same code path — the `EMBY_*` pair works too; the
-  `JELLYFIN_*` names are aliases so your compose file can say what it means.
+- **Settings page** — a *Media server* panel: one backend dropdown (Plex /
+  Emby / Jellyfin), one server-address field, one key field. The dropdown
+  picks which backend the two fields edit, and each backend keeps its own
+  stored pair, so switching loses nothing. Nothing changes until you press
+  **Save**; a saved change is picked up on the next poll (~5s), no container
+  restart. Keys and tokens are stored server-side and never sent back to a
+  browser — the page only shows *saved*; a blank field keeps the stored
+  value, and Export/Import never includes them.
+- **Env** — `MEDIA_BACKEND=emby` with `EMBY_HOST` (e.g.
+  `http://localhost:8096`) and `EMBY_API_KEY` (Emby dashboard → Advanced →
+  API Keys), or `MEDIA_BACKEND=jellyfin` with `JELLYFIN_HOST` and
+  `JELLYFIN_API_KEY` (Jellyfin dashboard → API Keys). Jellyfin is an
+  API-compatible fork of Emby and rides the same code path; either env pair
+  works with either backend, and the pair matching the backend name wins
+  when both are set. `PLEX_HOST`/`PLEX_TOKEN` are not required when the
+  backend is emby or jellyfin.
+
+Only `PAGE_URL` is required at startup: a container with no media-server
+credentials boots to the settings page, where they can be entered.
 
 The backends emit the same now-playing shape, so everything downstream —
 templates, themes, toggles, `/now-playing.json` — behaves identically.
