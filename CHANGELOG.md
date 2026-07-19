@@ -1,5 +1,34 @@
 # Changelog
 
+## 1.8.0 — 2026-07-19
+
+### The block editor grows up
+
+- **Font per block**: a Block font picker next to Selected block. The clock,
+  progress bar, plot — any block — can now carry its own face; Theme default
+  keeps the card-wide fonts. Title & logo blocks apply it to the text title
+  too.
+- **Snap to grid**: get a block close, hit the button, and its top-left corner
+  lands on the nearest line of the grid you already see while editing
+  (every 2.5% of the screen).
+- **Justify tells the truth**: Left/Center/Right now aligns the logo image and
+  the plain-text title the same way, in every template. Before, templates that
+  center the title block (Hero, Big Clock) kept centering the *logo* while the
+  text obeyed your choice — so a movie without a clear-logo drew its title
+  off-center from where the logo had been.
+- The editor also no longer writes `align: left` into your layout the first
+  time you touch a slider — that silent write was how most off-center titles
+  happened. No Justify button lights up until you actually pick one.
+
+### Phones stopped fighting you
+
+The preview, the block controls, and Save now ride together in one fixed
+bottom sheet. Scrolling the settings page can't graze a slider and skew a
+block, Save is always next to what you're previewing, and tapping a block in
+the preview unfolds the editor right above it. On desktop nothing moved —
+the editor just gained the same Snap button and font picker, and folds away
+if you want it gone.
+
 ## 1.7.0 — 2026-07-14
 
 ### The Hub no longer sits on a blank screen
