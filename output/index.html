@@ -283,6 +283,12 @@
   body[data-template="street"] .b-clock { left: 5.5vw; top: 3.5vh; }
   body[data-template="street"] .clock { color: #FFD9A0; opacity: .75; }
 
+  /* Late so it outranks the template rules above: a block's Justify must
+     align the logo image and the plain-text title the same way. */
+  body .al-left.b-identity   { justify-items: start;  text-align: left; }
+  body .al-center.b-identity { justify-items: center; text-align: center; }
+  body .al-right.b-identity  { justify-items: end;    text-align: right; }
+
   .idle { display: none; position: fixed; inset: 0; align-items: center;
     justify-content: center; color: #4A5058; font-size: 1.6vw; font-weight: 500;
     letter-spacing: .3em; text-transform: uppercase; z-index: 2; }
@@ -711,6 +717,11 @@ ${bulbs.join('')}
       el.style.width = p.width ? p.width + 'vw' : '';
       el.classList.remove('al-left', 'al-center', 'al-right');
       if (p.align) el.classList.add('al-' + p.align);
+      // Per-block font: children inherit; --title-font covers the .title.
+      const font = FONTS[p.font] || '';
+      el.style.fontFamily = font;
+      if (font) el.style.setProperty('--title-font', font);
+      else el.style.removeProperty('--title-font');
     });
   }
 
@@ -719,11 +730,11 @@ ${bulbs.join('')}
     const rect = el.getBoundingClientRect();
     return { x: p.x || 0, y: p.y || 0,
       width: p.width || Math.round(rect.width / innerWidth * 100),
-      scale: p.scale || 1, align: p.align || 'left' };
+      scale: p.scale || 1, align: p.align || '', font: p.font || 'system' };
   }
 
-  function announceSelection(el, name) {
-    parent.postMessage({ type: 'marquee-selection', name,
+  function announceSelection(el, name, tap) {
+    parent.postMessage({ type: 'marquee-selection', name, tap: !!tap,
       values: selectionValues(el, name) }, location.origin);
   }
 
@@ -738,7 +749,7 @@ ${bulbs.join('')}
         const name = el.dataset.layout;
         const layout = draftLayout ||= structuredClone(activeCfg().blockLayout || {});
         selectedLayout = name;
-        announceSelection(el, name);
+        announceSelection(el, name, true);
         const p = layout[name] ||= {};
         const start = { x: event.clientX, y: event.clientY, px: p.x || 0, py: p.y || 0 };
         el.setPointerCapture(event.pointerId);
@@ -820,10 +831,29 @@ ${bulbs.join('')}
       announceSelection(el, selectedLayout);
     } else if (msg.type === 'marquee-set') {
       const el = document.querySelector(`[data-layout="${selectedLayout}"]`);
-      if (!el || !['x', 'y', 'width', 'scale', 'align'].includes(msg.field)) return;
+      if (!el || !['x', 'y', 'width', 'scale', 'align', 'font'].includes(msg.field)) return;
       const layout = draftLayout ||= structuredClone(activeCfg().blockLayout || {});
-      const p = layout[selectedLayout] ||= selectionValues(el, selectedLayout);
-      p[msg.field] = msg.field === 'align' ? String(msg.value) : Number(msg.value);
+      // Seed numbers only: writing align/font here would silently pin the
+      // template's alignment (the old off-center-title bug).
+      const { align, font, ...seed } = selectionValues(el, selectedLayout);
+      const p = layout[selectedLayout] ||= seed;
+      p[msg.field] = ['align', 'font'].includes(msg.field)
+        ? String(msg.value) : Number(msg.value);
+      applyBlockLayout();
+      parent.postMessage({ type: 'marquee-layout', layout }, location.origin);
+      announceSelection(el, selectedLayout);
+    } else if (msg.type === 'marquee-snap') {
+      // Pull the selected block's visible top-left corner onto the nearest
+      // editor grid line (the overlay draws every 2.5vw x 2.5vh).
+      const el = document.querySelector(`[data-layout="${selectedLayout}"]`);
+      if (!el) return;
+      const layout = draftLayout ||= structuredClone(activeCfg().blockLayout || {});
+      const p = layout[selectedLayout] ||= {};
+      const r = el.getBoundingClientRect(), G = 2.5;
+      const left = r.left / innerWidth * 100, top = r.top / innerHeight * 100;
+      const clamp = v => Math.max(-100, Math.min(100, Math.round(v * 100) / 100));
+      p.x = clamp((p.x || 0) + Math.round(left / G) * G - left);
+      p.y = clamp((p.y || 0) + Math.round(top / G) * G - top);
       applyBlockLayout();
       parent.postMessage({ type: 'marquee-layout', layout }, location.origin);
       announceSelection(el, selectedLayout);
