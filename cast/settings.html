@@ -120,6 +120,16 @@
   .editor select { display:block; width:100%; margin-top:7px; min-height:48px;
     color:var(--text); background:var(--bg); border:1px solid var(--line);
     border-radius:8px; padding:8px 10px; font-size:16px; }
+  .editor .picks label { display:block; }
+  .editor .picks label + label { margin-top:12px; }
+  .editor-foot { grid-column:1 / -1; display:flex; gap:10px; flex-wrap:wrap; }
+  .editor-foot .secondary { padding:8px 14px; font-size:13px; }
+  .editor-wrap { margin:0 0 16px; }
+  .editor-wrap .editor { margin-bottom:0; }
+  .editor-wrap summary { cursor:pointer; color:var(--mut); font-size:12px;
+    font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    padding:8px 0; user-select:none; }
+  .editor-wrap[open] summary { color:var(--amber); }
   .sliders { display:grid; grid-template-columns:1fr 1fr; gap:12px 18px; }
   .slider label { display:flex; justify-content:space-between; }
   .slider output { color:var(--text); font-variant-numeric:tabular-nums; }
@@ -173,16 +183,28 @@
       justify-content:flex-end; }
     .devpick select, select.mini, input.mini { max-width:100%; }
     .sessions-list { text-align:left; }
-    .editor { grid-template-columns:1fr; }
-    .sliders { grid-template-columns:1fr; }
-    .actions { align-items:stretch; flex-direction:column; }
-    .actions .save, .actions .secondary { width:100%; }
-    /* The live preview rides the bottom of the screen on phones, so every
-       vibe step, toggle, and font change is visible without scrolling. */
-    .frame-box { position:fixed; left:0; right:0; bottom:0; z-index:30;
-      width:100vw; max-width:none; border-radius:12px 12px 0 0;
-      border-bottom:0; box-shadow:0 -8px 30px rgba(0,0,0,.6); }
-    body { padding-bottom:calc(62.5vw + 24px); } }
+    /* Keep the editor short so it shares the sheet with the preview. */
+    .editor { grid-template-columns:1fr; gap:10px; }
+    .editor .picks { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .editor .picks label + label { margin-top:0; }
+    .editor select { min-height:42px; padding:6px 10px; }
+    .sliders { grid-template-columns:1fr 1fr; gap:6px 12px; }
+    .slider input { height:30px; }
+    .editor-wrap summary { padding:6px 0; }
+    .editor-foot .secondary { padding:6px 12px; }
+    .actions { flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+    .actions .save { flex:1; padding:11px 14px; }
+    .actions .status { flex-basis:100%; }
+    /* Phones: preview, block controls, and Save ride together in one fixed
+       bottom sheet — tuning never fights the page scroll, and a stray swipe
+       can't land on a slider. */
+    .preview-col { position:fixed; left:0; right:0; bottom:0; z-index:30;
+      background:var(--bg); border-top:1px solid var(--line); box-sizing:border-box;
+      box-shadow:0 -8px 30px rgba(0,0,0,.6); max-height:85dvh; overflow-y:auto;
+      padding:8px 10px calc(8px + env(safe-area-inset-bottom)); }
+    .preview h2, .preview .sub { display:none; }
+    .editor { padding:10px; }
+    .frame-box { border-radius:10px; } }
 </style>
 <div class="wrap">
   <div class="top"><h1>Marquee <span>settings</span></h1>
@@ -329,7 +351,6 @@
   <div class="preview-col">
   <div class="actions">
     <button class="save" id="save">Save changes</button>
-    <button class="secondary" id="reset-layout">Reset block positions</button>
     <button class="secondary" id="export" title="Copy your whole setup as text to share">Export</button>
     <button class="secondary" id="import" title="Paste someone's exported setup">Import</button>
     <span class="status" id="status"></span>
@@ -338,7 +359,10 @@
   <div class="preview">
     <h2>Preview (demo data)</h2>
     <p class="sub">Every change previews instantly below — nothing hits the Hub until you save. Tap a block to select it, drag to move; sliders fine-tune position, width, and size.</p>
+    <details class="editor-wrap" id="editor-wrap" open>
+    <summary>Block editor</summary>
     <div class="editor">
+      <div class="picks">
       <label>Selected block<select id="element-select">
         <option value="clock">Clock</option>
         <option value="identity" selected>Title &amp; logo</option>
@@ -348,6 +372,14 @@
         <option value="progress">Progress</option>
         <option value="stinger">Credits badge</option>
         <option value="poster">Poster</option></select></label>
+      <label>Block font<select data-layout-field="font">
+        <option value="system">Theme default</option>
+        <option value="bebas">Bebas Neue</option>
+        <option value="oswald">Oswald</option>
+        <option value="playfair">Playfair Display</option>
+        <option value="cinzel">Cinzel</option>
+        <option value="grotesk">Space Grotesk</option></select></label>
+      </div>
       <div class="sliders">
         <div class="slider"><label>Horizontal <output data-value="x">0</output></label><input data-layout-field="x" type="range" min="-100" max="100" step="1" value="0"></div>
         <div class="slider"><label>Vertical <output data-value="y">0</output></label><input data-layout-field="y" type="range" min="-100" max="100" step="1" value="0"></div>
@@ -360,7 +392,12 @@
             <button data-v="right" type="button">Right</button>
           </div></div>
       </div>
+      <div class="editor-foot">
+        <button class="secondary" id="snap" type="button" title="Pull the selected block onto the nearest grid line">Snap to grid</button>
+        <button class="secondary" id="reset-layout">Reset block positions</button>
+      </div>
     </div>
+    </details>
     <div class="frame-box"><iframe id="frame"></iframe></div>
   </div>
   </div>
@@ -578,10 +615,14 @@
       $('#element-select').value = msg.name;
       Object.entries(msg.values || {}).forEach(([field, value]) => {
         const input = document.querySelector(`[data-layout-field="${field}"]`);
-        if (input) { input.value = value;
-          document.querySelector(`[data-value="${field}"]`).value = value; }
+        if (!input) return;
+        input.value = value;
+        const out = document.querySelector(`[data-value="${field}"]`);
+        if (out) out.value = value;
       });
-      segSet('align', (msg.values || {}).align || 'left');
+      // '' = template default: no Justify button lit until one is chosen.
+      segSet('align', (msg.values || {}).align || '');
+      if (msg.tap) $('#editor-wrap').open = true;
     }
   });
   $('#element-select').addEventListener('change', event =>
@@ -589,10 +630,15 @@
       { type: 'marquee-select', name: event.target.value }, location.origin));
   document.querySelectorAll('[data-layout-field]').forEach(input =>
     input.addEventListener('input', () => {
-      document.querySelector(`[data-value="${input.dataset.layoutField}"]`).value = input.value;
+      const field = input.dataset.layoutField;
+      const out = document.querySelector(`[data-value="${field}"]`);
+      if (out) out.value = input.value;
       $('#frame').contentWindow.postMessage({ type: 'marquee-set',
-        field: input.dataset.layoutField, value: Number(input.value) }, location.origin);
+        field, value: field === 'font' ? input.value : Number(input.value) },
+        location.origin);
     }));
+  $('#snap').addEventListener('click', () =>
+    $('#frame').contentWindow.postMessage({ type: 'marquee-snap' }, location.origin));
   // Share your look: export copies the full setup as JSON; import pastes
   // someone else's. The server validates on save, so junk can't break it.
   $('#export').addEventListener('click', async () => {
@@ -620,6 +666,17 @@
     sendLayout();
     $('#status').textContent = 'Block positions reset — save to apply.';
   });
+
+  // Phones: the preview column is a fixed bottom sheet. Pad the page so the
+  // last panel can scroll clear of it, and start with the editor folded.
+  const sheet = document.querySelector('.preview-col');
+  const phone = matchMedia('(max-width:760px)');
+  if (phone.matches) $('#editor-wrap').open = false;
+  new ResizeObserver(() => {
+    document.body.style.paddingBottom =
+      phone.matches ? sheet.offsetHeight + 16 + 'px' : '';
+    scaleFrame();
+  }).observe(sheet);
 
   // Changelog slide-over
   let notesLoaded = false;
