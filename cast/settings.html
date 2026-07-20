@@ -332,9 +332,9 @@
         <button class="secondary" id="scan" type="button">Scan</button>
       </div>
     </div>
-    <div class="row"><label>Plex users<small>Comma-separated usernames. Empty = everyone, including shared and home users.</small></label>
+    <div class="row"><label>Plex users<small>Comma-separated usernames. Typing here replaces PLEX_USERS; empty inherits it (shown greyed) — or everyone when unset.</small></label>
       <input type="text" id="users" class="mini" placeholder="e.g. jamison" autocomplete="off"></div>
-    <div class="row"><label>Devices<small>Comma-separated player names — only sessions on these devices cast. Empty = any device (your phone at work included).</small></label>
+    <div class="row"><label>Devices<small>Comma-separated player names — only sessions on these devices cast. Typing here replaces PLEX_DEVICES; empty inherits it — or any device when unset.</small></label>
       <input type="text" id="devices" class="mini" placeholder="e.g. Living Room TV" autocomplete="off"></div>
     <div class="row"><label>Rotate between sessions<small>When more than one allowed session is playing, each takes the display for this many seconds. 0 pins the first one (alphabetical by user, then device).</small></label>
       <input type="number" id="rotate" class="mini" min="0" max="3600" step="5" placeholder="30"></div>
@@ -577,6 +577,16 @@
     try {
       const s = await (await fetch('/settings.json')).json();
       cfg = { ...cfg, ...s };
+    } catch (e) {}
+    try {
+      // Container-level defaults (allowlisted server-side). Shown as greyed
+      // placeholders so a blank field reads as "inheriting this" — typing a
+      // value overrides the env var, clearing the field goes back to it.
+      const env = await (await fetch('/env-defaults')).json();
+      if (env.plexUsers) $('#users').placeholder = env.plexUsers + ' (from PLEX_USERS)';
+      if (env.plexDevices) $('#devices').placeholder = env.plexDevices + ' (from PLEX_DEVICES)';
+      if (env.hubIp) $('#hub').querySelector('option[value=""]').textContent =
+        'Use HUB_IP setting (' + env.hubIp + ')';
     } catch (e) {}
     if (!TEMPLATES.includes(cfg.template)) cfg.template = 'spotlight';
     document.querySelectorAll('input[data-k]').forEach(i => {

@@ -44,9 +44,37 @@ def csv_set(value):
 
 
 # Comma-separated Plex usernames/device names that may trigger the marquee;
-# empty = everyone / any device. Env is the seed; the settings page adds more.
-USERS = csv_set(os.environ.get("PLEX_USERS", ""))
-DEVICES = csv_set(os.environ.get("PLEX_DEVICES", ""))
+# empty = everyone / any device. The env var is the container-level default:
+# whatever is typed on the settings page replaces it, exactly as HUB_IP
+# behaves. The raw strings are kept so the settings page can show them as
+# placeholders — an env filter nobody can see is an env filter that lies.
+ENV_USERS = os.environ.get("PLEX_USERS", "")
+ENV_DEVICES = os.environ.get("PLEX_DEVICES", "")
+USERS = csv_set(ENV_USERS)
+DEVICES = csv_set(ENV_DEVICES)
+
+
+def filter_set(saved, env_default):
+    """The allow-list actually in force: what the settings page says, or the
+    container's env default when that field is blank.
+
+    Overrides rather than merges. A union would let an env var filter sessions
+    that the settings page shows no sign of, and could never be lifted from the
+    UI — clearing the field would change nothing.
+    """
+    chosen = csv_set(saved)
+    return chosen if chosen else csv_set(env_default)
+
+
+# Only these env vars are ever shown to the settings page. An allowlist, not a
+# denylist: a future PLEX_TOKEN-shaped variable must not leak by default.
+ENV_HINT_KEYS = ("hubIp", "plexUsers", "plexDevices")
+
+
+def env_defaults():
+    """Container-level defaults the settings page shows as placeholders, so a
+    blank field reads as "inheriting this" instead of "nothing is set"."""
+    return {"hubIp": HUB_IP, "plexUsers": ENV_USERS, "plexDevices": ENV_DEVICES}
 
 OUTPUT = os.path.join(REPO, "output")
 JSON_PATH = os.path.join(OUTPUT, "now-playing.json")
@@ -416,8 +444,8 @@ def cast_card():
 
 def current_session():
     s = load_settings()
-    users = USERS | csv_set(s.get("plexUsers"))
-    devices = DEVICES | csv_set(s.get("plexDevices"))
+    users = filter_set(s.get("plexUsers"), ENV_USERS)
+    devices = filter_set(s.get("plexDevices"), ENV_DEVICES)
     root = fetch_xml("/status/sessions")
     seen, allowed = [], []
     for video in root.findall("Video"):
@@ -498,6 +526,10 @@ class WebHandler(BaseHTTPRequestHandler):
         elif path == "/devices":
             self._send(json.dumps(scan_devices("refresh" in self.path)),
                        "application/json")
+        elif path == "/env-defaults":
+            # Allowlisted container defaults, so the settings page can render a
+            # blank field as "inheriting this" rather than "nothing is set".
+            self._send(json.dumps(env_defaults()), "application/json")
         elif path == "/weather":
             self._send(json.dumps(weather()), "application/json")
         elif path == "/sessions":
@@ -695,6 +727,24 @@ def selftest():
     assert scan == [{"ip": "192.168.1.50", "name": "Living Room",
                      "model": "Google Inc. Google Nest Hub"}]
     assert IP_RE.match("10.0.0.2") and not IP_RE.match("nest.local")
+
+    # The settings page overrides the env var; it does not merge with it. A
+    # union let PLEX_USERS filter sessions the UI showed no sign of, and no
+    # amount of editing the field could lift it.
+    assert filter_set("alice, Bob", "jamison") == {"alice", "bob"}
+    assert filter_set("", "jamison") == {"jamison"}       # blank -> inherit env
+    assert filter_set("   ", "jamison") == {"jamison"}    # whitespace is blank
+    assert filter_set("alice", "") == {"alice"}
+    assert filter_set("", "") == set()                    # nobody filtered
+    assert "jamison" not in filter_set("alice", "jamison")  # env is replaced
+
+    # The env hints the settings page may see are an allowlist. Nothing that
+    # looks like a credential may ever join them.
+    hints = env_defaults()
+    assert set(hints) == set(ENV_HINT_KEYS), set(hints)
+    for secret in ("PLEX_TOKEN", "TMDB_API_KEY", "token", "key"):
+        assert not any(secret.lower() in k.lower() for k in hints), secret
+    assert all(isinstance(v, str) for v in hints.values())
 
     # dashcast_active() only proves the DashCast *app* is loaded, not that our
     # card is drawing. A Hub whose page died keeps reporting DashCast forever,

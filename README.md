@@ -117,26 +117,29 @@ because the server reordered its session list.
 - `DATA_DIR` — the container sets `/config` (the code's own default is
   `REPO_DIR/output`)
 
-### Env vars that the settings page can also set
+### Env vars are defaults, not overrides
 
-Three settings exist in both places, and they combine differently:
+Some settings exist both as env vars and on the settings page. They all follow
+one rule:
 
 | Setting | Env var | Settings page | How they combine |
 |---|---|---|---|
-| Cast device | `HUB_IP` | Cast device picker | The settings page **wins**; the env var is only a fallback for when no device has been picked. |
-| Users | `PLEX_USERS` | Users | **Both apply.** The two lists are merged. |
-| Devices | `PLEX_DEVICES` | Devices | **Both apply.** The two lists are merged. |
+| Cast device | `HUB_IP` | Cast device picker | The settings page **wins**; the env var is the default when no device has been picked. |
+| Users | `PLEX_USERS` | Plex users | Same rule: a typed list **replaces** the env var; a blank field inherits it. |
+| Devices | `PLEX_DEVICES` | Devices | Same rule. |
 
-The merge is worth understanding before you use `PLEX_USERS` or `PLEX_DEVICES`.
-The settings page can only **add** names to what the env var already allows — it
-cannot remove them, and it does not display them. If `PLEX_USERS=jamison` is set
-in your Compose file, the Users field on the settings page shows up *empty*, as
-though nobody were being filtered, while every session except `jamison`'s is
-silently ignored. Clearing the field changes nothing.
+The settings page shows each inherited env value as a greyed placeholder —
+`jamison (from PLEX_USERS)` — so a blank field reads as *inheriting this*
+rather than *nothing is set*, and typing a value (then clearing it later)
+behaves the way you'd expect. The placeholders come from `/env-defaults`,
+which serves those values and nothing else — an allowlist, so nothing
+credential-shaped can leak to a browser.
 
-If you want to manage the filters from the settings page, leave `PLEX_USERS` and
-`PLEX_DEVICES` unset. Use them only for a filter you want pinned at the
-container level, where nobody can lift it from the UI.
+(Older versions **merged** the user/device env filters with the settings page
+instead: the env list was invisible in the UI and clearing the field could
+never lift it. If `PLEX_USERS=jamison` was set, the Users field showed up
+*empty* while every session except `jamison`'s was silently ignored, and
+clearing the field changed nothing.)
 
 Health status is available at `/healthz` and includes the version.
 
