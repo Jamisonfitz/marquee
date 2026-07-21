@@ -1,5 +1,59 @@
 # Changelog
 
+## Unreleased
+
+### Mix and match any block, on any template
+
+The block editor's "Selected block" dropdown now only ever lists what's
+actually on the current template. A new **Add a block** control sits next
+to it: pick a name and it's placed on the template immediately (auto-slotted
+onto an open spot, ready to drag), then resets itself so it's always ready
+for the next one. A **Remove block** button drops the selected block back
+off. Every template ships with its original block set untouched — this is
+purely additive, so nothing changes until you actually add or remove
+something. **Reset this template** now restores the template's shipped
+block set too, not just positions.
+
+Weather is no longer nested inside the clock block sharing its position —
+it's its own block, sized and placed independently. Adding it also turns
+its data fetch on if it wasn't already (that one setting used to default
+off, unlike everything else you can add).
+
+Every block change is scoped to the template you're looking at: nudging a
+block's position on Spotlight no longer silently nudges it on Street too,
+the way it used to.
+
+### The mobile settings page gets a top strip instead of a wall of cards
+
+On phones, the Template grid and the inline Vibes stepper — two overlapping
+ways to pick mostly the same thing — collapse into one looping, swipeable
+carousel pinned under the header. Swipe through and the preview updates
+live, the same way Vibes always has; tap a card or let it settle and it's
+applied. Frees up most of a screen's worth of vertical space before you
+even reach a real control.
+
+Also on phones: a focused text field elsewhere on the page popping the
+keyboard used to leave the fixed preview sheet pinned across most of the
+little space the keyboard left, crushing whatever you were trying to type
+into down to a sliver. The sheet now gets out of the way while a keyboard's
+up — nothing in it needs one.
+
+### Real weather on the Street scene
+
+Street's brick wall now reacts to actual conditions: rain streaks, drifting
+snow, or overcast dimming, plus true day/night — daylight brightens the
+wall and rests the marquee's bulb-twinkle and sign-chase animations instead
+of running them under a bright sky. Same `/weather` endpoint every template
+already used for the weather chip; Street just also fetches it for itself
+when you haven't turned the chip on. `?wx=rain|snow|fog|cloud` and
+`?day=1|0` force a condition, for testing without waiting for the sky to
+cooperate.
+
+The poster also picked up a theme-colored glow bleeding onto the brick
+behind it, like backlighting through the marquee case — it retints with
+whichever accent color the card is using, the same as the progress bar and
+title glow already do.
+
 ## 1.9.0 — 2026-07-20
 
 ### A "do not cast" list, so the marquee can't overshare
