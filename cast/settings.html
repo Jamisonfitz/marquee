@@ -293,7 +293,7 @@
 
   <div class="panel">
     <h2>Card content</h2>
-    <div class="row"><label>Backdrop art<small>Plex background art behind the card</small></label>
+    <div class="row"><label>Backdrop art<small>Server background art behind the card</small></label>
       <input type="checkbox" data-k="backdrop"></div>
     <div class="row"><label>Title logo<small>Movie/show logo cutout instead of text title</small></label>
       <input type="checkbox" data-k="logo"></div>
@@ -322,6 +322,20 @@
         <button data-v="f">&deg;F</button><button data-v="c">&deg;C</button>
       </div>
     </div>
+  </div>
+
+  <div class="panel">
+    <h2>Media server</h2>
+    <div class="row"><label>Backend<small>Which server Marquee watches. Nothing changes until you press Save; a saved change is picked up within ~5s, no restart.</small></label>
+      <select id="backend" class="mini">
+        <option value="plex">Plex</option>
+        <option value="emby">Emby</option>
+        <option value="jellyfin">Jellyfin</option>
+      </select></div>
+    <div class="row"><label>Server<small>Address for the backend picked above — each keeps its own. Blank uses the container's env var.</small></label>
+      <input type="text" id="mshost" class="mini" placeholder="http://server:8096" autocomplete="off"></div>
+    <div class="row"><label><span id="mskey-name">API key</span><small>Stored on the server, never shown again. Blank keeps the saved one.</small></label>
+      <input type="password" id="mskey" class="mini" placeholder="paste API key" autocomplete="new-password"></div>
   </div>
 
   <div class="panel">
@@ -541,6 +555,42 @@
     cfg[id === 'users' ? 'plexUsers' : 'plexDevices'] = $('#' + id).value;
     $('#status').textContent = 'Filter changed — save to apply.';
   }));
+  // One host box + one key box; the dropdown picks which backend they edit.
+  // Each backend keeps its own stored pair, so switching loses nothing.
+  const MS = {
+    plex: { host: 'plexHost', key: 'plexToken', set: 'plexTokenSet',
+            ph: 'http://server:32400', name: 'Plex token' },
+    emby: { host: 'embyHost', key: 'embyKey', set: 'embyKeySet',
+            ph: 'http://server:8096', name: 'API key' },
+    jellyfin: { host: 'jellyfinHost', key: 'jellyfinKey', set: 'jellyfinKeySet',
+                ph: 'http://server:8096', name: 'API key' },
+  };
+  // Typed-but-unsaved secrets, per backend. Never in cfg (cfg feeds Export);
+  // they join the POST body only when Save is pressed.
+  const pendingKeys = { plex: '', emby: '', jellyfin: '' };
+  const msCurrent = () => MS[$('#backend').value] ? $('#backend').value : 'plex';
+  function msShow() {
+    const b = msCurrent(), m = MS[b];
+    $('#mshost').value = cfg[m.host] || '';
+    $('#mshost').placeholder = m.ph;
+    $('#mskey-name').textContent = m.name;
+    $('#mskey').value = pendingKeys[b];
+    $('#mskey').placeholder = cfg[m.set] ? 'saved — blank keeps it'
+      : (b === 'plex' ? 'paste Plex token' : 'paste API key');
+  }
+  $('#backend').addEventListener('change', () => {
+    cfg.mediaBackend = $('#backend').value;
+    msShow();
+    $('#status').textContent = 'Backend changed — save to apply.';
+  });
+  $('#mshost').addEventListener('input', () => {
+    cfg[MS[msCurrent()].host] = $('#mshost').value.trim();
+    $('#status').textContent = 'Server address changed — save to apply.';
+  });
+  $('#mskey').addEventListener('input', () => {
+    pendingKeys[msCurrent()] = $('#mskey').value;
+    $('#status').textContent = MS[msCurrent()].name + ' entered — save to store it.';
+  });
   $('#rotate').addEventListener('input', () => {
     // Blank means "leave it alone"; the server clamps to 0 or 5..3600 on save.
     const n = parseInt($('#rotate').value, 10);
@@ -596,6 +646,12 @@
     if (cfg.accent) $('#accent').value = cfg.accent;
     $('#font').value = cfg.titleFont || 'system';
     $('#bodyfont').value = cfg.bodyFont || 'system';
+    // The dropdown shows the backend in force: the saved choice, or the
+    // container's env default. The server never sends secrets back, only
+    // whether one is saved — msShow() renders those hints.
+    $('#backend').value = ['plex', 'emby', 'jellyfin'].includes(cfg.mediaBackend)
+      ? cfg.mediaBackend : (cfg.envBackend || 'plex');
+    msShow();
     $('#users').value = cfg.plexUsers || '';
     $('#devices').value = cfg.plexDevices || '';
     $('#rotate').value = cfg.rotateSeconds ?? 30;
@@ -609,10 +665,21 @@
 
   $('#save').addEventListener('click', async () => {
     document.querySelectorAll('input[data-k]').forEach(i => { cfg[i.dataset.k] = i.checked; });
+    // Secrets ride the save body only — never cfg, so Export can't leak them.
+    const body = { ...cfg };
+    Object.entries(pendingKeys).forEach(([b, v]) => {
+      if (v.trim()) body[MS[b].key] = v.trim();
+    });
     const r = await (await fetch('/save', { method: 'POST',
-      body: JSON.stringify(cfg) })).json();
+      body: JSON.stringify(body) })).json();
     $('#status').textContent = r.ok
       ? 'Saved — the Hub picks it up within ~5s.' : 'Save failed: ' + r.error;
+    if (r.ok) {
+      Object.keys(pendingKeys).forEach(b => {
+        if (pendingKeys[b].trim()) { cfg[MS[b].set] = true; pendingKeys[b] = ''; }
+      });
+      msShow();
+    }
   });
 
   window.addEventListener('message', event => {

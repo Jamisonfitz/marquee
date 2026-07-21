@@ -18,6 +18,54 @@ credential-shaped can leak to a browser by default. `selftest` pins the
 override semantics (blank inherits, typed replaces, the env is never unioned
 back in) and the allowlist (no token/key-shaped name may ever join the hints).
 
+### Emby and Jellyfin join Plex
+
+Marquee can now watch an Emby or Jellyfin server instead of Plex. Set
+`MEDIA_BACKEND=emby` (with `EMBY_HOST` / `EMBY_API_KEY`) or
+`MEDIA_BACKEND=jellyfin` (with `JELLYFIN_HOST` / `JELLYFIN_API_KEY`); Plex
+stays the default and the Plex path is untouched.
+
+Both backends produce the same now-playing dict, so every template, theme,
+toggle, and the session filters and rotation work identically — the selftest
+asserts the two parsers emit the same keys. Emby's `/Sessions` omits some of
+the fields the card wants (genres, media streams, ratings, overview), so the
+backend fetches them from `/Items` once per title and caches them, exactly as
+the Plex path caches its metadata lookups. Artwork (poster, backdrop, logo)
+comes from the item image endpoints at the same sizes the Plex transcoder
+delivers.
+
+Jellyfin forked from Emby in 2018 and the handful of APIs Marquee uses —
+`api_key` query auth, `/Sessions`, `/Items`, `/Items/{id}/Images/*` — are
+byte-compatible, so Jellyfin rides the Emby code path unchanged. The
+`JELLYFIN_*` env names are aliases for the `EMBY_*` pair, accepted so a
+compose file can say what it means. Verified end to end against live Emby and
+Jellyfin (10.11) servers, through to the card rendering on a real Nest Hub.
+
+### Switch backends from the settings page
+
+A new **Media server** panel picks the backend: one dropdown (Plex / Emby /
+Jellyfin), one server-address field, one key field. The dropdown decides
+which backend the two fields edit; each backend keeps its own stored pair,
+so switching between servers loses nothing. Like every other setting,
+nothing changes until **Save**; the choice is then resolved every poll, so a
+saved change takes effect within ~5 seconds — no container restart. The
+settings page wins and env is the container-level default, exactly the rule
+the cast device field has always followed; with nothing set anywhere, the
+backend is plex, as it has always been.
+
+Keys and tokens are write-only secrets: stored server-side, never served
+back to a browser. `/settings.json` replaces each with a saved/not-saved
+hint, the page shows *saved — blank keeps it*, and Export/Import never
+carries them. Saving a backend that has no server configured anywhere is
+rejected with a clear error rather than stored — a backend that fails
+silently on the next poll would just be a blank display with no explanation.
+
+With that, only `PAGE_URL` is required at startup. A container with no
+media-server credentials at all no longer exits; it warns and serves the
+settings page, where the server address and key finish the job. Every
+credential env var still works exactly as before — it is simply no longer
+the only way in.
+
 ## 1.8.0 — 2026-07-19
 
 ### The block editor grows up

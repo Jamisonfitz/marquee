@@ -9,8 +9,16 @@ services:
       HUB_IP: ""                                   # optional — pick your Hub in the settings UI instead
       PAGE_URL: "http://192.168.1.10:8084/image"   # this server's LAN IP — the Hub loads this, so localhost won't work
       PLEX_HOST: "http://localhost:32400"          # keep localhost if Plex runs on this machine
-      PLEX_TOKEN: "replace-me"
+      PLEX_TOKEN: ""
       PLEX_USERS: ""   # comma-separated usernames; empty = everyone. A list typed on the settings page replaces this.
       TMDB_API_KEY: ""
+      # --- Media backend (optional) ---
+      # All of these can also be set on the settings page (backend dropdown,
+      # server address, API key) — the page wins, env is the default.
+      MEDIA_BACKEND: ""   # plex (default) | emby | jellyfin
+      EMBY_HOST: ""           # e.g. http://localhost:8096 (when emby)
+      EMBY_API_KEY: ""        # Emby API key (when emby)
+      JELLYFIN_HOST: ""       # e.g. http://localhost:8096 (when jellyfin; the EMBY_ pair works too)
+      JELLYFIN_API_KEY: ""    # Jellyfin API key (when jellyfin)
     volumes:
       - ./data:/config
