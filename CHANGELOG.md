@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.10.0 — 2026-07-21
 
 ### Mix and match any block, on any template
 
