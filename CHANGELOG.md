@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+### A "do not cast" list, so the marquee can't overshare
+
+A new **Do not cast** filter: comma-separated words, checked against every
+session's genres, tags, and content rating. A match means that session is
+never cast — no title, no poster, no card. Set it as `BLOCK_TAGS` in the
+container or type it on the settings page (same default-vs-override rule as
+the other filters, with the env value shown as a greyed placeholder).
+`adult, xxx, 18+, nc-17, tv-ma` is the obvious use, but it's just words —
+block `horror` on the family display if you like.
+
+Matching is deliberately broad: case-insensitive, and words of three or more
+characters match inside terms, so `adult` also blocks an "Adult Animation"
+genre — for an overshare guard, blocking too much beats leaking. Shorter
+words match a term exactly, so blocking the `R` rating doesn't take Horror
+and Drama with it. On Emby/Jellyfin, where `/Sessions`
+sometimes omits the genre list, the picked item is re-checked after its full
+record is fetched: better a blank display than a title the pre-filter
+couldn't see. Blocked sessions still appear in the settings page's Active
+sessions list (marked not allowed), so the admin can see the filter doing
+its job.
+
 ### Env vars are defaults you can see, not overrides you can't
 
 `PLEX_USERS` / `PLEX_DEVICES` used to **merge** with the settings page instead
