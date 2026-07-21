@@ -18,6 +18,13 @@ credential-shaped can leak to a browser by default. `selftest` pins the
 override semantics (blank inherits, typed replaces, the env is never unioned
 back in) and the allowlist (no token/key-shaped name may ever join the hints).
 
+The Emby/Jellyfin session picker now uses that same `filter_set` resolution —
+previously only the Plex path did, so on an Emby backend the user/device fields
+still merged with the env var (invisible, unliftable) while the docs promised
+they replaced it. Both backends read the same settings fields, so both now
+behave identically; `selftest` drives `emby_current_session()` to prove a typed
+user list excludes an env-allowed user rather than unioning it in.
+
 ### Emby and Jellyfin join Plex
 
 Marquee can now watch an Emby or Jellyfin server instead of Plex. Set

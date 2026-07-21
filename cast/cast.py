@@ -807,8 +807,8 @@ def emby_current_session():
     host, key = emby_creds(settings=s)
     if not (host and key):
         return None   # not configured yet — the settings page can fix it live
-    users = USERS | csv_set(s.get("plexUsers"))
-    devices = DEVICES | csv_set(s.get("plexDevices"))
+    users = filter_set(s.get("plexUsers"), ENV_USERS)
+    devices = filter_set(s.get("plexDevices"), ENV_DEVICES)
     sessions = emby_fetch_json("/Sessions")
     seen, allowed = [], []
     for session in sessions:
@@ -1460,6 +1460,32 @@ def selftest():
         assert picks[("normal", "t1")] == "Jaws"
         assert len(LAST_SESSIONS) == 2                 # both still reported
     finally:
+        globals()["time"].time = real_etime
+        globals()["emby_fetch_json"] = real_efetch
+        globals()["load_settings"] = real_eload
+        globals()["emby_enrich"] = real_enrich
+        globals()["parse_emby_session"] = real_eparse
+
+    # The Emby path honors filter_set the same way Plex does: a settings-page
+    # user list REPLACES the env var, it does not union with it. With
+    # PLEX_USERS=bob in the container and "alice" typed on the page, only
+    # alice's session may cast — a union would wrongly let Bob through too.
+    real_users, real_env_users = USERS, ENV_USERS
+    try:
+        globals()["USERS"], globals()["ENV_USERS"] = {"bob"}, "bob"
+        globals()["emby_enrich"] = lambda item: item
+        globals()["parse_emby_session"] = lambda s, extras=None: {
+            "title": (s.get("NowPlayingItem") or {}).get("Name")}
+        globals()["emby_fetch_json"] = lambda _p: emby_two(1)
+        globals()["load_settings"] = lambda: {
+            "plexUsers": "alice", "plexDevices": "", "rotateSeconds": 0,
+            "embyHost": "http://test:1", "embyKey": "k"}
+        globals()["time"].time = lambda: 0.0
+        assert emby_current_session()["title"] == "Alien"   # bob is not unioned in
+        allowed = {row["user"]: row["allowed"] for row in LAST_SESSIONS}
+        assert allowed == {"alice": True, "Bob": False}, allowed
+    finally:
+        globals()["USERS"], globals()["ENV_USERS"] = real_users, real_env_users
         globals()["time"].time = real_etime
         globals()["emby_fetch_json"] = real_efetch
         globals()["load_settings"] = real_eload
