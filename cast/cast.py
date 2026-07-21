@@ -183,7 +183,8 @@ DEFAULT_SETTINGS = {
     "blockTags": "",
     "rotateSeconds": 30,
     "showWeather": False, "weatherZip": "", "weatherUnits": "f",
-    "blockLayout": {},
+    "blockLayout": {},       # {template: {block: {x,y,width,scale,align,font}}}
+    "blockVisibility": {},  # {template: {block: bool}}, sparse — only overrides
     "mediaBackend": "",       # "" = inherit MEDIA_BACKEND env (plex when unset)
     "plexHost": "", "plexToken": "",
     "embyHost": "", "embyKey": "",
@@ -205,8 +206,24 @@ def served_settings(settings=None):
     s["envBackend"] = ENV_BACKEND
     return s
 
-EDITABLE_BLOCKS = ("clock", "identity", "meta", "plot", "ratings",
+EDITABLE_BLOCKS = ("clock", "weather", "identity", "meta", "plot", "ratings",
                    "progress", "poster", "stinger")
+# Blocks a user can freely add to or remove from a template. Stinger is
+# excluded: it's a content-driven badge (only appears when TMDB has a
+# credits-scene tag), not something toggling it on would ever show anything.
+TOGGLEABLE_BLOCKS = ("clock", "weather", "identity", "meta", "plot",
+                     "ratings", "progress", "poster")
+# Each template's shipped block set, mirrored from the display:none rules in
+# output/index.html. A user's blockVisibility only needs to store where they
+# differ from this — the default itself never touches settings.json.
+TEMPLATE_DEFAULT_BLOCKS = {
+    "spotlight": ("clock", "identity", "meta", "plot", "ratings", "progress", "poster"),
+    "split": ("clock", "identity", "meta", "plot", "ratings", "progress", "poster"),
+    "hero": ("clock", "identity", "meta", "ratings", "progress"),
+    "lowerthird": ("clock", "identity", "meta", "ratings", "progress"),
+    "bigclock": ("clock", "identity", "meta", "plot", "progress"),
+    "street": ("clock", "identity", "meta", "plot", "ratings", "progress", "poster"),
+}
 
 _meta_cache = {}  # ratingKey -> extras dict
 
@@ -882,36 +899,95 @@ def emby_current_session():
     return parse_emby_session(match, extras=emby_extras)
 
 
+def migrate_block_layout(value, current_template):
+    """blockLayout used to be flat ({block: position}), applied to every
+    template at once — nudging a block in Spotlight silently moved it in
+    Street too. Nest it under the template the user was last on, so an
+    upgrade doesn't change what they see; other templates start clean rather
+    than inheriting a position nobody meant for them.
+
+    ponytail: one-shot migration, no version flag. Once this has shipped for
+    a while and old flat saves are gone, this can be deleted along with the
+    isinstance branch that triggers it.
+    """
+    if not isinstance(value, dict):
+        return {}
+    if not value or any(k in TEMPLATES for k in value):
+        return value  # already nested (or empty)
+    return {current_template: value}
+
+
 def load_settings():
     try:
         with open(SETTINGS_PATH) as f:
             saved = json.load(f)
-        return {**DEFAULT_SETTINGS, **{k: v for k, v in saved.items() if k in DEFAULT_SETTINGS}}
+        merged = {**DEFAULT_SETTINGS, **{k: v for k, v in saved.items() if k in DEFAULT_SETTINGS}}
+        merged["blockLayout"] = migrate_block_layout(
+            merged["blockLayout"], merged.get("template") or "spotlight")
+        return merged
     except Exception:
         return dict(DEFAULT_SETTINGS)
 
 
+def clean_block_position(position):
+    """One block's {x,y,width,scale,align,font}, numbers clamped to sane
+    ranges, unknown keys dropped."""
+    item = {}
+    for key, low, high in (("x", -100, 100), ("y", -100, 100),
+                           ("width", 5, 100), ("scale", 0.3, 3)):
+        number = position.get(key)
+        if isinstance(number, (int, float)) and not isinstance(number, bool):
+            item[key] = round(max(low, min(high, number)), 2)
+    if position.get("align") in ("left", "center", "right"):
+        item["align"] = position["align"]
+    if position.get("font") in TITLE_FONTS:
+        item["font"] = position["font"]
+    return item
+
+
 def clean_block_layout(value):
-    """Keep layout overrides small, numeric, and limited to known card blocks."""
+    """{template: {block: position}}, limited to known templates/blocks."""
     if not isinstance(value, dict):
         return {}
     cleaned = {}
-    for name, position in value.items():
-        if name not in EDITABLE_BLOCKS or not isinstance(position, dict):
+    for template, blocks in value.items():
+        if template not in TEMPLATES or not isinstance(blocks, dict):
             continue
-        item = {}
-        for key, low, high in (("x", -100, 100), ("y", -100, 100),
-                               ("width", 5, 100), ("scale", 0.3, 3)):
-            number = position.get(key)
-            if isinstance(number, (int, float)) and not isinstance(number, bool):
-                item[key] = round(max(low, min(high, number)), 2)
-        if position.get("align") in ("left", "center", "right"):
-            item["align"] = position["align"]
-        if position.get("font") in TITLE_FONTS:
-            item["font"] = position["font"]
-        if item:
-            cleaned[name] = item
+        per_template = {}
+        for name, position in blocks.items():
+            if name not in EDITABLE_BLOCKS or not isinstance(position, dict):
+                continue
+            item = clean_block_position(position)
+            if item:
+                per_template[name] = item
+        if per_template:
+            cleaned[template] = per_template
     return cleaned
+
+
+def clean_block_visibility(value):
+    """{template: {block: bool}} — sparse overrides of TEMPLATE_DEFAULT_BLOCKS.
+    Only TOGGLEABLE_BLOCKS may be hidden/shown; stinger is content-driven."""
+    if not isinstance(value, dict):
+        return {}
+    cleaned = {}
+    for template, blocks in value.items():
+        if template not in TEMPLATES or not isinstance(blocks, dict):
+            continue
+        per_template = {name: bool(shown) for name, shown in blocks.items()
+                        if name in TOGGLEABLE_BLOCKS and isinstance(shown, bool)}
+        if per_template:
+            cleaned[template] = per_template
+    return cleaned
+
+
+def visible_blocks(template, visibility):
+    """The block set actually shown for a template: its shipped default,
+    with this template's blockVisibility overrides applied."""
+    shown = set(TEMPLATE_DEFAULT_BLOCKS.get(template, ()))
+    for name, on in (visibility or {}).get(template, {}).items():
+        shown.add(name) if on else shown.discard(name)
+    return shown
 
 
 class WebHandler(BaseHTTPRequestHandler):
@@ -1035,6 +1111,7 @@ class WebHandler(BaseHTTPRequestHandler):
                     and (merged["hubIp"] == "" or IP_RE.match(merged["hubIp"]))):
                 merged["hubIp"] = ""
             merged["blockLayout"] = clean_block_layout(merged["blockLayout"])
+            merged["blockVisibility"] = clean_block_visibility(merged["blockVisibility"])
             atomic_write(SETTINGS_PATH, json.dumps(merged))
             self._send(json.dumps({"ok": True}), "application/json")
         except Exception as e:
@@ -1228,13 +1305,28 @@ def selftest():
     assert "bogus" not in DEFAULT_SETTINGS and merged["posterSide"] == "left" \
         and merged["showPlot"] is False and merged["showClock"] is True \
         and merged["template"] == "spotlight"
-    layout = clean_block_layout({"identity": {"x": 12.345, "y": -200, "width": 140,
-                                              "scale": 9, "height": 50,
-                                              "align": "center", "font": "bebas"},
-                                 "plot": {"align": "diagonal", "font": "comic-sans"},
-                                 "unknown": {"x": 1}})
-    assert layout == {"identity": {"x": 12.35, "y": -100, "width": 100,
-                                   "scale": 3, "align": "center", "font": "bebas"}}
+    layout = clean_block_layout({"spotlight": {
+        "identity": {"x": 12.345, "y": -200, "width": 140,
+                     "scale": 9, "height": 50, "align": "center", "font": "bebas"},
+        "plot": {"align": "diagonal", "font": "comic-sans"},
+        "unknown": {"x": 1}}, "not-a-template": {"identity": {"x": 1}}})
+    assert layout == {"spotlight": {"identity": {"x": 12.35, "y": -100, "width": 100,
+                                                 "scale": 3, "align": "center", "font": "bebas"}}}
+    # Old flat saves (pre-per-template) get nested under the template that
+    # was active when they were written, not silently dropped or reapplied
+    # to every template.
+    assert migrate_block_layout({"identity": {"x": 5}}, "hero") == {
+        "hero": {"identity": {"x": 5}}}
+    assert migrate_block_layout({"spotlight": {"identity": {"x": 5}}}, "hero") == {
+        "spotlight": {"identity": {"x": 5}}}  # already nested: left alone
+    assert migrate_block_layout({}, "hero") == {}
+    vis = clean_block_visibility({"street": {"plot": False, "weather": True,
+                                            "stinger": True, "bogus": 1},
+                                  "not-a-template": {"plot": False}})
+    assert vis == {"street": {"plot": False, "weather": True}}
+    assert visible_blocks("hero", {}) == {"clock", "identity", "meta", "ratings", "progress"}
+    assert visible_blocks("hero", {"hero": {"plot": True, "clock": False}}) == \
+        {"identity", "meta", "ratings", "progress", "plot"}
     assert ACCENT_RE.match("#A1b2C3") and not ACCENT_RE.match("red") \
         and not ACCENT_RE.match("#12345")
     v = ET.fromstring(SAMPLE_SESSION)

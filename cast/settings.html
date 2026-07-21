@@ -8,6 +8,13 @@
     --mut:#9AA1AB; --amber:#E5A83B; }
   html, body { margin:0; background:var(--bg); color:var(--text);
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  button:focus-visible, [tabindex]:focus-visible, input:focus-visible,
+  select:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--amber); outline-offset: 2px; }
+  input[type=color]:focus-visible { outline-offset: 3px; }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+  }
   .wrap { max-width: 1100px; margin: 0 auto; padding: 32px 24px 64px; }
   h1 { font-size: 28px; font-weight: 800; margin: 0; }
   h1 span { color: var(--amber); }
@@ -77,6 +84,7 @@
   .devpick select, select.mini, input.mini { max-width: 200px; min-height: 40px;
     color: var(--text); background: var(--bg); border: 1px solid var(--line);
     border-radius: 8px; padding: 6px 8px; font-size: 14px; }
+  input.mini::placeholder { color: var(--mut); opacity: 1; }
   .vibes-step { display: flex; gap: 8px; align-items: stretch; }
   .vibes-step .secondary { padding: 6px 12px; font-size: 13px; }
   .vibe-now { background: var(--bg); border: 1px solid var(--line); border-radius: 12px;
@@ -183,6 +191,13 @@
       justify-content:flex-end; }
     .devpick select, select.mini, input.mini { max-width:100%; }
     .sessions-list { text-align:left; }
+    /* Bigger tap targets: the desktop-tuned 29px swatches and compact seg
+       buttons fall under the 44px touch minimum. */
+    .swatches button, .swatches input[type=color] { width:38px; height:38px; }
+    .seg button { padding:10px 16px; min-height:44px; }
+    input[type=checkbox] { width:48px; height:28px; }
+    input[type=checkbox]::after { width:22px; height:22px; }
+    input[type=checkbox]:checked::after { left:23px; }
     /* Keep the editor short so it shares the sheet with the preview. */
     .editor { grid-template-columns:1fr; gap:10px; }
     .editor .picks { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
@@ -202,9 +217,36 @@
       background:var(--bg); border-top:1px solid var(--line); box-sizing:border-box;
       box-shadow:0 -8px 30px rgba(0,0,0,.6); max-height:85dvh; overflow-y:auto;
       padding:8px 10px calc(8px + env(safe-area-inset-bottom)); }
+    .preview-col.kb-hidden { display:none; }
     .preview h2, .preview .sub { display:none; }
     .editor { padding:10px; }
-    .frame-box { border-radius:10px; } }
+    .frame-box { border-radius:10px; }
+    /* Replaced by the carousel above: template grid + inline vibes stepper
+       would otherwise eat most of the screen before you reach any control. */
+    .panel.wide, #vibes-row { display:none; }
+  }
+  .vibe-carousel { display:none; }
+  @media (max-width:760px) {
+    .vibe-carousel { display:block; margin: 2px 0 18px; }
+    .vc-track { display:flex; overflow-x:auto; scroll-snap-type:x mandatory;
+      -webkit-overflow-scrolling:touch; gap:12px; padding:4px 21vw;
+      scrollbar-width:none; }
+    .vc-track::-webkit-scrollbar { display:none; }
+    .vc-card { flex:0 0 58vw; scroll-snap-align:center; text-align:left;
+      border:1px solid var(--line); border-radius:14px; padding:10px;
+      background:linear-gradient(180deg, rgba(229,168,59,.06), rgba(255,255,255,.02));
+      color:var(--text); cursor:pointer; opacity:.55;
+      transition:opacity .2s ease, border-color .2s ease; }
+    .vc-card.on { opacity:1; border-color:var(--amber);
+      box-shadow:0 0 0 1px rgba(229,168,59,.35); }
+    .vc-card img { display:block; width:100%; aspect-ratio:16/10; border-radius:8px;
+      object-fit:cover; background:#07090C; border:1px solid var(--line); }
+    .vc-card b { display:block; font-size:14px; margin:8px 0 2px; }
+    .vc-card small { display:block; color:var(--mut); font-size:12px; }
+    @media (prefers-reduced-motion: reduce) {
+      .vc-track { scroll-behavior:auto; }
+    }
+  }
 </style>
 <div class="wrap">
   <div class="top"><h1>Marquee <span>settings</span></h1>
@@ -213,6 +255,8 @@
       <button class="linkbtn" id="notes-btn">What’s new</button>
     </nav></div>
   <p class="sub">Saves reach the Hub in about two seconds. The card lives at <code>/image</code>; the preview below always shows demo data.</p>
+
+  <div class="vibe-carousel" id="vibe-carousel"><div class="vc-track" id="vc-track"></div></div>
 
   <div class="layout">
   <div class="controls">
@@ -243,7 +287,7 @@
 
   <div class="panel">
     <h2>Look</h2>
-    <div class="row"><label>Vibes<small>Presets: theme + font + template. Step through, tune after, save to keep.</small></label>
+    <div class="row" id="vibes-row"><label>Vibes<small>Presets: theme + font + template. Step through, tune after, save to keep.</small></label>
       <div class="vibes-step">
         <button class="secondary vprev" id="vibe-prev" type="button" aria-label="Previous vibe">&#9664;</button>
         <button class="vibe-now" id="vibe-now" type="button"><i id="vibe-dot"></i><b id="vibe-name">Pick a vibe</b><small id="vibe-tag">tap or step through</small></button>
@@ -264,7 +308,7 @@
         <button class="clear" id="accent-clear" type="button">reset</button>
       </div>
     </div>
-    <div class="row"><label>Title font<small>Free Google fonts; falls back to system offline</small></label>
+    <div class="row"><label for="font">Title font<small>Free Google fonts; falls back to system offline</small></label>
       <select id="font" class="mini">
         <option value="system">System</option>
         <option value="bebas">Bebas Neue</option>
@@ -274,7 +318,7 @@
         <option value="grotesk">Space Grotesk</option>
       </select>
     </div>
-    <div class="row"><label>Card font<small>Everything else: plot, metadata, clock. Size per element lives in the block editor below.</small></label>
+    <div class="row"><label for="bodyfont">Card font<small>Everything else: plot, metadata, clock. Size per element lives in the block editor below.</small></label>
       <select id="bodyfont" class="mini">
         <option value="system">System</option>
         <option value="bebas">Bebas Neue</option>
@@ -293,29 +337,29 @@
 
   <div class="panel">
     <h2>Card content</h2>
-    <div class="row"><label>Backdrop art<small>Server background art behind the card</small></label>
-      <input type="checkbox" data-k="backdrop"></div>
-    <div class="row"><label>Title logo<small>Movie/show logo cutout instead of text title</small></label>
-      <input type="checkbox" data-k="logo"></div>
-    <div class="row"><label>Plot</label><input type="checkbox" data-k="showPlot"></div>
-    <div class="row"><label>Genres</label><input type="checkbox" data-k="showGenres"></div>
-    <div class="row"><label>Scores (RT / IMDb)</label><input type="checkbox" data-k="showScores"></div>
-    <div class="row"><label>Media info</label><input type="checkbox" data-k="showMediaInfo"></div>
-    <div class="row"><label>Content rating</label><input type="checkbox" data-k="showContentRating"></div>
-    <div class="row"><label>Runtime</label><input type="checkbox" data-k="showRuntime"></div>
-    <div class="row"><label>Progress bar</label><input type="checkbox" data-k="showProgress"></div>
-    <div class="row"><label>Clock</label>
-      <input type="checkbox" data-k="showClock"></div>
+    <div class="row"><label for="ck-backdrop">Backdrop art<small>Server background art behind the card</small></label>
+      <input type="checkbox" id="ck-backdrop" data-k="backdrop"></div>
+    <div class="row"><label for="ck-logo">Title logo<small>Movie/show logo cutout instead of text title</small></label>
+      <input type="checkbox" id="ck-logo" data-k="logo"></div>
+    <div class="row"><label for="ck-plot">Plot</label><input type="checkbox" id="ck-plot" data-k="showPlot"></div>
+    <div class="row"><label for="ck-genres">Genres</label><input type="checkbox" id="ck-genres" data-k="showGenres"></div>
+    <div class="row"><label for="ck-scores">Scores (RT / IMDb)</label><input type="checkbox" id="ck-scores" data-k="showScores"></div>
+    <div class="row"><label for="ck-mediainfo">Media info</label><input type="checkbox" id="ck-mediainfo" data-k="showMediaInfo"></div>
+    <div class="row"><label for="ck-contentrating">Content rating</label><input type="checkbox" id="ck-contentrating" data-k="showContentRating"></div>
+    <div class="row"><label for="ck-runtime">Runtime</label><input type="checkbox" id="ck-runtime" data-k="showRuntime"></div>
+    <div class="row"><label for="ck-progress">Progress bar</label><input type="checkbox" id="ck-progress" data-k="showProgress"></div>
+    <div class="row"><label for="ck-clock">Clock</label>
+      <input type="checkbox" id="ck-clock" data-k="showClock"></div>
     <div class="row"><label>Clock style</label>
       <div class="seg" id="clockfmt">
         <button data-v="12h">12h</button><button data-v="24h">24h</button>
       </div>
     </div>
-    <div class="row"><label>Clock seconds</label>
-      <input type="checkbox" data-k="clockSeconds"></div>
-    <div class="row"><label>Weather<small>Temperature and conditions beside the clock</small></label>
-      <input type="checkbox" data-k="showWeather"></div>
-    <div class="row"><label>ZIP code<small>US ZIP for local weather and day/night; blank = auto-locate from your server's IP</small></label>
+    <div class="row"><label for="ck-clocksec">Clock seconds</label>
+      <input type="checkbox" id="ck-clocksec" data-k="clockSeconds"></div>
+    <div class="row"><label for="ck-weather">Weather<small>Temperature and conditions beside the clock</small></label>
+      <input type="checkbox" id="ck-weather" data-k="showWeather"></div>
+    <div class="row"><label for="zip">ZIP code<small>US ZIP for local weather and day/night; blank = auto-locate from your server's IP</small></label>
       <input type="text" id="zip" class="mini" placeholder="e.g. 30301" autocomplete="off"></div>
     <div class="row"><label>Units</label>
       <div class="seg" id="unitfmt">
@@ -326,33 +370,33 @@
 
   <div class="panel">
     <h2>Media server</h2>
-    <div class="row"><label>Backend<small>Which server Marquee watches. Nothing changes until you press Save; a saved change is picked up within ~5s, no restart.</small></label>
+    <div class="row"><label for="backend">Backend<small>Which server Marquee watches. Nothing changes until you press Save; a saved change is picked up within ~5s, no restart.</small></label>
       <select id="backend" class="mini">
         <option value="plex">Plex</option>
         <option value="emby">Emby</option>
         <option value="jellyfin">Jellyfin</option>
       </select></div>
-    <div class="row"><label>Server<small>Address for the backend picked above — each keeps its own. Blank uses the container's env var.</small></label>
+    <div class="row"><label for="mshost">Server<small>Address for the backend picked above — each keeps its own. Blank uses the container's env var.</small></label>
       <input type="text" id="mshost" class="mini" placeholder="http://server:8096" autocomplete="off"></div>
-    <div class="row"><label><span id="mskey-name">API key</span><small>Stored on the server, never shown again. Blank keeps the saved one.</small></label>
+    <div class="row"><label for="mskey"><span id="mskey-name">API key</span><small>Stored on the server, never shown again. Blank keeps the saved one.</small></label>
       <input type="password" id="mskey" class="mini" placeholder="paste API key" autocomplete="new-password"></div>
   </div>
 
   <div class="panel">
     <h2>Casting</h2>
-    <div class="row"><label>Cast device<small>Scan finds Google Cast devices on your LAN</small></label>
+    <div class="row"><label for="hub">Cast device<small>Scan finds Google Cast devices on your LAN</small></label>
       <div class="devpick">
         <select id="hub"><option value="">Use HUB_IP setting</option></select>
         <button class="secondary" id="scan" type="button">Scan</button>
       </div>
     </div>
-    <div class="row"><label>Plex users<small>Comma-separated usernames. Typing here replaces PLEX_USERS; empty inherits it (shown greyed) — or everyone when unset.</small></label>
+    <div class="row"><label for="users">Users<small>Comma-separated usernames. Typing here replaces PLEX_USERS; empty inherits it (shown greyed) — or everyone when unset.</small></label>
       <input type="text" id="users" class="mini" placeholder="e.g. jamison" autocomplete="off"></div>
-    <div class="row"><label>Devices<small>Comma-separated player names — only sessions on these devices cast. Typing here replaces PLEX_DEVICES; empty inherits it — or any device when unset.</small></label>
+    <div class="row"><label for="devices">Devices<small>Comma-separated player names — only sessions on these devices cast. Typing here replaces PLEX_DEVICES; empty inherits it — or any device when unset.</small></label>
       <input type="text" id="devices" class="mini" placeholder="e.g. Living Room TV" autocomplete="off"></div>
-    <div class="row"><label>Do not cast<small>Comma-separated words. A session whose genres, tags, or content rating match one is never cast — the marquee can't overshare. Words of 3+ letters match inside terms ("adult" also blocks "Adult Animation"); shorter ones match exactly, so "r" blocks the R rating, not Horror.</small></label>
+    <div class="row"><label for="blocktags">Do not cast<small>Comma-separated words. A session whose genres, tags, or content rating match one is never cast — the marquee can't overshare. Words of 3+ letters match inside terms ("adult" also blocks "Adult Animation"); shorter ones match exactly, so "r" blocks the R rating, not Horror.</small></label>
       <input type="text" id="blocktags" class="mini" placeholder="e.g. adult, xxx, 18+" autocomplete="off"></div>
-    <div class="row"><label>Rotate between sessions<small>When more than one allowed session is playing, each takes the display for this many seconds. 0 pins the first one (alphabetical by user, then device).</small></label>
+    <div class="row"><label for="rotate">Rotate between sessions<small>When more than one allowed session is playing, each takes the display for this many seconds. 0 pins the first one (alphabetical by user, then device).</small></label>
       <input type="number" id="rotate" class="mini" min="0" max="3600" step="5" placeholder="30"></div>
     <div class="row"><label>Active sessions<small>Copy exact user and device names from what's playing right now</small></label>
       <div class="devpick">
@@ -378,17 +422,12 @@
     <details class="editor-wrap" id="editor-wrap" open>
     <summary>Block editor</summary>
     <div class="editor">
+      <p class="sub" id="no-blocks-note" hidden>This template has no blocks — pick one below to add it.</p>
       <div class="picks">
-      <label>Selected block<select id="element-select">
-        <option value="clock">Clock</option>
-        <option value="identity" selected>Title &amp; logo</option>
-        <option value="meta">Metadata</option>
-        <option value="plot">Plot</option>
-        <option value="ratings">Ratings</option>
-        <option value="progress">Progress</option>
-        <option value="stinger">Credits badge</option>
-        <option value="poster">Poster</option></select></label>
-      <label>Block font<select data-layout-field="font">
+      <label for="element-select">Selected block<select id="element-select"></select></label>
+      <label for="add-block-select">Add a block<select id="add-block-select">
+        <option value="" selected>+ Add…</option></select></label>
+      <label for="block-font">Block font<select id="block-font" data-layout-field="font">
         <option value="system">Theme default</option>
         <option value="bebas">Bebas Neue</option>
         <option value="oswald">Oswald</option>
@@ -396,7 +435,7 @@
         <option value="cinzel">Cinzel</option>
         <option value="grotesk">Space Grotesk</option></select></label>
       </div>
-      <div class="sliders">
+      <div class="sliders" id="block-sliders">
         <div class="slider"><label>Horizontal <output data-value="x">0</output></label><input data-layout-field="x" type="range" min="-100" max="100" step="1" value="0"></div>
         <div class="slider"><label>Vertical <output data-value="y">0</output></label><input data-layout-field="y" type="range" min="-100" max="100" step="1" value="0"></div>
         <div class="slider"><label>Width <output data-value="width">25</output></label><input data-layout-field="width" type="range" min="5" max="100" step="1" value="25"></div>
@@ -410,7 +449,8 @@
       </div>
       <div class="editor-foot">
         <button class="secondary" id="snap" type="button" title="Pull the selected block onto the nearest grid line">Snap to grid</button>
-        <button class="secondary" id="reset-layout">Reset block positions</button>
+        <button class="secondary" id="remove-block" type="button" title="Remove this block from the current template">Remove block</button>
+        <button class="secondary" id="reset-layout">Reset this template</button>
       </div>
     </div>
     </details>
@@ -434,8 +474,106 @@
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   const TEMPLATES = ['spotlight', 'split', 'hero', 'lowerthird', 'bigclock', 'street'];
   let cfg = { hubIp: '', template: 'spotlight', theme: 'amber', accent: '',
-    titleFont: 'system', posterSide: 'right', clockFormat: '12h', blockLayout: {} };
+    titleFont: 'system', posterSide: 'right', clockFormat: '12h', blockLayout: {},
+    blockVisibility: {}, showWeather: false };
   const cardBase = '/image';
+
+  // ponytail: mirrors TEMPLATE_DEFAULT_BLOCKS in cast.py / output/index.html
+  // — no shared codegen between the three, same as TEMPLATES already being
+  // duplicated across all of them.
+  const TEMPLATE_DEFAULT_BLOCKS = {
+    spotlight: ['clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
+    split: ['clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
+    hero: ['clock', 'identity', 'meta', 'ratings', 'progress'],
+    lowerthird: ['clock', 'identity', 'meta', 'ratings', 'progress'],
+    bigclock: ['clock', 'identity', 'meta', 'plot', 'progress'],
+    street: ['clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
+  };
+  const BLOCK_LABEL = { clock: 'Clock', weather: 'Weather', identity: 'Title & logo',
+    meta: 'Metadata', plot: 'Plot', ratings: 'Ratings', progress: 'Progress',
+    poster: 'Poster', stinger: 'Credits badge' };
+  // Stinger excluded: it's a content-driven badge (only appears with a TMDB
+  // credits-scene tag), not something adding it would ever show anything.
+  const TOGGLEABLE = ['clock', 'weather', 'identity', 'meta', 'plot', 'ratings',
+    'progress', 'poster'];
+  // Candidate spots for a freshly-added block, cycled by how many are
+  // already on the template. Aligned to the editor's 2.5% grid so a fresh
+  // add already sits on a line instead of needing an immediate Snap.
+  const OPEN_SLOTS = [
+    { x: 5, y: 5, width: 30 }, { x: 65, y: 5, width: 30 },
+    { x: 5, y: 70, width: 30 }, { x: 65, y: 70, width: 30 },
+    { x: 35, y: 37.5, width: 30 },
+  ];
+
+  function visibleBlockSet(tpl) {
+    const shown = new Set(TEMPLATE_DEFAULT_BLOCKS[tpl] || []);
+    const overrides = (cfg.blockVisibility || {})[tpl] || {};
+    for (const name in overrides) overrides[name] ? shown.add(name) : shown.delete(name);
+    return shown;
+  }
+
+  // Rebuilds the "Selected block" dropdown for the current template: blocks
+  // already on it in one group, blocks that could be added in another.
+  // Picking an "on" option just selects it for editing; picking an "add"
+  // option (handled by the change listener below) adds it.
+  function rebuildBlockDropdown() {
+    const shown = visibleBlockSet(cfg.template);
+    const sel = $('#element-select');
+    const prev = sel.value;
+    sel.innerHTML = '';
+    const on = [];
+    const toAdd = [];
+    TOGGLEABLE.forEach(name => (shown.has(name) ? on : toAdd).push(name));
+    const onCount = on.length;  // toggleable blocks only
+    on.forEach(name => sel.add(new Option(BLOCK_LABEL[name], name)));
+    // Content-driven, always positionable, never added/removed by hand —
+    // appended after onCount is read so it can't mask an all-removed template.
+    sel.add(new Option(BLOCK_LABEL.stinger, 'stinger'));
+    $('#no-blocks-note').hidden = onCount > 0;
+    $('#block-sliders').hidden = onCount === 0;
+    const stillOnScreen = [...sel.options].some(o => o.value === prev);
+    sel.value = stillOnScreen ? prev : (sel.options[0]?.value || '');
+
+    // A separate control, not options mixed into the block above it: adding
+    // is a one-shot action, not a state to browse into and leave selected.
+    const addSel = $('#add-block-select');
+    addSel.innerHTML = '<option value="" selected>+ Add…</option>';
+    toAdd.forEach(name => addSel.add(new Option(BLOCK_LABEL[name], name)));
+    addSel.disabled = toAdd.length === 0;
+  }
+
+  function selectBlock(name) {
+    if (!name) return;
+    $('#frame').contentWindow?.postMessage({ type: 'marquee-select', name }, location.origin);
+    updateRemoveButton();
+  }
+
+  function addBlock(name) {
+    const tpl = cfg.template;
+    const usedCount = TOGGLEABLE.filter(n => visibleBlockSet(tpl).has(n)).length;
+    cfg.blockVisibility[tpl] ||= {};
+    cfg.blockVisibility[tpl][name] = true;
+    cfg.blockLayout[tpl] ||= {};
+    if (!cfg.blockLayout[tpl][name]) {
+      cfg.blockLayout[tpl][name] = { ...OPEN_SLOTS[usedCount % OPEN_SLOTS.length] };
+    }
+    // Weather is the one toggleable block whose data-fetch defaults off —
+    // adding it to a template with nothing to show would be a dead end.
+    if (name === 'weather' && !cfg.showWeather) {
+      cfg.showWeather = true;
+      const ck = document.getElementById('ck-weather');
+      if (ck) ck.checked = true;
+    }
+    rebuildBlockDropdown();
+    sendCfg(); sendLayout();
+    selectBlock(name);
+    $('#status').textContent = BLOCK_LABEL[name] + ' added — save to keep it.';
+  }
+
+  function updateRemoveButton() {
+    const name = $('#element-select').value;
+    $('#remove-block').hidden = !(TOGGLEABLE.includes(name) && visibleBlockSet(cfg.template).has(name));
+  }
 
   function scaleFrame() {
     const box = $('.frame-box');
@@ -456,8 +594,7 @@
   function loadFrame() {
     $('#frame').onload = () => {
       sendCfg(); sendLayout();
-      $('#frame').contentWindow.postMessage(
-        { type: 'marquee-select', name: $('#element-select').value }, location.origin);
+      selectBlock($('#element-select').value);
     };
     $('#frame').src = cardBase + '?demo=1&edit=1&t=' + Date.now(); scaleFrame();
   }
@@ -468,6 +605,7 @@
   }
   document.querySelectorAll('.tpl').forEach(b => b.addEventListener('click', () => {
     cfg.template = b.dataset.template; markTemplates(); sendCfg();
+    rebuildBlockDropdown(); selectBlock($('#element-select').value);
     // Clicking through templates also steps the demo film, so the preview
     // shows the reel instead of one movie forever.
     $('#frame').contentWindow?.postMessage({ type: 'marquee-demo-next' }, location.origin);
@@ -512,7 +650,8 @@
     $('#font').value = v.font;
     $('#vibe-name').textContent = v.n; $('#vibe-tag').textContent = v.tag;
     $('.vibe-now').style.setProperty('--v', v.c);
-    markTheme(); markTemplates(); sendCfg();
+    markTheme(); markTemplates(); markCarousel(); sendCfg();
+    rebuildBlockDropdown(); selectBlock($('#element-select').value);
     // each step also flips the demo film, so browsing vibes tours the reel
     $('#frame').contentWindow?.postMessage({ type: 'marquee-demo-next' }, location.origin);
     $('#status').textContent = `${v.n} — ${v.tag}. Save to keep the vibe.`;
@@ -520,6 +659,68 @@
   $('#vibe-prev').addEventListener('click', () => applyVibe(vibeIdx - 1));
   $('#vibe-next').addEventListener('click', () => applyVibe(vibeIdx + 1));
   $('#vibe-now').addEventListener('click', () => applyVibe(vibeIdx < 0 ? 0 : vibeIdx));
+
+  // Mobile carousel: merges Template + Vibes into one looping swipeable
+  // strip. Reuses VIBES and applyVibe() wholesale — each card IS a vibe,
+  // so a swipe picks a full look (template + theme + font) in one motion,
+  // exactly what the desktop Vibes stepper already does.
+  let carouselBuilt = false, carouselProgrammatic = false, carouselSettleT = 0;
+  function buildCarousel() {
+    const track = $('#vc-track');
+    // Built via DOM APIs, not innerHTML — the Street thumbnail is an inline
+    // SVG data-URI containing literal double-quotes, which would break out
+    // of a string-templated src="..." attribute.
+    const buildCard = v => {
+      const thumb = document.querySelector(`.tpl[data-template="${v.tpl}"] img`);
+      const card = document.createElement('button');
+      card.className = 'vc-card'; card.type = 'button';
+      const img = document.createElement('img');
+      img.src = thumb ? thumb.src : ''; img.alt = v.n;
+      const b = document.createElement('b'); b.textContent = v.n;
+      const small = document.createElement('small'); small.textContent = v.tag;
+      card.append(img, b, small);
+      return card;
+    };
+    track.innerHTML = '';
+    // Tripled so scrolling past either end always lands on an identical
+    // clone card — the loop "teleports" there instantly, unnoticed.
+    for (let rep = 0; rep < 3; rep++) VIBES.forEach(v => track.appendChild(buildCard(v)));
+    [...track.children].forEach((el, domI) =>
+      el.addEventListener('click', () => applyVibe(domI % VIBES.length)));
+    track.addEventListener('scroll', () => {
+      if (carouselProgrammatic) return;
+      clearTimeout(carouselSettleT);
+      carouselSettleT = setTimeout(carouselSettled, 150);
+    });
+    carouselBuilt = true;
+    markCarousel(true);
+  }
+  function carouselSettled() {
+    const track = $('#vc-track');
+    const center = track.scrollLeft + track.clientWidth / 2;
+    let best = 0, bestDist = Infinity;
+    [...track.children].forEach((el, domI) => {
+      const dist = Math.abs(el.offsetLeft + el.offsetWidth / 2 - center);
+      if (dist < bestDist) { bestDist = dist; best = domI; }
+    });
+    const real = best % VIBES.length;
+    if (real === vibeIdx) markCarousel(); // same vibe: just re-center the clone
+    else applyVibe(real);
+  }
+  // Jumps the active card into the middle clone set (instant, no visible
+  // motion since every set looks identical) so there's always a full set
+  // of cards to swipe into on either side — the loop never dead-ends.
+  function markCarousel(instant) {
+    if (!carouselBuilt) return;
+    const track = $('#vc-track');
+    [...track.children].forEach((el, domI) =>
+      el.classList.toggle('on', domI % VIBES.length === vibeIdx));
+    const middleDomI = VIBES.length + Math.max(vibeIdx, 0);
+    carouselProgrammatic = true;
+    track.children[middleDomI]?.scrollIntoView(
+      { inline: 'center', block: 'nearest', behavior: instant ? 'instant' : 'smooth' });
+    requestAnimationFrame(() => { carouselProgrammatic = false; });
+  }
 
   function markTheme() {
     document.querySelectorAll('#theme button[data-v]').forEach(b =>
@@ -665,7 +866,8 @@
     segSet('unitfmt', cfg.weatherUnits || 'f');
     segSet('side', cfg.posterSide || 'right');
     segSet('clockfmt', cfg.clockFormat || '12h');
-    markTheme(); markTemplates(); loadFrame();
+    cfg.blockLayout ||= {}; cfg.blockVisibility ||= {};
+    markTheme(); markTemplates(); rebuildBlockDropdown(); buildCarousel(); loadFrame();
     loadDevices(false);
   }
 
@@ -706,11 +908,27 @@
       // '' = template default: no Justify button lit until one is chosen.
       segSet('align', (msg.values || {}).align || '');
       if (msg.tap) $('#editor-wrap').open = true;
+      updateRemoveButton();
     }
   });
-  $('#element-select').addEventListener('change', event =>
-    $('#frame').contentWindow.postMessage(
-      { type: 'marquee-select', name: event.target.value }, location.origin));
+  $('#element-select').addEventListener('change', event => selectBlock(event.target.value));
+  $('#add-block-select').addEventListener('change', event => {
+    const name = event.target.value;
+    event.target.value = '';  // one-shot: always resets to "+ Add…" after firing
+    if (name) addBlock(name);
+  });
+  $('#remove-block').addEventListener('click', () => {
+    const name = $('#element-select').value;
+    if (!TOGGLEABLE.includes(name)) return;
+    const tpl = cfg.template;
+    cfg.blockVisibility[tpl] ||= {};
+    cfg.blockVisibility[tpl][name] = false;
+    delete (cfg.blockLayout[tpl] || {})[name];
+    rebuildBlockDropdown();
+    sendCfg(); sendLayout();
+    selectBlock($('#element-select').value);
+    $('#status').textContent = BLOCK_LABEL[name] + ' removed — save to apply.';
+  });
   document.querySelectorAll('[data-layout-field]').forEach(input =>
     input.addEventListener('input', () => {
       const field = input.dataset.layoutField;
@@ -745,9 +963,15 @@
     } catch (e) { $('#status').textContent = 'Import failed: ' + e.message; }
   });
   $('#reset-layout').addEventListener('click', () => {
-    cfg.blockLayout = {};
-    sendLayout();
-    $('#status').textContent = 'Block positions reset — save to apply.';
+    // Scoped to the template you're looking at — back to how it shipped,
+    // added/removed blocks included, not just positions.
+    const tpl = cfg.template;
+    delete cfg.blockLayout[tpl];
+    delete cfg.blockVisibility[tpl];
+    rebuildBlockDropdown();
+    sendCfg(); sendLayout();
+    selectBlock($('#element-select').value);
+    $('#status').textContent = 'This template reset to its defaults — save to apply.';
   });
 
   // Phones: the preview column is a fixed bottom sheet. Pad the page so the
@@ -760,6 +984,21 @@
       phone.matches ? sheet.offsetHeight + 16 + 'px' : '';
     scaleFrame();
   }).observe(sheet);
+
+  // A focused text field elsewhere on the page pops the on-screen keyboard,
+  // which shrinks the *visual* viewport without shrinking the fixed sheet
+  // pinned to the bottom of the (unchanged) layout viewport — the sheet
+  // then eats most of the little space the keyboard left, crushing the
+  // field you're actually typing into down to a sliver. Hide the sheet
+  // while a keyboard is up; nothing in it needs a keyboard to use.
+  if (window.visualViewport) {
+    const updateKeyboardState = () => {
+      if (!phone.matches) { sheet.classList.remove('kb-hidden'); return; }
+      const shrunk = visualViewport.height < window.innerHeight * 0.75;
+      sheet.classList.toggle('kb-hidden', shrunk);
+    };
+    visualViewport.addEventListener('resize', updateKeyboardState);
+  }
 
   // Changelog slide-over
   let notesLoaded = false;
