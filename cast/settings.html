@@ -359,6 +359,8 @@
       <input type="checkbox" id="ck-clocksec" data-k="clockSeconds"></div>
     <div class="row"><label for="ck-weather">Weather<small>Temperature and conditions beside the clock</small></label>
       <input type="checkbox" id="ck-weather" data-k="showWeather"></div>
+    <div class="row"><label for="ck-lightning">Lightning flash<small>On the Street template during storms — off by default, can be distracting</small></label>
+      <input type="checkbox" id="ck-lightning" data-k="stormLightning"></div>
     <div class="row"><label for="zip">ZIP code<small>US ZIP for local weather and day/night; blank = auto-locate from your server's IP</small></label>
       <input type="text" id="zip" class="mini" placeholder="e.g. 30301" autocomplete="off"></div>
     <div class="row"><label>Units</label>
@@ -475,7 +477,7 @@
   const TEMPLATES = ['spotlight', 'split', 'hero', 'lowerthird', 'bigclock', 'street'];
   let cfg = { hubIp: '', template: 'spotlight', theme: 'amber', accent: '',
     titleFont: 'system', posterSide: 'right', clockFormat: '12h', blockLayout: {},
-    blockVisibility: {}, showWeather: false };
+    blockVisibility: {}, showWeather: false, stormLightning: false };
   const cardBase = '/image';
 
   // ponytail: mirrors TEMPLATE_DEFAULT_BLOCKS in cast.py / output/index.html

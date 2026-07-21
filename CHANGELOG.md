@@ -9,10 +9,15 @@ near streaks/flakes move bigger and faster, far ones smaller and slower.
 Snow drifts side to side as it falls instead of sliding straight down. Fog
 gets its own look for the first time: a soft drifting haze plus a real
 blur on the scene, instead of just a dim overlay. Overcast now casts a
-slow-moving cloud shadow instead of flat dimming alone. Thunderstorms
-(`?wx=storm`) are their own condition now — same layered rain, plus an
-occasional lightning flash across the brick and marquee behind the card
-(text and poster stay clear, per real cast-card readability). Test any of
+slow-moving cloud shadow instead of flat dimming alone. Rain streaks now
+mix two periods per layer so they read as rain instead of a scan-line
+grid. Snow flakes are bigger with a gem-like glint instead of tiny flat
+dots. Fog is a real, visible haze + blur now instead of barely-there
+dimming. Thunderstorms (`?wx=storm`) are their own condition — same
+layered rain, plus an optional lightning flash across the brick and
+marquee behind the card (text and poster stay clear). The flash is a new
+**Lightning flash** setting under Card content, **off by default** since a
+bright pop can be distracting on an always-on ambient display. Test any of
 it live with `?wx=rain|snow|fog|cloud|storm` and `?day=1|0` on `/image`.
 
 ## 1.10.0 — 2026-07-21
