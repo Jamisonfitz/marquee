@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased
+
+### Env vars are defaults you can see, not overrides you can't
+
+`PLEX_USERS` / `PLEX_DEVICES` used to **merge** with the settings page instead
+of being replaced by it. The env list was invisible — the Users field showed
+empty while every other session was silently ignored — and unliftable: the
+page could only add names to what the env var already allowed, so clearing the
+field changed nothing. `HUB_IP` alone behaved correctly.
+
+Now all three follow `HUB_IP`'s rule: a typed value replaces the env var, a
+blank field inherits it. The inherited value is shown as a greyed placeholder —
+`jamison (from PLEX_USERS)` — via a new `/env-defaults` route that serves
+exactly those three values and nothing else, an allowlist so nothing
+credential-shaped can leak to a browser by default. `selftest` pins the
+override semantics (blank inherits, typed replaces, the env is never unioned
+back in) and the allowlist (no token/key-shaped name may ever join the hints).
+
 ## 1.8.0 — 2026-07-19
 
 ### The block editor grows up
