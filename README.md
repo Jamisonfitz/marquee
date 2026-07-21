@@ -27,9 +27,9 @@ Six designed layouts, switchable live from the settings page:
 |:---:|:---:|
 | ![Spotlight](docs/screenshots/spotlight.jpg) **Spotlight** — poster beside the full metadata stack | ![Hero](docs/screenshots/hero.jpg) **Hero** — big centered title over the backdrop |
 | ![Lower Third](docs/screenshots/lowerthird.jpg) **Lower Third** — broadcast-style chyron over full-bleed art | ![Big Clock](docs/screenshots/bigclock.jpg) **Big Clock** — ambient timepiece with a now-playing strip |
-| ![Street](docs/screenshots/street.jpg) **Street** — a living night scene: your poster in a bulb-lit marquee, the movie logo sprayed on brick | ![Split](docs/screenshots/split.jpg) **Split** — hard split: full-height art wall beside the info column |
+| ![Street](docs/screenshots/street.jpg) **Street** — a living night scene: your poster glowing in a bulb-lit marquee, the movie logo sprayed on brick, real weather on the wall | ![Split](docs/screenshots/split.jpg) **Split** — hard split: full-height art wall beside the info column |
 
-Every template is built from the same blocks — title/logo identity, grouped ratings, metadata chips, plot, progress, clock, poster — so your show/hide toggles, themes, custom accent color, and block position tweaks carry across all of them.
+Every template is built from the same set of blocks — title/logo identity, weather, grouped ratings, metadata chips, plot, progress, clock, poster — so themes, custom accent color, and fonts carry across all of them. Which blocks appear, and where, is set per template: add or remove any block from any template independently, and reposition them without affecting the others.
 
 ![Settings UI](docs/screenshots/settings.jpg)
 
@@ -37,14 +37,20 @@ Every template is built from the same blocks — title/logo identity, grouped ra
 
 - Live now-playing card — from Plex, Emby, or Jellyfin — with six designed
   templates: Spotlight, Split, Hero, Lower Third, Big Clock, and Street
-  (animated marquee bulbs and all).
+  (animated marquee bulbs, real weather, and day/night, all included).
 - Eight themes, one-tap Vibe presets, a custom accent color, five title
   fonts, 12/24-hour clock styles, and per-block show/hide toggles.
+- Add or remove any block — clock, weather, title, plot, ratings, progress,
+  poster — from any template independently, and reposition it without
+  affecting the others. Nothing changes until you actually add or remove
+  something; every template still ships with its original layout.
 - Session filters: limit casting to your Plex users and your devices, live
   from the settings page — shared users no longer take over the display.
 - A drag-and-slider editor for moving, sizing, justifying, and scaling each
   card block, with an instant demo preview featuring original fictional
-  films (no copyrighted art).
+  films (no copyrighted art). On phones, the template and vibe pickers
+  collapse into one swipeable strip so the editor doesn't fight the screen
+  for room.
 - Persisted settings, health checks, and a Docker-first deployment path.
 - Google Nest Hub casting with clean idle handoff back to ambient mode.
 

@@ -256,6 +256,47 @@
     animation-delay: calc(var(--i) * -.275s); }
   .scene .np { animation: npf 8s linear infinite; }
   .scene .pool { animation: brth 6s ease-in-out infinite; }
+
+  /* Real weather on the Street scene: rain streaks, drifting snow, overcast
+     dimming, and true day/night resting the bulb animations. Driven by
+     /weather (Open-Meteo, already fetched for the weather chip on every
+     template); ?wx=rain|snow|fog|cloud and ?day=1|0 force a condition. */
+  @keyframes rainfall { to { background-position: -18vw 100vh, -10vw 100vh; } }
+  @keyframes snowfall { to { background-position: 4vw 105vh, -3vw 100vh, 2vw 110vh; } }
+  body[data-template="street"].wx-rain::after,
+  body[data-template="street"].wx-snow::after { content: ""; position: fixed;
+    inset: 0; pointer-events: none; z-index: 3; }
+  body[data-template="street"].wx-rain::after { background-image:
+    repeating-linear-gradient(78deg, transparent 0 15px, rgba(178,198,228,.14) 15px 16px),
+    repeating-linear-gradient(78deg, transparent 0 27px, rgba(178,198,228,.09) 27px 28px);
+    animation: rainfall 1.1s linear infinite; }
+  body[data-template="street"].wx-snow::after { background-image:
+    radial-gradient(circle, rgba(255,255,255,.55) 1.4px, transparent 2.2px),
+    radial-gradient(circle, rgba(255,255,255,.4) 1.1px, transparent 1.8px),
+    radial-gradient(circle, rgba(255,255,255,.28) .9px, transparent 1.5px);
+    background-size: 6vw 9vh, 9vw 13vh, 13vw 17vh;
+    animation: snowfall 11s linear infinite; }
+  .scene svg { filter: brightness(var(--sb, 1)); }
+  body[data-template="street"].wx-cloud { --sb: .82; }
+  body[data-template="street"].street-day { --sb: 1.75; }
+  body[data-template="street"].street-day.wx-cloud { --sb: 1.35; }
+  body[data-template="street"].street-day .scene .bl,
+  body[data-template="street"].street-day .scene .ch { animation: none; opacity: .3; }
+  body[data-template="street"].street-day .scene .np text { opacity: .8; }
+  body[data-template="street"].street-day .scene .pool { display: none; }
+  @media (prefers-reduced-motion: reduce) {
+    body[data-template="street"].wx-rain::after,
+    body[data-template="street"].wx-snow::after { animation: none; opacity: .5; }
+  }
+
+  /* LED trim: the theme accent bleeds around the poster like backlighting
+     through the marquee case, reusing --accent-glow so it retints with
+     every theme automatically, the same as the progress bar and title do. */
+  body[data-template="street"] .b-poster::after { content: ""; position: absolute;
+    inset: -1.1vw; z-index: -1; border-radius: .8vw;
+    background: radial-gradient(closest-side, var(--accent-glow), transparent 75%);
+    filter: blur(1.1vw); }
+
   body[data-template="street"] .stage { display: block; padding: 0; }
   body[data-template="street"] .block { position: absolute; }
   /* The poster hangs inside the marquee frame drawn in the scene. */
@@ -314,7 +355,8 @@
 <div class="bg-shade"></div>
 <div class="scene" id="scene"></div>
 <div class="stage hidden">
-  <div class="block b-clock" data-layout="clock"><div class="clock" id="clock"></div><div class="wx" id="wx"></div></div>
+  <div class="block b-clock" data-layout="clock"><div class="clock" id="clock"></div></div>
+  <div class="block b-weather" data-layout="weather"><div class="wx" id="wx"></div></div>
   <div class="block b-identity" data-layout="identity">
     <p class="eyebrow" id="eyebrow"></p>
     <img class="logo" id="logo" alt="">
@@ -337,6 +379,27 @@
   const DEMO = new URLSearchParams(location.search).has('demo');
   const EDIT = new URLSearchParams(location.search).has('edit');
   const TEMPLATES = ['spotlight', 'split', 'hero', 'lowerthird', 'bigclock', 'street'];
+  // ponytail: mirrors TEMPLATE_DEFAULT_BLOCKS in cast.py — no shared codegen
+  // between the two, same as TEMPLATES/THEMES already being duplicated here.
+  const TEMPLATE_DEFAULT_BLOCKS = {
+    spotlight: ['clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
+    split: ['clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
+    hero: ['clock', 'identity', 'meta', 'ratings', 'progress'],
+    lowerthird: ['clock', 'identity', 'meta', 'ratings', 'progress'],
+    bigclock: ['clock', 'identity', 'meta', 'plot', 'progress'],
+    street: ['clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
+  };
+  // A block outside its template's default set has no grid-area or template
+  // CSS anchor to offset from, so it needs a real starting position the
+  // first time it's shown. Filled in properly by the settings page's Add
+  // flow (nearest open grid cell); this is only the safety-net fallback.
+  const ADDED_BLOCK_FALLBACK = { x: 10, y: 10, width: 30 };
+  function visibleBlockSet(tpl, visibility) {
+    const shown = new Set(TEMPLATE_DEFAULT_BLOCKS[tpl] || []);
+    const overrides = (visibility || {})[tpl] || {};
+    for (const name in overrides) overrides[name] ? shown.add(name) : shown.delete(name);
+    return shown;
+  }
   let shownKey = null, prog = null, state = 'playing', fetchedAt = 0;
   let baseCfg = null, draftCfg = null, draftLayout = null, lastD = null;
   let selectedLayout = 'identity', announced = false;
@@ -653,6 +716,9 @@ ${bulbs.join('')}
     const tpl = TEMPLATES.includes(c.template) ? c.template : 'spotlight';
     document.body.dataset.template = tpl;
     if (tpl === 'street' && !$('scene').firstChild) $('scene').innerHTML = SCENE;
+    // Landing on Street before the 10-minute weather poll has ever run
+    // would otherwise leave the scene undimmed/dry until the next tick.
+    if (tpl === 'street' && !lastWx) wxTick();
     document.body.classList.toggle('flip',
       (tpl === 'spotlight' || tpl === 'split') && c.posterSide === 'left');
 
@@ -691,13 +757,16 @@ ${bulbs.join('')}
       `<div class="score"><span class="imdb-tag">IMDb</span><div class="num">${esc(s.imdb)}</div></div>`);
     $('scores').innerHTML = parts.join('');
 
-    show('clock', c.showClock !== false);
-    show('identity', true);
-    show('meta', metaHtml !== '');
-    show('plot', c.showPlot !== false && !!d.summary);
-    show('ratings', parts.length > 0);
-    show('progress', !!d.progress && c.showProgress !== false);
-    show('poster', !!d.poster);
+    const shown = visibleBlockSet(tpl, c.blockVisibility);
+    show('clock', shown.has('clock') && c.showClock !== false);
+    show('weather', shown.has('weather') && c.showWeather !== false);
+    show('identity', shown.has('identity'));
+    show('meta', shown.has('meta') && metaHtml !== '');
+    show('plot', shown.has('plot') && c.showPlot !== false && !!d.summary);
+    show('ratings', shown.has('ratings') && parts.length > 0);
+    show('progress', shown.has('progress') && !!d.progress && c.showProgress !== false);
+    show('poster', shown.has('poster') && !!d.poster);
+    paintWx();
     applyBlockLayout();
     if (EDIT && !announced) {
       // First render: blocks finally have real sizes, so the settings sliders
@@ -709,12 +778,33 @@ ${bulbs.join('')}
   }
 
   function applyBlockLayout() {
-    const layout = activeCfg().blockLayout || {};
+    const tpl = document.body.dataset.template;
+    const native = new Set(TEMPLATE_DEFAULT_BLOCKS[tpl] || []);
+    const layout = (activeCfg().blockLayout || {})[tpl] || {};
     document.querySelectorAll('[data-layout]').forEach(el => {
-      const p = layout[el.dataset.layout] || {};
-      el.style.transform =
-        `translate(${p.x || 0}vw, ${p.y || 0}vh) scale(${p.scale || 1})`;
-      el.style.width = p.width ? p.width + 'vw' : '';
+      const name = el.dataset.layout;
+      const p = layout[name] || {};
+      // Stinger already has a natural anchor (it's an inline child of the
+      // meta block, not a template-native top-level block) — it's always
+      // been a transform-offset from wherever it naturally sits.
+      if (native.has(name) || name === 'stinger') {
+        // Already has a template-defined base position (a grid-area, or a
+        // Street per-block CSS anchor) — x/y is a nudge on top of it, as
+        // it's always been.
+        el.style.position = ''; el.style.left = ''; el.style.top = '';
+        el.style.transform =
+          `translate(${p.x || 0}vw, ${p.y || 0}vh) scale(${p.scale || 1})`;
+      } else {
+        // Added beyond the template's native set: nothing anchors it, so
+        // its saved x/y IS the position, not an offset from one.
+        const f = ADDED_BLOCK_FALLBACK;
+        el.style.position = 'absolute';
+        el.style.left = (p.x != null ? p.x : f.x) + 'vw';
+        el.style.top = (p.y != null ? p.y : f.y) + 'vh';
+        el.style.transform = `scale(${p.scale || 1})`;
+      }
+      const width = p.width || (native.has(name) ? null : ADDED_BLOCK_FALLBACK.width);
+      el.style.width = width ? width + 'vw' : '';
       el.classList.remove('al-left', 'al-center', 'al-right');
       if (p.align) el.classList.add('al-' + p.align);
       // Per-block font: children inherit; --title-font covers the .title.
@@ -726,7 +816,8 @@ ${bulbs.join('')}
   }
 
   function selectionValues(el, name) {
-    const p = (draftLayout || activeCfg().blockLayout || {})[name] || {};
+    const tpl = document.body.dataset.template;
+    const p = ((draftLayout || activeCfg().blockLayout || {})[tpl] || {})[name] || {};
     const rect = el.getBoundingClientRect();
     return { x: p.x || 0, y: p.y || 0,
       width: p.width || Math.round(rect.width / innerWidth * 100),
@@ -747,10 +838,12 @@ ${bulbs.join('')}
         document.querySelectorAll('[data-layout]').forEach(n => n.classList.remove('selected'));
         el.classList.add('selected');
         const name = el.dataset.layout;
+        const tpl = document.body.dataset.template;
         const layout = draftLayout ||= structuredClone(activeCfg().blockLayout || {});
+        const tplLayout = layout[tpl] ||= {};
         selectedLayout = name;
         announceSelection(el, name, true);
-        const p = layout[name] ||= {};
+        const p = tplLayout[name] ||= {};
         const start = { x: event.clientX, y: event.clientY, px: p.x || 0, py: p.y || 0 };
         el.setPointerCapture(event.pointerId);
         const snap = v => Math.round(v);
@@ -781,24 +874,45 @@ ${bulbs.join('')}
   }
 
   // Weather beside the clock (any template): /weather is served by the
-  // container from Open-Meteo, keyed to the ZIP in settings.
+  // container from Open-Meteo, keyed to the ZIP in settings. The same fetch
+  // also drives the Street scene's rain/snow/day-night — that scene wants
+  // real conditions even when the text chip block is off, so it fetches
+  // whenever the Weather block is on OR Street is the active template.
   let lastWx = null;
+  const WX_FORCE = new URLSearchParams(location.search).get('wx');
+  const DAY_FORCE = new URLSearchParams(location.search).get('day');
   const wxWord = c =>
     c == null ? '' :
     c >= 95 ? 'storms' :
     c >= 85 ? 'snow' : (c >= 80 ? 'showers' : '') ||
     (c >= 71 ? 'snow' : c >= 51 ? 'rain' : c >= 45 ? 'fog' : c >= 2 ? 'clouds' : 'clear');
+  const wxClass = code =>
+    code == null ? '' :
+    code >= 71 && code <= 86 && !(code >= 80 && code <= 82) ? 'wx-snow' :
+    (code >= 51 && code <= 67) || (code >= 80 && code <= 82) || code >= 95 ? 'wx-rain' :
+    code >= 45 && code <= 48 ? 'wx-fog' :
+    code >= 2 ? 'wx-cloud' : '';
+  function applyStreetWeather() {
+    document.body.classList.remove('wx-rain', 'wx-snow', 'wx-fog', 'wx-cloud');
+    const cls = WX_FORCE ? 'wx-' + WX_FORCE : wxClass(lastWx?.code);
+    if (['wx-rain', 'wx-snow', 'wx-fog', 'wx-cloud'].includes(cls))
+      document.body.classList.add(cls);
+    const h = new Date().getHours();
+    document.body.classList.toggle('street-day', DAY_FORCE !== null
+      ? DAY_FORCE === '1'
+      : (lastWx?.isDay != null ? lastWx.isDay : h >= 7 && h < 19));
+  }
   function paintWx() {
     const c = activeCfg();
-    if (!c.showWeather || !lastWx || lastWx.temp == null) {
-      $('wx').textContent = ''; return;
-    }
-    const f = (c.weatherUnits || 'f') === 'f';
-    const t = Math.round(f ? lastWx.temp * 9 / 5 + 32 : lastWx.temp);
-    $('wx').textContent = `${t}°${f ? 'F' : 'C'} · ${wxWord(lastWx.code)}`;
+    $('wx').textContent = (c.showWeather && lastWx && lastWx.temp != null)
+      ? `${Math.round((c.weatherUnits || 'f') === 'f' ? lastWx.temp * 9 / 5 + 32 : lastWx.temp)}°${(c.weatherUnits || 'f') === 'f' ? 'F' : 'C'} · ${wxWord(lastWx.code)}`
+      : '';
+    applyStreetWeather();
   }
   async function wxTick() {
-    if (!activeCfg().showWeather) { paintWx(); return; }
+    const c = activeCfg();
+    const wanted = c.showWeather || document.body.dataset.template === 'street' || WX_FORCE;
+    if (!wanted) { paintWx(); return; }
     try { lastWx = await (await fetch('/weather')).json(); } catch (e) {}
     paintWx();
   }
@@ -832,11 +946,13 @@ ${bulbs.join('')}
     } else if (msg.type === 'marquee-set') {
       const el = document.querySelector(`[data-layout="${selectedLayout}"]`);
       if (!el || !['x', 'y', 'width', 'scale', 'align', 'font'].includes(msg.field)) return;
+      const tpl = document.body.dataset.template;
       const layout = draftLayout ||= structuredClone(activeCfg().blockLayout || {});
+      const tplLayout = layout[tpl] ||= {};
       // Seed numbers only: writing align/font here would silently pin the
       // template's alignment (the old off-center-title bug).
       const { align, font, ...seed } = selectionValues(el, selectedLayout);
-      const p = layout[selectedLayout] ||= seed;
+      const p = tplLayout[selectedLayout] ||= seed;
       p[msg.field] = ['align', 'font'].includes(msg.field)
         ? String(msg.value) : Number(msg.value);
       applyBlockLayout();
@@ -847,8 +963,10 @@ ${bulbs.join('')}
       // editor grid line (the overlay draws every 2.5vw x 2.5vh).
       const el = document.querySelector(`[data-layout="${selectedLayout}"]`);
       if (!el) return;
+      const tpl = document.body.dataset.template;
       const layout = draftLayout ||= structuredClone(activeCfg().blockLayout || {});
-      const p = layout[selectedLayout] ||= {};
+      const tplLayout = layout[tpl] ||= {};
+      const p = tplLayout[selectedLayout] ||= {};
       const r = el.getBoundingClientRect(), G = 2.5;
       const left = r.left / innerWidth * 100, top = r.top / innerHeight * 100;
       const clamp = v => Math.max(-100, Math.min(100, Math.round(v * 100) / 100));
