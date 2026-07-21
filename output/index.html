@@ -281,35 +281,43 @@
   body[data-template="street"].wx-snow::before, body[data-template="street"].wx-snow::after,
   body[data-template="street"].wx-fog::after, body[data-template="street"].wx-cloud::after {
     content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 3; }
-  /* Rain/storm: near layer bigger + faster, far layer thinner + slower —
-     real parallax instead of one flat sheet of identical streaks. */
+  /* Rain/storm: two periods per layer so streaks don't line up into a
+     scan-line grid, plus a near layer (denser, faster) and far layer
+     (sparser, slower) for depth. */
   body[data-template="street"].wx-rain::before, body[data-template="street"].wx-storm::before {
-    background-image: repeating-linear-gradient(76deg, transparent 0 20px, rgba(202,218,242,.22) 20px 22px);
-    background-size: 100% 140%; animation: rain-near .6s linear infinite; }
+    background-image:
+      repeating-linear-gradient(76deg, transparent 0 15px, rgba(205,220,244,.26) 15px 16.5px),
+      repeating-linear-gradient(73deg, transparent 0 23px, rgba(205,220,244,.16) 23px 24.5px);
+    animation: rain-near .6s linear infinite; }
   body[data-template="street"].wx-rain::after, body[data-template="street"].wx-storm::after {
-    background-image: repeating-linear-gradient(80deg, transparent 0 33px, rgba(178,198,228,.11) 33px 34px);
-    background-size: 100% 140%; animation: rain-far 1.05s linear infinite; }
-  /* Storm reuses the rain streaks and adds an occasional flash — scoped to
-     .scene (already position:fixed) and left at the default stacking layer
-     so it lights the brick/marquee behind the card without washing out the
-     poster and text sitting on .stage above it. */
-  body[data-template="street"].wx-storm .scene::after { content: ""; position: absolute; inset: 0;
+    background-image:
+      repeating-linear-gradient(80deg, transparent 0 31px, rgba(178,198,228,.13) 31px 32px),
+      repeating-linear-gradient(83deg, transparent 0 44px, rgba(178,198,228,.08) 44px 45px);
+    animation: rain-far 1.05s linear infinite; }
+  /* Storm reuses the rain streaks; the flash is opt-in (Settings → Card
+     content → Lightning flash, off by default) since a bright pop across
+     the scene can be distracting on an always-on ambient display. Scoped
+     to .scene (already position:fixed) and left at the default stacking
+     layer so it lights the brick/marquee without washing out the poster
+     and text sitting on .stage above it. */
+  body[data-template="street"].wx-storm.flash-on .scene::after { content: ""; position: absolute; inset: 0;
     background: #eaf0ff; mix-blend-mode: screen; pointer-events: none; opacity: 0;
     animation: lightning 8s steps(1) infinite; animation-delay: 3.1s; animation-fill-mode: backwards; }
-  /* Snow: near flakes are bigger and drift faster; mid/far flakes are
-     smaller, slower, and wander on their own offset rhythm. */
+  /* Snow: big, bright flakes up close with a gem-like glint (core + soft
+     halo), smaller and dimmer as they recede — near layer drifts faster. */
   body[data-template="street"].wx-snow::before {
-    background-image: radial-gradient(circle, rgba(255,255,255,.65) 1.6px, transparent 2.4px);
-    background-size: 8vw 11vh; animation: snow-near 6s ease-in-out infinite; }
+    background-image: radial-gradient(circle, rgba(255,255,255,.98) 0 2.2px, rgba(255,255,255,.4) 2.2px 5.5px, transparent 5.5px 7px);
+    background-size: 7vw 10vh; animation: snow-near 6s ease-in-out infinite; }
   body[data-template="street"].wx-snow::after {
-    background-image: radial-gradient(circle, rgba(255,255,255,.4) 1.1px, transparent 1.8px),
-      radial-gradient(circle, rgba(255,255,255,.25) .8px, transparent 1.4px);
+    background-image:
+      radial-gradient(circle, rgba(255,255,255,.85) 0 1.6px, rgba(255,255,255,.3) 1.6px 3.8px, transparent 3.8px 5px),
+      radial-gradient(circle, rgba(255,255,255,.5) 0 1.1px, rgba(255,255,255,.18) 1.1px 2.6px, transparent 2.6px 3.5px);
     background-size: 10vw 14vh, 14vw 19vh; animation: snow-far 12s ease-in-out infinite; }
-  /* Fog: soft drifting haze plus a real blur on the scene, since fog
-     physically softens what's behind it, not just dims it. */
+  /* Fog: a real, visible haze plus blur — fog should read at a glance,
+     not require squinting. */
   body[data-template="street"].wx-fog::after {
-    background: linear-gradient(180deg, rgba(212,220,232,.3) 0%, rgba(212,220,232,.1) 35%, transparent 60%),
-      radial-gradient(ellipse 70vw 30vh at 50% 90%, rgba(212,220,232,.35), transparent 70%);
+    background: linear-gradient(180deg, rgba(214,222,234,.5) 0%, rgba(214,222,234,.22) 40%, transparent 68%),
+      radial-gradient(ellipse 75vw 34vh at 50% 92%, rgba(214,222,234,.55), transparent 72%);
     animation: fog-drift 15s ease-in-out infinite; }
   /* Overcast: a slow, subtle cloud-shadow drift instead of flat dimming alone. */
   body[data-template="street"].wx-cloud::after {
@@ -319,11 +327,11 @@
   .scene svg { filter: brightness(var(--sb, 1)) blur(var(--sblur, 0px)); }
   body[data-template="street"].wx-cloud { --sb: .82; }
   body[data-template="street"].wx-storm { --sb: .74; }
-  body[data-template="street"].wx-fog { --sb: .88; --sblur: 1.4px; }
+  body[data-template="street"].wx-fog { --sb: .96; --sblur: 2.6px; }
   body[data-template="street"].street-day { --sb: 1.75; }
   body[data-template="street"].street-day.wx-cloud { --sb: 1.35; }
   body[data-template="street"].street-day.wx-storm { --sb: 1.2; }
-  body[data-template="street"].street-day.wx-fog { --sb: 1.5; }
+  body[data-template="street"].street-day.wx-fog { --sb: 1.6; }
   body[data-template="street"].street-day .scene .bl,
   body[data-template="street"].street-day .scene .ch { animation: none; opacity: .3; }
   body[data-template="street"].street-day .scene .np text { opacity: .8; }
@@ -334,7 +342,7 @@
     body[data-template="street"].wx-snow::before, body[data-template="street"].wx-snow::after {
       animation: none; opacity: .5; }
     body[data-template="street"].wx-fog::after, body[data-template="street"].wx-cloud::after { animation: none; }
-    body[data-template="street"].wx-storm .scene::after { animation: none; opacity: 0; }
+    body[data-template="street"].wx-storm.flash-on .scene::after { animation: none; opacity: 0; }
   }
 
   /* LED trim: the theme accent bleeds around the poster like backlighting
@@ -946,6 +954,7 @@ ${bulbs.join('')}
     const cls = WX_FORCE ? 'wx-' + WX_FORCE : wxClass(lastWx?.code);
     if (['wx-rain', 'wx-snow', 'wx-fog', 'wx-cloud', 'wx-storm'].includes(cls))
       document.body.classList.add(cls);
+    document.body.classList.toggle('flash-on', !!activeCfg().stormLightning);
     const h = new Date().getHours();
     document.body.classList.toggle('street-day', DAY_FORCE !== null
       ? DAY_FORCE === '1'
