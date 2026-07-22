@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.11.1 — 2026-07-22
+
+- Fixed the now-playing card requesting a missing `/favicon.ico` (a harmless
+  404 and console error). The card now carries the same tab icon as the
+  settings page.
+
 ## 1.11.0 — 2026-07-22
 
 ### Street weather, rebuilt for real
