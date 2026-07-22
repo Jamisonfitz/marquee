@@ -425,6 +425,9 @@
   const stage = document.querySelector('.stage');
   const DEMO = new URLSearchParams(location.search).has('demo');
   const EDIT = new URLSearchParams(location.search).has('edit');
+  // ?tpl= previews a template without changing saved settings — handy for
+  // sharing a self-contained demo link (e.g. ?demo=1&tpl=street&wx=rain).
+  const TPL_FORCE = new URLSearchParams(location.search).get('tpl');
   const TEMPLATES = ['spotlight', 'split', 'hero', 'lowerthird', 'bigclock', 'street'];
   // ponytail: mirrors TEMPLATE_DEFAULT_BLOCKS in cast.py — no shared codegen
   // between the two, same as TEMPLATES/THEMES already being duplicated here.
@@ -760,7 +763,8 @@ ${bulbs.join('')}
     if (FONTS[c.bodyFont]) root.setProperty('--font', FONTS[c.bodyFont]);
     else root.removeProperty('--font');
 
-    const tpl = TEMPLATES.includes(c.template) ? c.template : 'spotlight';
+    const tpl = TEMPLATES.includes(TPL_FORCE) ? TPL_FORCE
+      : (TEMPLATES.includes(c.template) ? c.template : 'spotlight');
     document.body.dataset.template = tpl;
     if (tpl === 'street' && !$('scene').firstChild) $('scene').innerHTML = SCENE;
     // Landing on Street before the 10-minute weather poll has ever run

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.11.2 — 2026-07-22
+
+- The card now accepts a `?tpl=<template>` query param to preview any
+  template without changing saved settings — so a demo link like
+  `/image?demo=1&tpl=street&wx=rain&day=0` always shows the Street scene and
+  weather regardless of which template is saved. View it on a wide/landscape
+  screen; the card is designed for the Hub's 16:9 display.
+
 ## 1.11.1 — 2026-07-22
 
 - Fixed the now-playing card requesting a missing `/favicon.ico` (a harmless
