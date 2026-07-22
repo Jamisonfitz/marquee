@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.11.0 — 2026-07-22
 
 ### Street weather, rebuilt for real
 
