@@ -278,7 +278,7 @@
   @keyframes fog-op2 { 0%,100% { opacity: .5; } 25% { opacity: .22; } 50% { opacity: .14; } 80% { opacity: .34; } }
   @keyframes fog-op3 { 0%,100% { opacity: .78; } 27% { opacity: .24; } 52% { opacity: .6; } 68% { opacity: .32; } }
   .fog { position: fixed; inset: 0; pointer-events: none; z-index: 3; display: none;
-    filter: blur(2px) saturate(1.05); }
+    opacity: var(--wx-layer, .72); filter: blur(2px) saturate(1.05); }
   body[data-template="street"].wx-fog .fog { display: block; }
   .fog span { position: absolute; inset: 0; background-repeat: repeat-x;
     background-image: radial-gradient(ellipse 50% 62% at 50% 55%,
@@ -294,6 +294,7 @@
   @keyframes cloud-drift { 0%, 100% { transform: translateX(-4%); } 50% { transform: translateX(4%); } }
   body[data-template="street"].wx-cloud::after {
     content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 3;
+    opacity: var(--wx-layer, .72);
     background: radial-gradient(ellipse 42vw 20vh at 18% -6%, rgba(0,0,0,.16), transparent 70%),
       radial-gradient(ellipse 38vw 18vh at 82% 104%, rgba(0,0,0,.13), transparent 70%);
     animation: cloud-drift 22s ease-in-out infinite; }
@@ -952,6 +953,21 @@ ${bulbs.join('')}
   // running while rain/snow/storm is on — cleared and stopped otherwise.
   const wxCanvas = $('wxcanvas'), wxCtx = wxCanvas.getContext('2d');
   let wxMode = null, wxRAF = null, wxW = 0, wxH = 0, drops = [], splashes = [];
+  // Intensity 1..4 (Settings → Effect intensity). Scales particle count,
+  // particle opacity, and the CSS opacity of the fog/cloud layers. Level 2
+  // is the default — present but easy to ignore in peripheral vision.
+  const WX_LEVELS = {
+    1: { rain: 90,  storm: 150, snow: 65,  alpha: .34, layer: .5 },
+    2: { rain: 160, storm: 240, snow: 110, alpha: .5,  layer: .72 },
+    3: { rain: 250, storm: 360, snow: 165, alpha: .64, layer: .9 },
+    4: { rain: 360, storm: 480, snow: 230, alpha: .82, layer: 1 },
+  };
+  const WXI_FORCE = new URLSearchParams(location.search).get('wxi');
+  let wxAlpha = WX_LEVELS[2].alpha, wxLevelUsed = 0;
+  function wxLevelNum() {
+    const n = parseInt(WXI_FORCE != null ? WXI_FORCE : activeCfg().weatherIntensity, 10);
+    return Math.min(4, Math.max(1, Number.isFinite(n) ? n : 2));
+  }
   function wxSize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     wxW = window.innerWidth; wxH = window.innerHeight;
@@ -975,9 +991,9 @@ ${bulbs.join('')}
   function wxFrame() {
     wxCtx.clearRect(0, 0, wxW, wxH);
     if (wxMode === 'snow') {
-      wxCtx.fillStyle = 'rgba(255,255,255,.9)';
+      wxCtx.fillStyle = '#fff';
       for (const f of drops) {
-        wxCtx.globalAlpha = 0.45 + (f.r / 3.3) * 0.55;
+        wxCtx.globalAlpha = Math.min(1, (0.4 + (f.r / 3.3) * 0.5) * (wxAlpha * 2));
         wxCtx.beginPath(); wxCtx.arc(f.x, f.y, f.r, 0, 6.2832); wxCtx.fill();
         f.y += f.vy; f.x += f.wind + Math.sin((f.ph += 0.01)) * 0.4;
         if (f.y > wxH + 4) { f.y = -4; f.x = rnd(0, wxW); }
@@ -986,7 +1002,7 @@ ${bulbs.join('')}
       wxCtx.globalAlpha = 1;
     } else {
       // rain / storm: near-white streaks, faster+longer for storm
-      wxCtx.strokeStyle = 'rgba(214,224,240,.55)'; wxCtx.lineCap = 'round';
+      wxCtx.strokeStyle = `rgba(214,224,240,${wxAlpha})`; wxCtx.lineCap = 'round';
       for (const d of drops) {
         wxCtx.lineWidth = Math.max(0.7, d.vy / 11);
         wxCtx.beginPath(); wxCtx.moveTo(d.x, d.y);
@@ -1000,7 +1016,7 @@ ${bulbs.join('')}
           d.vy = rnd(6, 15); d.len = d.vy * 1.6;
         }
       }
-      wxCtx.fillStyle = 'rgba(214,224,240,.5)';
+      wxCtx.fillStyle = `rgba(214,224,240,${wxAlpha})`;
       for (let i = splashes.length - 1; i >= 0; i--) {
         const s = splashes[i];
         wxCtx.globalAlpha = Math.max(0, s.a);
@@ -1012,23 +1028,26 @@ ${bulbs.join('')}
     }
     wxRAF = requestAnimationFrame(wxFrame);
   }
+  function wxSeed() {
+    const L = WX_LEVELS[wxLevelUsed]; wxAlpha = L.alpha;
+    if (wxMode === 'snow') seedSnow(L.snow);
+    else seedRain(wxMode === 'storm' ? L.storm : L.rain);
+  }
   function wxStart(mode) {
-    if (wxMode === mode) return;
-    wxMode = mode; wxSize();
-    if (mode === 'snow') seedSnow(150);
-    else seedRain(mode === 'storm' ? 320 : 210);
+    const lv = wxLevelNum();
+    if (wxMode === mode && wxLevelUsed === lv) return;
+    wxMode = mode; wxLevelUsed = lv; wxSize(); wxSeed();
     if (wxRAF) cancelAnimationFrame(wxRAF);
     if (REDUCE) { wxFrame(); cancelAnimationFrame(wxRAF); wxRAF = null; }  // one static frame
     else wxRAF = requestAnimationFrame(wxFrame);
   }
   function wxStop() {
     if (!wxMode) return;
-    wxMode = null;
+    wxMode = null; wxLevelUsed = 0;
     if (wxRAF) { cancelAnimationFrame(wxRAF); wxRAF = null; }
     wxCtx.clearRect(0, 0, wxW, wxH);
   }
-  window.addEventListener('resize', () => { if (wxMode) { wxSize();
-    wxMode === 'snow' ? seedSnow(150) : seedRain(wxMode === 'storm' ? 320 : 210); } });
+  window.addEventListener('resize', () => { if (wxMode) { wxSize(); wxSeed(); } });
 
   function applyStreetWeather() {
     const c = activeCfg();
@@ -1038,6 +1057,7 @@ ${bulbs.join('')}
     const fx = document.body.dataset.template === 'street'
       && (c.weatherFX !== false || WX_FORCE || DAY_FORCE !== null);
     if (!fx) { document.body.classList.remove('street-day'); wxStop(); return; }
+    document.body.style.setProperty('--wx-layer', WX_LEVELS[wxLevelNum()].layer);
     const cls = WX_FORCE ? 'wx-' + WX_FORCE : wxClass(lastWx?.code);
     if (['wx-rain', 'wx-snow', 'wx-fog', 'wx-cloud', 'wx-storm'].includes(cls))
       document.body.classList.add(cls);

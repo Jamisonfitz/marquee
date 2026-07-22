@@ -29,8 +29,13 @@ temperature readout without the scene effects, or the effects without the
 readout; neither is tied to the other. On by default so Street keeps its
 signature look.
 
-Test any condition live with `?wx=rain|snow|fog|cloud|storm` and
-`?day=1|0` on `/image`.
+**Effect intensity (1–4)** — a new dropdown under Card content scales how
+strong the weather looks: particle count, particle opacity, and fog/cloud
+density. Defaults to **2 (Light)**, which stays easy to ignore if the
+screen sits in the corner of your eye while you watch something.
+
+Test any condition live with `?wx=rain|snow|fog|cloud|storm`, `?day=1|0`,
+and `?wxi=1..4` on `/image`.
 
 ## 1.10.0 — 2026-07-21
 
