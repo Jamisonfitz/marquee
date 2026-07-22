@@ -2,26 +2,33 @@
 
 ## Unreleased
 
-### Weather effects: their own toggle, realer visuals
+### Street weather, rebuilt for real
 
-The live rain/snow/fog/day-night on the Street scene is now its own
-setting — **Weather effects**, under Card content — separate from the
-**Weather** text chip. You can have the temperature readout without the
-scene effects, or the effects without the readout; neither is tied to the
-other. On by default so the Street template keeps its signature look.
+The live weather on the Street scene got a full realism pass, built around
+techniques from four community CodePens (credited in `CREDITS.md`):
 
-The visuals themselves got a pass:
+- **Rain and snow now draw on a `<canvas>`** — real particles, not CSS
+  tiles. Rain streaks vary in length with fall speed and kick up splash
+  droplets when they land, coloured near‑white rather than blue. Snow is
+  150 flakes with random size, speed, and wind drift — no repeating grid.
+- **Fog** is three soft layers drifting at different speeds with
+  independently pulsing opacity under a blur — a real rolling haze instead
+  of a flat wash.
+- **Overcast** casts a slow drifting cloud shadow instead of flat dimming.
+- **Thunderstorms** (`?wx=storm`) are their own condition with denser rain
+  and an optional **Lightning flash** (Card content, **off by default** — a
+  bright pop can be distracting on an always‑on display).
+- **The "NOW PLAYING" sign glows like neon** with an irregular flicker,
+  theme‑tinted, resting in daylight.
 
-- **Snow** is now real individual flakes with random columns, sizes,
-  speeds, and drift — no more repeating grid, and flakes actually vary in
-  size instead of all being identical dots.
-- **Rain** streaks mix two spacings per layer so they read as rain, not
-  scan lines, with a near/far depth split.
-- **Fog** is a real, visible haze plus blur instead of a barely-there dim.
-- **Overcast** casts a slow-moving cloud shadow instead of flat dimming.
-- **Thunderstorms** (`?wx=storm`) are their own condition, with an optional
-  **Lightning flash** (also under Card content, **off by default** — a
-  bright pop can be distracting on an always-on display).
+The canvas only runs while rain/snow/storm is active and stops otherwise,
+so it costs nothing on a clear day.
+
+**Weather effects are now their own setting** — **Weather effects** under
+Card content, separate from the **Weather** text chip. You can have the
+temperature readout without the scene effects, or the effects without the
+readout; neither is tied to the other. On by default so Street keeps its
+signature look.
 
 Test any condition live with `?wx=rain|snow|fog|cloud|storm` and
 `?day=1|0` on `/image`.
