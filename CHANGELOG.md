@@ -2,23 +2,29 @@
 
 ## Unreleased
 
-### Realer weather on the Street scene
+### Weather effects: their own toggle, realer visuals
 
-Rain and snow now render in two depth layers instead of one flat sheet —
-near streaks/flakes move bigger and faster, far ones smaller and slower.
-Snow drifts side to side as it falls instead of sliding straight down. Fog
-gets its own look for the first time: a soft drifting haze plus a real
-blur on the scene, instead of just a dim overlay. Overcast now casts a
-slow-moving cloud shadow instead of flat dimming alone. Rain streaks now
-mix two periods per layer so they read as rain instead of a scan-line
-grid. Snow flakes are bigger with a gem-like glint instead of tiny flat
-dots. Fog is a real, visible haze + blur now instead of barely-there
-dimming. Thunderstorms (`?wx=storm`) are their own condition — same
-layered rain, plus an optional lightning flash across the brick and
-marquee behind the card (text and poster stay clear). The flash is a new
-**Lightning flash** setting under Card content, **off by default** since a
-bright pop can be distracting on an always-on ambient display. Test any of
-it live with `?wx=rain|snow|fog|cloud|storm` and `?day=1|0` on `/image`.
+The live rain/snow/fog/day-night on the Street scene is now its own
+setting — **Weather effects**, under Card content — separate from the
+**Weather** text chip. You can have the temperature readout without the
+scene effects, or the effects without the readout; neither is tied to the
+other. On by default so the Street template keeps its signature look.
+
+The visuals themselves got a pass:
+
+- **Snow** is now real individual flakes with random columns, sizes,
+  speeds, and drift — no more repeating grid, and flakes actually vary in
+  size instead of all being identical dots.
+- **Rain** streaks mix two spacings per layer so they read as rain, not
+  scan lines, with a near/far depth split.
+- **Fog** is a real, visible haze plus blur instead of a barely-there dim.
+- **Overcast** casts a slow-moving cloud shadow instead of flat dimming.
+- **Thunderstorms** (`?wx=storm`) are their own condition, with an optional
+  **Lightning flash** (also under Card content, **off by default** — a
+  bright pop can be distracting on an always-on display).
+
+Test any condition live with `?wx=rain|snow|fog|cloud|storm` and
+`?day=1|0` on `/image`.
 
 ## 1.10.0 — 2026-07-21
 

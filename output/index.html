@@ -265,20 +265,14 @@
      ?wx=rain|snow|fog|cloud|storm and ?day=1|0 force a condition. */
   @keyframes rain-near { to { background-position: -26vw 100vh; } }
   @keyframes rain-far { to { background-position: -11vw 100vh; } }
-  @keyframes snow-near { 0% { background-position: 0 -6vh; }
-    30% { background-position: 2.4vw 32vh; } 60% { background-position: -1.6vw 64vh; }
-    100% { background-position: 1vw 106vh; } }
-  @keyframes snow-far { 0% { background-position: 0 -6vh, 0 -6vh; }
-    35% { background-position: -2vw 40vh, 1.6vw 36vh; }
-    70% { background-position: 1.6vw 76vh, -1.2vw 70vh; }
-    100% { background-position: 0 110vh, 0 108vh; } }
+  @keyframes snow-fall { to { transform: translateY(118vh); } }
+  @keyframes snow-sway { to { transform: translateX(var(--sx, 3vw)); } }
   @keyframes fog-drift { 0%, 100% { transform: translateX(-3%); } 50% { transform: translateX(3%); } }
   @keyframes cloud-drift { 0%, 100% { transform: translateX(-4%); } 50% { transform: translateX(4%); } }
   @keyframes lightning { 0%, 92%, 100% { opacity: 0; } 92.6% { opacity: .9; }
     93.2% { opacity: .1; } 94% { opacity: .55; } 94.6% { opacity: 0; } }
   body[data-template="street"].wx-rain::before, body[data-template="street"].wx-storm::before,
   body[data-template="street"].wx-rain::after, body[data-template="street"].wx-storm::after,
-  body[data-template="street"].wx-snow::before, body[data-template="street"].wx-snow::after,
   body[data-template="street"].wx-fog::after, body[data-template="street"].wx-cloud::after {
     content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 3; }
   /* Rain/storm: two periods per layer so streaks don't line up into a
@@ -303,16 +297,18 @@
   body[data-template="street"].wx-storm.flash-on .scene::after { content: ""; position: absolute; inset: 0;
     background: #eaf0ff; mix-blend-mode: screen; pointer-events: none; opacity: 0;
     animation: lightning 8s steps(1) infinite; animation-delay: 3.1s; animation-fill-mode: backwards; }
-  /* Snow: big, bright flakes up close with a gem-like glint (core + soft
-     halo), smaller and dimmer as they recede — near layer drifts faster. */
-  body[data-template="street"].wx-snow::before {
-    background-image: radial-gradient(circle, rgba(255,255,255,.98) 0 2.2px, rgba(255,255,255,.4) 2.2px 5.5px, transparent 5.5px 7px);
-    background-size: 7vw 10vh; animation: snow-near 6s ease-in-out infinite; }
-  body[data-template="street"].wx-snow::after {
-    background-image:
-      radial-gradient(circle, rgba(255,255,255,.85) 0 1.6px, rgba(255,255,255,.3) 1.6px 3.8px, transparent 3.8px 5px),
-      radial-gradient(circle, rgba(255,255,255,.5) 0 1.1px, rgba(255,255,255,.18) 1.1px 2.6px, transparent 2.6px 3.5px);
-    background-size: 10vw 14vh, 14vw 19vh; animation: snow-far 12s ease-in-out infinite; }
+  /* Snow: real individual flakes, generated in JS (buildSnow) so each has
+     a random column, size, speed, and sway — a CSS background-tile can only
+     repeat one grid, which is exactly what read as a locked lattice. Each
+     flake falls (outer) while swaying (inner) so the two motions compose
+     without fighting over transform. */
+  .wx-field { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 3; }
+  .flake { position: absolute; top: -8vh; will-change: transform;
+    animation: snow-fall var(--dur, 10s) linear var(--delay, 0s) infinite; }
+  .flake > b { display: block; width: var(--sz, 5px); height: var(--sz, 5px);
+    border-radius: 50%; background: radial-gradient(circle,
+      #fff 0 35%, rgba(255,255,255,.55) 35% 62%, rgba(255,255,255,0) 68%);
+    animation: snow-sway var(--sway, 3s) ease-in-out var(--delay, 0s) infinite alternate; }
   /* Fog: a real, visible haze plus blur — fog should read at a glance,
      not require squinting. */
   body[data-template="street"].wx-fog::after {
@@ -338,9 +334,9 @@
   body[data-template="street"].street-day .scene .pool { display: none; }
   @media (prefers-reduced-motion: reduce) {
     body[data-template="street"].wx-rain::before, body[data-template="street"].wx-storm::before,
-    body[data-template="street"].wx-rain::after, body[data-template="street"].wx-storm::after,
-    body[data-template="street"].wx-snow::before, body[data-template="street"].wx-snow::after {
+    body[data-template="street"].wx-rain::after, body[data-template="street"].wx-storm::after {
       animation: none; opacity: .5; }
+    .flake, .flake > b { animation: none; }
     body[data-template="street"].wx-fog::after, body[data-template="street"].wx-cloud::after { animation: none; }
     body[data-template="street"].wx-storm.flash-on .scene::after { animation: none; opacity: 0; }
   }
@@ -410,6 +406,7 @@
 <img class="bg" id="bg" alt="">
 <div class="bg-shade"></div>
 <div class="scene" id="scene"></div>
+<div class="wx-field" id="wxfield" aria-hidden="true"></div>
 <div class="stage hidden">
   <div class="block b-clock" data-layout="clock"><div class="clock" id="clock"></div></div>
   <div class="block b-weather" data-layout="weather"><div class="wx" id="wx"></div></div>
@@ -930,10 +927,13 @@ ${bulbs.join('')}
   }
 
   // Weather beside the clock (any template): /weather is served by the
-  // container from Open-Meteo, keyed to the ZIP in settings. The same fetch
-  // also drives the Street scene's rain/snow/day-night — that scene wants
-  // real conditions even when the text chip block is off, so it fetches
-  // whenever the Weather block is on OR Street is the active template.
+  // container from Open-Meteo, keyed to the ZIP in settings.
+  //
+  // Two independent switches feed off the same fetch: the "Weather" text
+  // chip (showWeather) and "Weather effects" (weatherFX) — the live
+  // rain/snow/fog/day-night on the Street scene. Either one on (or a ?wx=
+  // / ?day= test override) triggers the fetch; neither is coupled to the
+  // other, so you can have the chip without effects or vice-versa.
   let lastWx = null;
   const WX_FORCE = new URLSearchParams(location.search).get('wx');
   const DAY_FORCE = new URLSearchParams(location.search).get('day');
@@ -949,16 +949,57 @@ ${bulbs.join('')}
     (code >= 51 && code <= 67) || (code >= 80 && code <= 82) ? 'wx-rain' :
     code >= 45 && code <= 48 ? 'wx-fog' :
     code >= 2 ? 'wx-cloud' : '';
+
+  // Snow flakes as real elements: each gets its own random column, size,
+  // fall speed, sway, and start offset, so there's no repeating lattice.
+  // Bigger flakes read as "closer" — brighter and a touch faster.
+  const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let snowOn = false;
+  function buildSnow() {
+    if (snowOn) return;
+    const field = $('wxfield');
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < 60; i++) {
+      const sz = 2 + Math.random() * 7;                 // 2–9px, real size spread
+      const flake = document.createElement('span');
+      flake.className = 'flake';
+      flake.style.left = (Math.random() * 100).toFixed(2) + 'vw';
+      flake.style.setProperty('--sz', sz.toFixed(1) + 'px');
+      flake.style.setProperty('--dur', (13 - sz * 0.8 + Math.random() * 2).toFixed(1) + 's');
+      flake.style.setProperty('--delay', (-Math.random() * 16).toFixed(1) + 's');
+      flake.style.setProperty('--sway', (2.5 + Math.random() * 3).toFixed(1) + 's');
+      flake.style.setProperty('--sx', ((Math.random() * 2 - 1) * 4).toFixed(1) + 'vw');
+      flake.style.opacity = (0.4 + (sz / 9) * 0.6).toFixed(2);
+      if (REDUCE) flake.style.top = (Math.random() * 100).toFixed(1) + 'vh';
+      flake.appendChild(document.createElement('b'));
+      frag.appendChild(flake);
+    }
+    field.replaceChildren(frag);
+    snowOn = true;
+  }
+  function stopSnow() {
+    if (!snowOn) return;
+    $('wxfield').replaceChildren();
+    snowOn = false;
+  }
+
   function applyStreetWeather() {
+    const c = activeCfg();
     document.body.classList.remove('wx-rain', 'wx-snow', 'wx-fog', 'wx-cloud', 'wx-storm');
+    document.body.classList.toggle('flash-on', !!c.stormLightning);
+    // Effects are their own opt-in, independent of the weather chip. ?wx=
+    // / ?day= always force so the conditions stay testable from a URL.
+    const fx = document.body.dataset.template === 'street'
+      && (c.weatherFX !== false || WX_FORCE || DAY_FORCE !== null);
+    if (!fx) { document.body.classList.remove('street-day'); stopSnow(); return; }
     const cls = WX_FORCE ? 'wx-' + WX_FORCE : wxClass(lastWx?.code);
     if (['wx-rain', 'wx-snow', 'wx-fog', 'wx-cloud', 'wx-storm'].includes(cls))
       document.body.classList.add(cls);
-    document.body.classList.toggle('flash-on', !!activeCfg().stormLightning);
     const h = new Date().getHours();
     document.body.classList.toggle('street-day', DAY_FORCE !== null
       ? DAY_FORCE === '1'
       : (lastWx?.isDay != null ? lastWx.isDay : h >= 7 && h < 19));
+    if (document.body.classList.contains('wx-snow')) buildSnow(); else stopSnow();
   }
   function paintWx() {
     const c = activeCfg();
@@ -969,7 +1010,9 @@ ${bulbs.join('')}
   }
   async function wxTick() {
     const c = activeCfg();
-    const wanted = c.showWeather || document.body.dataset.template === 'street' || WX_FORCE;
+    const wanted = c.showWeather
+      || (c.weatherFX !== false && document.body.dataset.template === 'street')
+      || WX_FORCE || DAY_FORCE !== null;
     if (!wanted) { paintWx(); return; }
     try { lastWx = await (await fetch('/weather')).json(); } catch (e) {}
     paintWx();

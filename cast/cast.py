@@ -183,7 +183,7 @@ DEFAULT_SETTINGS = {
     "blockTags": "",
     "rotateSeconds": 30,
     "showWeather": False, "weatherZip": "", "weatherUnits": "f",
-    "stormLightning": False,
+    "weatherFX": True, "stormLightning": False,
     "blockLayout": {},       # {template: {block: {x,y,width,scale,align,font}}}
     "blockVisibility": {},  # {template: {block: bool}}, sparse — only overrides
     "mediaBackend": "",       # "" = inherit MEDIA_BACKEND env (plex when unset)
@@ -1104,6 +1104,7 @@ class WebHandler(BaseHTTPRequestHandler):
             if merged["weatherUnits"] not in ("f", "c"):
                 merged["weatherUnits"] = "f"
             merged["showWeather"] = bool(merged["showWeather"])
+            merged["weatherFX"] = bool(merged["weatherFX"])
             merged["stormLightning"] = bool(merged["stormLightning"])
             merged["clockSeconds"] = bool(merged["clockSeconds"])
             if not (isinstance(merged["accent"], str)
