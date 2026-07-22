@@ -236,3 +236,9 @@ Marquee checks that DashCast is active, casts the `/image` URL when playback sta
 3. Pause and resume playback and confirm the progress state updates within one poll interval.
 4. Stop playback and confirm the Hub returns to ambient mode.
 5. Review `docker logs marquee`; there should be no `catt ... failed` message.
+
+## Credits
+
+The Street template's weather effects were built with technique and
+inspiration from several open CodePens — rain, snow, fog, and the neon sign
+flicker. See [CREDITS.md](CREDITS.md) for the authors and sources.
