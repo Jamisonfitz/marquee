@@ -183,6 +183,7 @@ DEFAULT_SETTINGS = {
     "blockTags": "",
     "rotateSeconds": 30,
     "showWeather": False, "weatherZip": "", "weatherUnits": "f",
+    "weatherFX": True, "weatherIntensity": 2,
     "blockLayout": {},       # {template: {block: {x,y,width,scale,align,font}}}
     "blockVisibility": {},  # {template: {block: bool}}, sparse — only overrides
     "mediaBackend": "",       # "" = inherit MEDIA_BACKEND env (plex when unset)
@@ -990,6 +991,14 @@ def visible_blocks(template, visibility):
     return shown
 
 
+def clean_intensity(value):
+    """Weather effect intensity: an int 1..4, default 2."""
+    try:
+        return min(4, max(1, int(value)))
+    except (TypeError, ValueError):
+        return 2
+
+
 class WebHandler(BaseHTTPRequestHandler):
     def log_message(self, *_):
         pass
@@ -1103,6 +1112,8 @@ class WebHandler(BaseHTTPRequestHandler):
             if merged["weatherUnits"] not in ("f", "c"):
                 merged["weatherUnits"] = "f"
             merged["showWeather"] = bool(merged["showWeather"])
+            merged["weatherFX"] = bool(merged["weatherFX"])
+            merged["weatherIntensity"] = clean_intensity(merged["weatherIntensity"])
             merged["clockSeconds"] = bool(merged["clockSeconds"])
             if not (isinstance(merged["accent"], str)
                     and (merged["accent"] == "" or ACCENT_RE.match(merged["accent"]))):
@@ -1694,6 +1705,9 @@ def selftest():
     finally:
         globals()["emby_fetch_json"] = _orig_fetch
         _emby_enrich_cache.clear()
+    # weather intensity clamps to 1..4 with a sane default
+    assert clean_intensity(3) == 3 and clean_intensity(0) == 1
+    assert clean_intensity(9) == 4 and clean_intensity("x") == 2
     print("selftest ok")
 
 

@@ -257,36 +257,80 @@
   .scene .np { animation: npf 8s linear infinite; }
   .scene .pool { animation: brth 6s ease-in-out infinite; }
 
-  /* Real weather on the Street scene: rain streaks, drifting snow, overcast
-     dimming, and true day/night resting the bulb animations. Driven by
-     /weather (Open-Meteo, already fetched for the weather chip on every
-     template); ?wx=rain|snow|fog|cloud and ?day=1|0 force a condition. */
-  @keyframes rainfall { to { background-position: -18vw 100vh, -10vw 100vh; } }
-  @keyframes snowfall { to { background-position: 4vw 105vh, -3vw 100vh, 2vw 110vh; } }
-  body[data-template="street"].wx-rain::after,
-  body[data-template="street"].wx-snow::after { content: ""; position: fixed;
-    inset: 0; pointer-events: none; z-index: 3; }
-  body[data-template="street"].wx-rain::after { background-image:
-    repeating-linear-gradient(78deg, transparent 0 15px, rgba(178,198,228,.14) 15px 16px),
-    repeating-linear-gradient(78deg, transparent 0 27px, rgba(178,198,228,.09) 27px 28px);
-    animation: rainfall 1.1s linear infinite; }
-  body[data-template="street"].wx-snow::after { background-image:
-    radial-gradient(circle, rgba(255,255,255,.55) 1.4px, transparent 2.2px),
-    radial-gradient(circle, rgba(255,255,255,.4) 1.1px, transparent 1.8px),
-    radial-gradient(circle, rgba(255,255,255,.28) .9px, transparent 1.5px);
-    background-size: 6vw 9vh, 9vw 13vh, 13vw 17vh;
-    animation: snowfall 11s linear infinite; }
-  .scene svg { filter: brightness(var(--sb, 1)); }
+  /* Real weather on the Street scene. Rain and snow are drawn on a <canvas>
+     (see the JS "Canvas weather" section) for real particles — adapted from
+     two CodePens, credited there and in CREDITS.md. Fog, overcast, and
+     day/night are CSS. Driven by /weather (Open-Meteo);
+     ?wx=rain|snow|fog|cloud|storm and ?day=1|0 force a condition. */
+  .wx-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 3;
+    display: none; }
+  body[data-template="street"].wx-rain .wx-canvas,
+  body[data-template="street"].wx-snow .wx-canvas,
+  body[data-template="street"].wx-storm .wx-canvas { display: block; }
+
+  /* Fog: three soft layers that drift on their own speeds and pulse opacity
+     independently, under a blur so it reads as haze rather than a flat wash.
+     Technique adapted from Braeden Craig's CSS fog (which uses Daniel
+     Stuart's fog PNGs); rebuilt PNG-free with gradient tiles so the card
+     stays self-contained. */
+  @keyframes fog-move { from { background-position: 0 0; } to { background-position: -64vw 0; } }
+  @keyframes fog-op1 { 0%,100% { opacity: .12; } 22% { opacity: .5; } 40% { opacity: .3; } 58% { opacity: .42; } 80% { opacity: .18; } }
+  @keyframes fog-op2 { 0%,100% { opacity: .5; } 25% { opacity: .22; } 50% { opacity: .14; } 80% { opacity: .34; } }
+  @keyframes fog-op3 { 0%,100% { opacity: .78; } 27% { opacity: .24; } 52% { opacity: .6; } 68% { opacity: .32; } }
+  .fog { position: fixed; inset: 0; pointer-events: none; z-index: 3; display: none;
+    opacity: var(--wx-layer, .72); filter: blur(2px) saturate(1.05); }
+  body[data-template="street"].wx-fog .fog { display: block; }
+  .fog span { position: absolute; inset: 0; background-repeat: repeat-x;
+    background-image: radial-gradient(ellipse 50% 62% at 50% 55%,
+      rgba(216,224,236,.85), rgba(216,224,236,0) 72%); }
+  .fog span:nth-child(1) { background-size: 64vw 130vh;
+    animation: fog-move 34s linear infinite, fog-op1 10s ease-in-out infinite; }
+  .fog span:nth-child(2) { background-size: 52vw 150vh;
+    animation: fog-move 23s linear infinite, fog-op2 21s ease-in-out infinite; }
+  .fog span:nth-child(3) { background-size: 78vw 120vh;
+    animation: fog-move 44s linear infinite, fog-op3 17s ease-in-out infinite; }
+
+  /* Overcast: a slow, subtle cloud-shadow drift instead of flat dimming alone. */
+  @keyframes cloud-drift { 0%, 100% { transform: translateX(-4%); } 50% { transform: translateX(4%); } }
+  body[data-template="street"].wx-cloud::after {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 3;
+    opacity: var(--wx-layer, .72);
+    background: radial-gradient(ellipse 42vw 20vh at 18% -6%, rgba(0,0,0,.16), transparent 70%),
+      radial-gradient(ellipse 38vw 18vh at 82% 104%, rgba(0,0,0,.13), transparent 70%);
+    animation: cloud-drift 22s ease-in-out infinite; }
+
+  .scene svg { filter: brightness(var(--sb, 1)) blur(var(--sblur, 0px)); }
   body[data-template="street"].wx-cloud { --sb: .82; }
+  body[data-template="street"].wx-storm { --sb: .74; }
+  body[data-template="street"].wx-fog { --sb: .96; --sblur: 2.6px; }
   body[data-template="street"].street-day { --sb: 1.75; }
   body[data-template="street"].street-day.wx-cloud { --sb: 1.35; }
+  body[data-template="street"].street-day.wx-storm { --sb: 1.2; }
+  body[data-template="street"].street-day.wx-fog { --sb: 1.6; }
   body[data-template="street"].street-day .scene .bl,
   body[data-template="street"].street-day .scene .ch { animation: none; opacity: .3; }
   body[data-template="street"].street-day .scene .np text { opacity: .8; }
   body[data-template="street"].street-day .scene .pool { display: none; }
+
+  /* Neon "NOW PLAYING" sign: layered glow + an irregular flicker, adapted
+     from Tiff Wong's neon theater sign (credited in CREDITS.md). The glow
+     rides on --accent so it retints with the theme. */
+  @keyframes neon-flicker {
+    0%, 24%, 42%, 68%, 100% { opacity: 1; }
+    4% { opacity: .9; } 6% { opacity: .85; } 8% { opacity: .95; }
+    11% { opacity: .92; } 16% { opacity: .98; } 19% { opacity: .93; }
+    28% { opacity: .96; } 39% { opacity: .96; } 46% { opacity: .94; }
+    58% { opacity: .9; } 70% { opacity: .9; } 72% { opacity: .95; }
+    95% { opacity: .95; } 97% { opacity: .93; } }
+  body[data-template="street"] .scene .np {
+    filter: drop-shadow(0 0 2px #FFE9C8) drop-shadow(0 0 7px var(--accent, #C9973B))
+      drop-shadow(0 0 14px var(--accent, #C9973B));
+    animation: neon-flicker 5.2s linear infinite; }
+  body[data-template="street"].street-day .scene .np { filter: none; }
+
   @media (prefers-reduced-motion: reduce) {
-    body[data-template="street"].wx-rain::after,
-    body[data-template="street"].wx-snow::after { animation: none; opacity: .5; }
+    .fog span, body[data-template="street"].wx-cloud::after,
+    body[data-template="street"] .scene .np { animation: none; }
   }
 
   /* LED trim: the theme accent bleeds around the poster like backlighting
@@ -354,6 +398,8 @@
 <img class="bg" id="bg" alt="">
 <div class="bg-shade"></div>
 <div class="scene" id="scene"></div>
+<canvas class="wx-canvas" id="wxcanvas" aria-hidden="true"></canvas>
+<div class="fog" id="fog" aria-hidden="true"><span></span><span></span><span></span></div>
 <div class="stage hidden">
   <div class="block b-clock" data-layout="clock"><div class="clock" id="clock"></div></div>
   <div class="block b-weather" data-layout="weather"><div class="wx" id="wx"></div></div>
@@ -874,10 +920,13 @@ ${bulbs.join('')}
   }
 
   // Weather beside the clock (any template): /weather is served by the
-  // container from Open-Meteo, keyed to the ZIP in settings. The same fetch
-  // also drives the Street scene's rain/snow/day-night — that scene wants
-  // real conditions even when the text chip block is off, so it fetches
-  // whenever the Weather block is on OR Street is the active template.
+  // container from Open-Meteo, keyed to the ZIP in settings.
+  //
+  // Two independent switches feed off the same fetch: the "Weather" text
+  // chip (showWeather) and "Weather effects" (weatherFX) — the live
+  // rain/snow/fog/day-night on the Street scene. Either one on (or a ?wx=
+  // / ?day= test override) triggers the fetch; neither is coupled to the
+  // other, so you can have the chip without effects or vice-versa.
   let lastWx = null;
   const WX_FORCE = new URLSearchParams(location.search).get('wx');
   const DAY_FORCE = new URLSearchParams(location.search).get('day');
@@ -888,19 +937,138 @@ ${bulbs.join('')}
     (c >= 71 ? 'snow' : c >= 51 ? 'rain' : c >= 45 ? 'fog' : c >= 2 ? 'clouds' : 'clear');
   const wxClass = code =>
     code == null ? '' :
+    code >= 95 ? 'wx-storm' :
     code >= 71 && code <= 86 && !(code >= 80 && code <= 82) ? 'wx-snow' :
-    (code >= 51 && code <= 67) || (code >= 80 && code <= 82) || code >= 95 ? 'wx-rain' :
+    (code >= 51 && code <= 67) || (code >= 80 && code <= 82) ? 'wx-rain' :
     code >= 45 && code <= 48 ? 'wx-fog' :
     code >= 2 ? 'wx-cloud' : '';
+
+  const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ── Canvas weather: real rain and snow particles ──────────────────────
+  // Rain adapts sheepjs's canvas rain (streak length ∝ fall speed, splash
+  // on impact), recoloured toward white per Jamison's note. Snow adapts
+  // ivanodintsov's canvas snow (circles with random radius, speed, wind
+  // drift). Both credited in CREDITS.md. One canvas, one rAF loop, only
+  // running while rain/snow/storm is on — cleared and stopped otherwise.
+  const wxCanvas = $('wxcanvas'), wxCtx = wxCanvas.getContext('2d');
+  let wxMode = null, wxRAF = null, wxW = 0, wxH = 0, drops = [], splashes = [];
+  // Intensity 1..4 (Settings → Effect intensity). Scales particle count,
+  // particle opacity, and the CSS opacity of the fog/cloud layers. Level 2
+  // is the default — present but easy to ignore in peripheral vision.
+  const WX_LEVELS = {
+    1: { rain: 90,  storm: 150, snow: 65,  alpha: .34, layer: .5 },
+    2: { rain: 160, storm: 240, snow: 110, alpha: .5,  layer: .72 },
+    3: { rain: 250, storm: 360, snow: 165, alpha: .64, layer: .9 },
+    4: { rain: 360, storm: 480, snow: 230, alpha: .82, layer: 1 },
+  };
+  const WXI_FORCE = new URLSearchParams(location.search).get('wxi');
+  let wxAlpha = WX_LEVELS[2].alpha, wxLevelUsed = 0;
+  function wxLevelNum() {
+    const n = parseInt(WXI_FORCE != null ? WXI_FORCE : activeCfg().weatherIntensity, 10);
+    return Math.min(4, Math.max(1, Number.isFinite(n) ? n : 2));
+  }
+  function wxSize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    wxW = window.innerWidth; wxH = window.innerHeight;
+    wxCanvas.width = wxW * dpr; wxCanvas.height = wxH * dpr;
+    wxCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  function seedRain(n) {
+    drops = []; splashes = [];
+    for (let i = 0; i < n; i++) drops.push({
+      x: rnd(0, wxW), y: rnd(-wxH, 0),
+      vy: rnd(6, 15), vx: rnd(-0.4, 0.9), len: 0 });
+    drops.forEach(d => d.len = d.vy * 1.6);
+  }
+  function seedSnow(n) {
+    drops = []; splashes = [];
+    for (let i = 0; i < n; i++) drops.push({
+      x: rnd(0, wxW), y: rnd(-wxH, 0), r: rnd(0.6, 3.3),
+      vy: rnd(0.5, 2.4), wind: rnd(-0.4, 1.3), ph: rnd(0, 6.3) });
+  }
+  function wxFrame() {
+    wxCtx.clearRect(0, 0, wxW, wxH);
+    if (wxMode === 'snow') {
+      wxCtx.fillStyle = '#fff';
+      for (const f of drops) {
+        wxCtx.globalAlpha = Math.min(1, (0.4 + (f.r / 3.3) * 0.5) * (wxAlpha * 2));
+        wxCtx.beginPath(); wxCtx.arc(f.x, f.y, f.r, 0, 6.2832); wxCtx.fill();
+        f.y += f.vy; f.x += f.wind + Math.sin((f.ph += 0.01)) * 0.4;
+        if (f.y > wxH + 4) { f.y = -4; f.x = rnd(0, wxW); }
+        if (f.x > wxW + 4) f.x = -4; else if (f.x < -4) f.x = wxW + 4;
+      }
+      wxCtx.globalAlpha = 1;
+    } else {
+      // rain / storm: near-white streaks, faster+longer for storm
+      wxCtx.strokeStyle = `rgba(214,224,240,${wxAlpha})`; wxCtx.lineCap = 'round';
+      for (const d of drops) {
+        wxCtx.lineWidth = Math.max(0.7, d.vy / 11);
+        wxCtx.beginPath(); wxCtx.moveTo(d.x, d.y);
+        wxCtx.lineTo(d.x + d.vx * 2, d.y + d.len); wxCtx.stroke();
+        d.x += d.vx * 2; d.y += d.vy;
+        if (d.y > wxH - 3) {
+          for (let s = 0; s < 3; s++) splashes.push({
+            x: d.x, y: wxH - 2, vx: rnd(-1.2, 1.2), vy: rnd(-2.4, -0.5),
+            r: rnd(0.6, 1.6), a: 1 });
+          d.y = rnd(-40, -4); d.x = rnd(0, wxW);
+          d.vy = rnd(6, 15); d.len = d.vy * 1.6;
+        }
+      }
+      wxCtx.fillStyle = `rgba(214,224,240,${wxAlpha})`;
+      for (let i = splashes.length - 1; i >= 0; i--) {
+        const s = splashes[i];
+        wxCtx.globalAlpha = Math.max(0, s.a);
+        wxCtx.beginPath(); wxCtx.arc(s.x, s.y, Math.max(0, s.r), 0, 6.2832); wxCtx.fill();
+        s.x += s.vx; s.y += s.vy; s.vy += 0.12; s.r -= 0.06; s.a -= 0.03;
+        if (s.a <= 0 || s.r <= 0) splashes.splice(i, 1);
+      }
+      wxCtx.globalAlpha = 1;
+    }
+    wxRAF = requestAnimationFrame(wxFrame);
+  }
+  function wxSeed() {
+    const L = WX_LEVELS[wxLevelUsed]; wxAlpha = L.alpha;
+    if (wxMode === 'snow') seedSnow(L.snow);
+    else seedRain(wxMode === 'storm' ? L.storm : L.rain);
+  }
+  function wxStart(mode) {
+    const lv = wxLevelNum();
+    if (wxMode === mode && wxLevelUsed === lv) return;
+    wxMode = mode; wxLevelUsed = lv; wxSize(); wxSeed();
+    if (wxRAF) cancelAnimationFrame(wxRAF);
+    if (REDUCE) { wxFrame(); cancelAnimationFrame(wxRAF); wxRAF = null; }  // one static frame
+    else wxRAF = requestAnimationFrame(wxFrame);
+  }
+  function wxStop() {
+    if (!wxMode) return;
+    wxMode = null; wxLevelUsed = 0;
+    if (wxRAF) { cancelAnimationFrame(wxRAF); wxRAF = null; }
+    wxCtx.clearRect(0, 0, wxW, wxH);
+  }
+  window.addEventListener('resize', () => { if (wxMode) { wxSize(); wxSeed(); } });
+
   function applyStreetWeather() {
-    document.body.classList.remove('wx-rain', 'wx-snow', 'wx-fog', 'wx-cloud');
+    const c = activeCfg();
+    document.body.classList.remove('wx-rain', 'wx-snow', 'wx-fog', 'wx-cloud', 'wx-storm');
+    // Effects are their own opt-in, independent of the weather chip. ?wx=
+    // / ?day= always force so the conditions stay testable from a URL.
+    const fx = document.body.dataset.template === 'street'
+      && (c.weatherFX !== false || WX_FORCE || DAY_FORCE !== null);
+    if (!fx) { document.body.classList.remove('street-day'); wxStop(); return; }
+    document.body.style.setProperty('--wx-layer', WX_LEVELS[wxLevelNum()].layer);
     const cls = WX_FORCE ? 'wx-' + WX_FORCE : wxClass(lastWx?.code);
-    if (['wx-rain', 'wx-snow', 'wx-fog', 'wx-cloud'].includes(cls))
+    if (['wx-rain', 'wx-snow', 'wx-fog', 'wx-cloud', 'wx-storm'].includes(cls))
       document.body.classList.add(cls);
     const h = new Date().getHours();
     document.body.classList.toggle('street-day', DAY_FORCE !== null
       ? DAY_FORCE === '1'
       : (lastWx?.isDay != null ? lastWx.isDay : h >= 7 && h < 19));
+    if (document.body.classList.contains('wx-snow')) wxStart('snow');
+    else if (document.body.classList.contains('wx-storm')) wxStart('storm');
+    else if (document.body.classList.contains('wx-rain')) wxStart('rain');
+    else wxStop();
   }
   function paintWx() {
     const c = activeCfg();
@@ -911,7 +1079,9 @@ ${bulbs.join('')}
   }
   async function wxTick() {
     const c = activeCfg();
-    const wanted = c.showWeather || document.body.dataset.template === 'street' || WX_FORCE;
+    const wanted = c.showWeather
+      || (c.weatherFX !== false && document.body.dataset.template === 'street')
+      || WX_FORCE || DAY_FORCE !== null;
     if (!wanted) { paintWx(); return; }
     try { lastWx = await (await fetch('/weather')).json(); } catch (e) {}
     paintWx();

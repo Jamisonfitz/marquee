@@ -1,5 +1,42 @@
 # Changelog
 
+## Unreleased
+
+### Street weather, rebuilt for real
+
+The live weather on the Street scene got a full realism pass, built around
+techniques from four community CodePens (credited in `CREDITS.md`):
+
+- **Rain and snow now draw on a `<canvas>`** — real particles, not CSS
+  tiles. Rain streaks vary in length with fall speed and kick up splash
+  droplets when they land, coloured near‑white rather than blue. Snow is
+  150 flakes with random size, speed, and wind drift — no repeating grid.
+- **Fog** is three soft layers drifting at different speeds with
+  independently pulsing opacity under a blur — a real rolling haze instead
+  of a flat wash.
+- **Overcast** casts a slow drifting cloud shadow instead of flat dimming.
+- **Thunderstorms** (`?wx=storm`) are their own condition with denser rain
+  and stronger dimming.
+- **The "NOW PLAYING" sign glows like neon** with an irregular flicker,
+  theme‑tinted, resting in daylight.
+
+The canvas only runs while rain/snow/storm is active and stops otherwise,
+so it costs nothing on a clear day.
+
+**Weather effects are now their own setting** — **Weather effects** under
+Card content, separate from the **Weather** text chip. You can have the
+temperature readout without the scene effects, or the effects without the
+readout; neither is tied to the other. On by default so Street keeps its
+signature look.
+
+**Effect intensity (1–4)** — a new dropdown under Card content scales how
+strong the weather looks: particle count, particle opacity, and fog/cloud
+density. Defaults to **2 (Light)**, which stays easy to ignore if the
+screen sits in the corner of your eye while you watch something.
+
+Test any condition live with `?wx=rain|snow|fog|cloud|storm`, `?day=1|0`,
+and `?wxi=1..4` on `/image`.
+
 ## 1.10.0 — 2026-07-21
 
 ### Mix and match any block, on any template

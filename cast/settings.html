@@ -359,6 +359,15 @@
       <input type="checkbox" id="ck-clocksec" data-k="clockSeconds"></div>
     <div class="row"><label for="ck-weather">Weather<small>Temperature and conditions beside the clock</small></label>
       <input type="checkbox" id="ck-weather" data-k="showWeather"></div>
+    <div class="row"><label for="ck-weatherfx">Weather effects<small>Live rain, snow, and fog on the Street template, reacting to your real local weather and time of day</small></label>
+      <input type="checkbox" id="ck-weatherfx" data-k="weatherFX"></div>
+    <div class="row"><label for="wxintensity">Effect intensity<small>How strong the weather looks. Lower is calmer — good if the screen sits in the corner of your eye while you watch.</small></label>
+      <select id="wxintensity" class="mini">
+        <option value="1">1 — Subtle</option>
+        <option value="2">2 — Light</option>
+        <option value="3">3 — Medium</option>
+        <option value="4">4 — Bold</option>
+      </select></div>
     <div class="row"><label for="zip">ZIP code<small>US ZIP for local weather and day/night; blank = auto-locate from your server's IP</small></label>
       <input type="text" id="zip" class="mini" placeholder="e.g. 30301" autocomplete="off"></div>
     <div class="row"><label>Units</label>
@@ -475,7 +484,7 @@
   const TEMPLATES = ['spotlight', 'split', 'hero', 'lowerthird', 'bigclock', 'street'];
   let cfg = { hubIp: '', template: 'spotlight', theme: 'amber', accent: '',
     titleFont: 'system', posterSide: 'right', clockFormat: '12h', blockLayout: {},
-    blockVisibility: {}, showWeather: false };
+    blockVisibility: {}, showWeather: false, weatherFX: true, weatherIntensity: 2 };
   const cardBase = '/image';
 
   // ponytail: mirrors TEMPLATE_DEFAULT_BLOCKS in cast.py / output/index.html
@@ -809,6 +818,11 @@
   document.querySelectorAll('#unitfmt button').forEach(b => b.addEventListener('click', () => {
     cfg.weatherUnits = b.dataset.v; segSet('unitfmt', b.dataset.v); sendCfg();
   }));
+  $('#wxintensity').addEventListener('change', () => {
+    cfg.weatherIntensity = parseInt($('#wxintensity').value, 10) || 2;
+    sendCfg();
+    $('#status').textContent = 'Effect intensity changed — save to apply.';
+  });
   $('#sessions-btn').addEventListener('click', async () => {
     $('#sessions').textContent = '…';
     try {
@@ -863,6 +877,7 @@
     $('#blocktags').value = cfg.blockTags || '';
     $('#rotate').value = cfg.rotateSeconds ?? 30;
     $('#zip').value = cfg.weatherZip || '';
+    $('#wxintensity').value = String(cfg.weatherIntensity || 2);
     segSet('unitfmt', cfg.weatherUnits || 'f');
     segSet('side', cfg.posterSide || 'right');
     segSet('clockfmt', cfg.clockFormat || '12h');

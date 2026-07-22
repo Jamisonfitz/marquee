@@ -38,6 +38,10 @@ Every template is built from the same set of blocks — title/logo identity, wea
 - Live now-playing card — from Plex, Emby, or Jellyfin — with six designed
   templates: Spotlight, Split, Hero, Lower Third, Big Clock, and Street
   (animated marquee bulbs, real weather, and day/night, all included).
+- Street weather effects — canvas rain and snow, drifting fog, overcast, and
+  storms that follow your real local conditions, with an **Effect intensity**
+  (1–4) control so they stay ambient rather than distracting. Optional and
+  separate from the temperature readout.
 - Eight themes, one-tap Vibe presets, a custom accent color, five title
   fonts, 12/24-hour clock styles, and per-block show/hide toggles.
 - Add or remove any block — clock, weather, title, plot, ratings, progress,
@@ -236,3 +240,9 @@ Marquee checks that DashCast is active, casts the `/image` URL when playback sta
 3. Pause and resume playback and confirm the progress state updates within one poll interval.
 4. Stop playback and confirm the Hub returns to ambient mode.
 5. Review `docker logs marquee`; there should be no `catt ... failed` message.
+
+## Credits
+
+The Street template's weather effects were built with technique and
+inspiration from several open CodePens — rain, snow, fog, and the neon sign
+flicker. See [CREDITS.md](CREDITS.md) for the authors and sources.
