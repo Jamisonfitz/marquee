@@ -16,8 +16,7 @@ techniques from four community CodePens (credited in `CREDITS.md`):
   of a flat wash.
 - **Overcast** casts a slow drifting cloud shadow instead of flat dimming.
 - **Thunderstorms** (`?wx=storm`) are their own condition with denser rain
-  and an optional **Lightning flash** (Card content, **off by default** — a
-  bright pop can be distracting on an always‑on display).
+  and stronger dimming.
 - **The "NOW PLAYING" sign glows like neon** with an irregular flicker,
   theme‑tinted, resting in daylight.
 

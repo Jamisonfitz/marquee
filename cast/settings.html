@@ -361,8 +361,6 @@
       <input type="checkbox" id="ck-weather" data-k="showWeather"></div>
     <div class="row"><label for="ck-weatherfx">Weather effects<small>Live rain, snow, and fog on the Street template, reacting to your real local weather and time of day</small></label>
       <input type="checkbox" id="ck-weatherfx" data-k="weatherFX"></div>
-    <div class="row"><label for="ck-lightning">Lightning flash<small>Adds occasional lightning to Weather effects during storms — off by default, can be distracting</small></label>
-      <input type="checkbox" id="ck-lightning" data-k="stormLightning"></div>
     <div class="row"><label for="zip">ZIP code<small>US ZIP for local weather and day/night; blank = auto-locate from your server's IP</small></label>
       <input type="text" id="zip" class="mini" placeholder="e.g. 30301" autocomplete="off"></div>
     <div class="row"><label>Units</label>
@@ -479,7 +477,7 @@
   const TEMPLATES = ['spotlight', 'split', 'hero', 'lowerthird', 'bigclock', 'street'];
   let cfg = { hubIp: '', template: 'spotlight', theme: 'amber', accent: '',
     titleFont: 'system', posterSide: 'right', clockFormat: '12h', blockLayout: {},
-    blockVisibility: {}, showWeather: false, weatherFX: true, stormLightning: false };
+    blockVisibility: {}, showWeather: false, weatherFX: true };
   const cardBase = '/image';
 
   // ponytail: mirrors TEMPLATE_DEFAULT_BLOCKS in cast.py / output/index.html

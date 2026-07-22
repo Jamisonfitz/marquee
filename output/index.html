@@ -259,8 +259,8 @@
 
   /* Real weather on the Street scene. Rain and snow are drawn on a <canvas>
      (see the JS "Canvas weather" section) for real particles — adapted from
-     two CodePens, credited there and in CREDITS.md. Fog, overcast, storm
-     lightning, and day/night are CSS. Driven by /weather (Open-Meteo);
+     two CodePens, credited there and in CREDITS.md. Fog, overcast, and
+     day/night are CSS. Driven by /weather (Open-Meteo);
      ?wx=rain|snow|fog|cloud|storm and ?day=1|0 force a condition. */
   .wx-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 3;
     display: none; }
@@ -298,15 +298,6 @@
       radial-gradient(ellipse 38vw 18vh at 82% 104%, rgba(0,0,0,.13), transparent 70%);
     animation: cloud-drift 22s ease-in-out infinite; }
 
-  /* Storm lightning: opt-in (Settings → Card content → Lightning flash, off
-     by default). Scoped to .scene (behind the card) so it lights the brick
-     and marquee without washing out the poster and text on .stage. */
-  @keyframes lightning { 0%, 92%, 100% { opacity: 0; } 92.6% { opacity: .9; }
-    93.2% { opacity: .1; } 94% { opacity: .55; } 94.6% { opacity: 0; } }
-  body[data-template="street"].wx-storm.flash-on .scene::after { content: ""; position: absolute; inset: 0;
-    background: #eaf0ff; mix-blend-mode: screen; pointer-events: none; opacity: 0;
-    animation: lightning 8s steps(1) infinite; animation-delay: 3.1s; animation-fill-mode: backwards; }
-
   .scene svg { filter: brightness(var(--sb, 1)) blur(var(--sblur, 0px)); }
   body[data-template="street"].wx-cloud { --sb: .82; }
   body[data-template="street"].wx-storm { --sb: .74; }
@@ -339,7 +330,6 @@
   @media (prefers-reduced-motion: reduce) {
     .fog span, body[data-template="street"].wx-cloud::after,
     body[data-template="street"] .scene .np { animation: none; }
-    body[data-template="street"].wx-storm.flash-on .scene::after { animation: none; opacity: 0; }
   }
 
   /* LED trim: the theme accent bleeds around the poster like backlighting
@@ -1043,7 +1033,6 @@ ${bulbs.join('')}
   function applyStreetWeather() {
     const c = activeCfg();
     document.body.classList.remove('wx-rain', 'wx-snow', 'wx-fog', 'wx-cloud', 'wx-storm');
-    document.body.classList.toggle('flash-on', !!c.stormLightning);
     // Effects are their own opt-in, independent of the weather chip. ?wx=
     // / ?day= always force so the conditions stay testable from a URL.
     const fx = document.body.dataset.template === 'street'
