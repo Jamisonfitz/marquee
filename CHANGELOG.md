@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.11.4 — 2026-07-31
+
+- The settings page now looks like the product it controls: the masthead is a
+  letterboard between two bulb rails in the card's own Bebas Neue, section
+  titles speak the same face, toggles glow amber when lit, the preview sits in
+  a real screen bezel that spills a little light, and the marquee's glow pools
+  down from the top of the page.
+
 ## 1.11.3 — 2026-07-31
 
 - Settings page pass: Card content rows are grouped now — Clock style and

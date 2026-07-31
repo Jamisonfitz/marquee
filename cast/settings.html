@@ -3,11 +3,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Marquee — Settings</title>
 <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🎬</text></svg>'>
+<!-- The product's own headline face — same load-and-fall-back as the card. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap">
 <style>
   :root { --bg:#0B0D10; --panel:#14171C; --line:#262B33; --text:#F2EEE6;
-    --mut:#9AA1AB; --amber:#E5A83B; }
+    --mut:#9AA1AB; --amber:#E5A83B;
+    --display:'Bebas Neue', 'Arial Narrow', sans-serif; }
   html, body { margin:0; background:var(--bg); color:var(--text);
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  /* The lobby at night: the marquee's light pooling down from the masthead,
+     fading to black by the footer. One wash, not a pattern. */
+  body { background:
+    radial-gradient(60% 340px at 28% 0, rgba(229,168,59,.09), transparent 70%),
+    linear-gradient(180deg, #0D0F13, var(--bg) 480px); }
   button:focus-visible, [tabindex]:focus-visible, input:focus-visible,
   select:focus-visible, summary:focus-visible {
     outline: 2px solid var(--amber); outline-offset: 2px; }
@@ -15,25 +25,44 @@
   @media (prefers-reduced-motion: reduce) {
     * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
   }
-  .wrap { max-width: 1100px; margin: 0 auto; padding: 32px 24px 64px; }
-  h1 { font-size: 28px; font-weight: 800; margin: 0; }
-  h1 span { color: var(--amber); }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 26px 24px 64px; }
+  /* Masthead = the marquee itself: letterboard wordmark between two bulb
+     rails, the same sign language the card's Street template speaks. */
+  h1 { font-family: var(--display); font-size: 46px; font-weight: 400;
+    letter-spacing: .045em; line-height: 1; margin: 0; text-transform: uppercase; }
+  h1 span { color: var(--amber);
+    text-shadow: 0 0 18px rgba(229,168,59,.45), 0 2px 12px rgba(229,168,59,.25); }
   a { color: var(--amber); }
-  .top { display:flex; justify-content:space-between; gap:16px; align-items:center; }
+  .top { display:flex; justify-content:space-between; gap:16px; align-items:center;
+    padding: 14px 2px; position: relative; }
+  .top::before, .top::after { content:""; position:absolute; left:0; right:0;
+    height:5px; background-image:
+      radial-gradient(2.5px 2.5px at 5px 2.5px, rgba(229,168,59,.9) 55%, transparent 62%),
+      radial-gradient(2px 2px at 21px 2.5px, rgba(242,238,230,.16) 55%, transparent 62%),
+      radial-gradient(2px 2px at 37px 2.5px, rgba(242,238,230,.16) 55%, transparent 62%);
+    background-size: 48px 5px; background-repeat: repeat-x; }
+  .top::before { top: 0; }
+  .top::after { bottom: 0; }
   .topnav { display:flex; gap:14px; flex-wrap:wrap; align-items:center;
     font-size:14px; font-weight:700; }
   .linkbtn { background:none; border:0; color:var(--amber); font:inherit;
     font-weight:700; cursor:pointer; padding:0; }
   .sub { color: var(--mut); margin: 6px 0 28px; font-size: 14px; }
   .cols { display: flex; gap: 32px; flex-wrap: wrap; }
-  .panel { background: var(--panel); border: 1px solid var(--line);
-    border-radius: 14px; padding: 20px 22px; flex: 1; min-width: 320px; }
+  .panel { background: linear-gradient(180deg, #171B21, #12151A);
+    border: 1px solid var(--line);
+    border-radius: 14px; padding: 20px 22px; flex: 1; min-width: 320px;
+    box-shadow: inset 0 1px 0 rgba(242,238,230,.04); }
   .panel.wide { flex-basis: 100%; margin-bottom: 24px; }
-  h2 { font-size: 14.5px; font-weight: 800; letter-spacing: .14em;
-    text-transform: uppercase; color: var(--amber); margin: 0 0 14px;
-    padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+  /* Section titles in the letterboard face — big enough to anchor a long
+     page, quiet enough to stay chrome. */
+  h2 { font-family: var(--display); font-size: 21px; font-weight: 400;
+    letter-spacing: .07em; text-transform: uppercase; color: var(--amber);
+    margin: 0 0 14px; padding-bottom: 9px; border-bottom: 1px solid var(--line); }
   .row { display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 0; border-bottom: 1px solid var(--line); gap: 12px; }
+    padding: 10px 8px; margin: 0 -8px; border-bottom: 1px solid var(--line);
+    gap: 12px; border-radius: 8px; transition: background .15s ease; }
+  @media (hover:hover) { .row:hover { background: rgba(229,168,59,.045); } }
   .row:last-child { border-bottom: 0; }
   .row label { font-size: 15px; font-weight: 500; }
   .row small { display: block; color: var(--mut); font-weight: 400; margin-top: 2px; }
@@ -50,8 +79,10 @@
   .tpl { text-align:left; border:1px solid var(--line); border-radius:14px; padding:12px;
     background:linear-gradient(180deg, rgba(229,168,59,.06), rgba(255,255,255,.02));
     color:var(--text); cursor:pointer; }
-  .tpl:hover { border-color: rgba(229,168,59,.55); transform: translateY(-1px); }
-  .tpl.on { border-color: var(--amber); box-shadow: 0 0 0 1px rgba(229,168,59,.35); }
+  .tpl:hover { border-color: rgba(229,168,59,.55); transform: translateY(-2px);
+    box-shadow: 0 10px 24px -14px rgba(0,0,0,.8); }
+  .tpl.on { border-color: var(--amber);
+    box-shadow: 0 0 0 1px rgba(229,168,59,.35), 0 0 18px -4px rgba(229,168,59,.35); }
   .tpl strong { display:block; font-size:15px; margin:10px 0 3px; }
   .tpl small { display:block; color:var(--mut); font-size:12.5px; line-height:1.35; }
   .thumb { display:block; width:100%; aspect-ratio:16/10; border-radius:8px;
@@ -87,7 +118,8 @@
   input[type=checkbox]::after { content: ""; position: absolute; top: 3px; left: 3px;
     width: 18px; height: 18px; border-radius: 50%; background: #6B7280; transition: .15s; }
   input[type=checkbox]:checked { background: rgba(229,168,59,.35); }
-  input[type=checkbox]:checked::after { left: 21px; background: var(--amber); }
+  input[type=checkbox]:checked::after { left: 21px; background: var(--amber);
+    box-shadow: 0 0 7px rgba(229,168,59,.55); }
   .devpick { display: flex; gap: 8px; align-items: center; min-width: 0; }
   .devpick select, select.mini, input.mini { max-width: 200px; min-height: 40px;
     color: var(--text); background: var(--bg); border: 1px solid var(--line);
@@ -122,8 +154,15 @@
   .swatches .clear { width:auto; border-radius:9px; padding:0 8px; background:none;
     color:var(--mut); font-size:12px; font-weight:700; border:1px solid var(--line); }
   .actions { margin-top: 18px; display: flex; align-items: center; gap: 14px; }
-  .save { background: var(--amber); color: #0B0D10; font-weight: 800; border: 0;
-    border-radius: 9px; padding: 11px 26px; font-size: 15px; cursor: pointer; }
+  .save { background: var(--amber); color: #0B0D10; border: 0;
+    font-family: var(--display); font-weight: 400; letter-spacing: .07em;
+    text-transform: uppercase;
+    border-radius: 9px; padding: 10px 28px; font-size: 19px; cursor: pointer;
+    box-shadow: 0 0 14px rgba(229,168,59,.28), 0 6px 18px -8px rgba(229,168,59,.5);
+    transition: box-shadow .2s ease, transform .2s ease; }
+  .save:hover { box-shadow: 0 0 20px rgba(229,168,59,.42),
+    0 8px 22px -8px rgba(229,168,59,.6); transform: translateY(-1px); }
+  .save:active { transform: translateY(0); }
   .status { color: var(--mut); font-size: 14px; }
   .secondary { background: transparent; color: var(--text); border: 1px solid var(--line);
     border-radius: 9px; padding: 10px 16px; font-weight: 700; cursor: pointer; }
@@ -153,8 +192,13 @@
   .slider output { color:var(--text); font-variant-numeric:tabular-nums; }
   .slider input { width:100%; height:36px; margin:2px 0 0; accent-color:var(--amber);
     touch-action:pan-y; }
+  /* The preview is the screen: a real bezel and the screen's own light
+     spilling onto the wall beneath it. */
   .frame-box { width: 100%; max-width: 1000px; aspect-ratio: 16 / 10;
-    border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+    border: 2px solid #1D2229; border-radius: 14px; overflow: hidden;
+    background: #07090C;
+    box-shadow: 0 0 0 1px #060809, 0 18px 44px -18px rgba(0,0,0,.85),
+      0 10px 60px -12px rgba(229,168,59,.14); }
   .frame-box iframe { width: 1280px; height: 800px; border: 0; transform-origin: 0 0; }
 
   /* Changelog slide-over */
@@ -190,7 +234,8 @@
   body { overflow-x: hidden; }
   .layout, .controls, .preview-col, .panel { min-width: 0; }
   @media (max-width:760px) { .wrap { padding:20px 14px 44px; }
-    .top { align-items:flex-start; flex-direction:column; }
+    .top { align-items:flex-start; flex-direction:column; gap:10px; }
+    h1 { font-size: 38px; }
     .panel { min-width:0; width:100%; box-sizing:border-box; }
     .tpl-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
     .tpl small { display:none; }
