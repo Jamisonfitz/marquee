@@ -29,13 +29,21 @@
   .panel { background: var(--panel); border: 1px solid var(--line);
     border-radius: 14px; padding: 20px 22px; flex: 1; min-width: 320px; }
   .panel.wide { flex-basis: 100%; margin-bottom: 24px; }
-  h2 { font-size: 13px; font-weight: 700; letter-spacing: .22em;
-    text-transform: uppercase; color: var(--amber); margin: 0 0 14px; }
+  h2 { font-size: 14.5px; font-weight: 800; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--amber); margin: 0 0 14px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--line); }
   .row { display: flex; align-items: center; justify-content: space-between;
     padding: 10px 0; border-bottom: 1px solid var(--line); gap: 12px; }
   .row:last-child { border-bottom: 0; }
   .row label { font-size: 15px; font-weight: 500; }
   .row small { display: block; color: var(--mut); font-weight: 400; margin-top: 2px; }
+  /* Grouped dependents: indented under their parent toggle, and visibly dead
+     when the parent is off — a control that does nothing must look like it. */
+  .row.group-start { margin-top: 6px; }
+  .dep-rows { padding-left: 18px; }
+  .dep-rows .row label { font-size: 14px; }
+  .dep-rows.is-off, .row.is-off { opacity: .45; }
+  .is-off input, .is-off select, .is-off button { cursor: not-allowed; }
 
   /* Template picker with sketch thumbnails */
   .tpl-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:12px; }
@@ -132,7 +140,9 @@
   .editor .picks label + label { margin-top:12px; }
   .editor-foot { grid-column:1 / -1; display:flex; gap:10px; flex-wrap:wrap; }
   .editor-foot .secondary { padding:8px 14px; font-size:13px; }
-  .editor-wrap { margin:0 0 16px; }
+  /* Preview leads, editor folds beneath it — "always see the preview" is the
+     product's core principle; tapping a block in the preview unfolds this. */
+  .editor-wrap { margin:14px 0 0; }
   .editor-wrap .editor { margin-bottom:0; }
   .editor-wrap summary { cursor:pointer; color:var(--mut); font-size:12px;
     font-weight:700; letter-spacing:.08em; text-transform:uppercase;
@@ -348,31 +358,35 @@
     <div class="row"><label for="ck-contentrating">Content rating</label><input type="checkbox" id="ck-contentrating" data-k="showContentRating"></div>
     <div class="row"><label for="ck-runtime">Runtime</label><input type="checkbox" id="ck-runtime" data-k="showRuntime"></div>
     <div class="row"><label for="ck-progress">Progress bar</label><input type="checkbox" id="ck-progress" data-k="showProgress"></div>
-    <div class="row"><label for="ck-clock">Clock</label>
+    <div class="row group-start"><label for="ck-clock">Clock</label>
       <input type="checkbox" id="ck-clock" data-k="showClock"></div>
-    <div class="row"><label>Clock style</label>
-      <div class="seg" id="clockfmt">
-        <button data-v="12h">12h</button><button data-v="24h">24h</button>
+    <div class="dep-rows" id="clock-deps">
+      <div class="row"><label>Clock style</label>
+        <div class="seg" id="clockfmt">
+          <button data-v="12h">12h</button><button data-v="24h">24h</button>
+        </div>
       </div>
+      <div class="row"><label for="ck-clocksec">Clock seconds</label>
+        <input type="checkbox" id="ck-clocksec" data-k="clockSeconds"></div>
     </div>
-    <div class="row"><label for="ck-clocksec">Clock seconds</label>
-      <input type="checkbox" id="ck-clocksec" data-k="clockSeconds"></div>
-    <div class="row"><label for="ck-weather">Weather<small>Temperature and conditions beside the clock</small></label>
+    <div class="row group-start"><label for="ck-weather">Weather<small>Temperature and conditions beside the clock</small></label>
       <input type="checkbox" id="ck-weather" data-k="showWeather"></div>
     <div class="row"><label for="ck-weatherfx">Weather effects<small>Live rain, snow, and fog on the Street template, reacting to your real local weather and time of day</small></label>
       <input type="checkbox" id="ck-weatherfx" data-k="weatherFX"></div>
-    <div class="row"><label for="wxintensity">Effect intensity<small>How strong the weather looks. Lower is calmer — good if the screen sits in the corner of your eye while you watch.</small></label>
-      <select id="wxintensity" class="mini">
-        <option value="1">1 — Subtle</option>
-        <option value="2">2 — Light</option>
-        <option value="3">3 — Medium</option>
-        <option value="4">4 — Bold</option>
-      </select></div>
-    <div class="row"><label for="zip">ZIP code<small>US ZIP for local weather and day/night; blank = auto-locate from your server's IP</small></label>
-      <input type="text" id="zip" class="mini" placeholder="e.g. 30301" autocomplete="off"></div>
-    <div class="row"><label>Units</label>
-      <div class="seg" id="unitfmt">
-        <button data-v="f">&deg;F</button><button data-v="c">&deg;C</button>
+    <div class="dep-rows" id="weather-deps">
+      <div class="row" id="row-wxintensity"><label for="wxintensity">Effect intensity<small>How strong the weather looks. Lower is calmer — good if the screen sits in the corner of your eye while you watch.</small></label>
+        <select id="wxintensity" class="mini">
+          <option value="1">1 — Subtle</option>
+          <option value="2">2 — Light</option>
+          <option value="3">3 — Medium</option>
+          <option value="4">4 — Bold</option>
+        </select></div>
+      <div class="row" id="row-zip"><label for="zip">ZIP code<small>US ZIP for local weather and day/night; blank = auto-locate from your server's IP</small></label>
+        <input type="text" id="zip" class="mini" placeholder="e.g. 30301" autocomplete="off"></div>
+      <div class="row" id="row-units"><label>Units</label>
+        <div class="seg" id="unitfmt">
+          <button data-v="f">&deg;F</button><button data-v="c">&deg;C</button>
+        </div>
       </div>
     </div>
   </div>
@@ -428,7 +442,8 @@
   <div class="preview">
     <h2>Preview (demo data)</h2>
     <p class="sub">Every change previews instantly below — nothing hits the Hub until you save. Tap a block to select it, drag to move; sliders fine-tune position, width, and size.</p>
-    <details class="editor-wrap" id="editor-wrap" open>
+    <div class="frame-box"><iframe id="frame"></iframe></div>
+    <details class="editor-wrap" id="editor-wrap">
     <summary>Block editor</summary>
     <div class="editor">
       <p class="sub" id="no-blocks-note" hidden>This template has no blocks — pick one below to add it.</p>
@@ -463,7 +478,6 @@
       </div>
     </div>
     </details>
-    <div class="frame-box"><iframe id="frame"></iframe></div>
   </div>
   </div>
   </div>
@@ -743,8 +757,25 @@
   $('#accent-clear').addEventListener('click', () => {
     cfg.accent = ''; markTheme(); sendCfg(); });
 
+  // Dependent controls go dead (dimmed + disabled) when their parent toggle
+  // is off: clock style/seconds need the clock, effect intensity needs the
+  // effects, ZIP feeds either weather feature's location, units only label
+  // the text chip. A live-looking control that does nothing is a lie.
+  function syncDeps() {
+    const on = id => $(id).checked;
+    const gate = (sel, ok) => {
+      const el = document.querySelector(sel);
+      el.classList.toggle('is-off', !ok);
+      el.querySelectorAll('input,select,button').forEach(c => { c.disabled = !ok; });
+    };
+    gate('#clock-deps', on('#ck-clock'));
+    gate('#row-wxintensity', on('#ck-weatherfx'));
+    gate('#row-zip', on('#ck-weather') || on('#ck-weatherfx'));
+    gate('#row-units', on('#ck-weather'));
+  }
+
   document.querySelectorAll('input[data-k]').forEach(i =>
-    i.addEventListener('change', sendCfg));
+    i.addEventListener('change', () => { syncDeps(); sendCfg(); }));
 
   async function loadDevices(refresh) {
     try {
@@ -882,6 +913,7 @@
     segSet('side', cfg.posterSide || 'right');
     segSet('clockfmt', cfg.clockFormat || '12h');
     cfg.blockLayout ||= {}; cfg.blockVisibility ||= {};
+    syncDeps();
     markTheme(); markTemplates(); rebuildBlockDropdown(); buildCarousel(); loadFrame();
     loadDevices(false);
   }
