@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.11.3 — 2026-07-31
+
+- Settings page pass: Card content rows are grouped now — Clock style and
+  seconds sit under the Clock toggle, weather intensity/ZIP/units under the
+  weather toggles, and controls whose parent is off dim and disable instead
+  of silently doing nothing.
+- The preview leads: on desktop the demo card now sits right under Save with
+  the block editor folded beneath it (tap a block to unfold it, same as
+  phones), so the preview is always in view instead of below an open editor.
+- Panel headings got a size bump and a hairline rule — the long page scans.
+
 ## 1.11.2 — 2026-07-22
 
 - The card now accepts a `?tpl=<template>` query param to preview any
