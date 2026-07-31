@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.12.0 — 2026-07-31
+
+- The settings page is now an editor: the card fills the page and is the
+  navigation. Tap anything on it — the poster, the plot, the clock — and just
+  that thing's controls appear in the inspector rail. Look (templates, vibes,
+  theme, fonts) is the rail's home; server, casting, filters, and
+  export/import live behind Connection & casting in the top bar.
+- Save moved to the top bar, always in reach; on phones the card rides sticky
+  at the top while the inspector scrolls beneath it.
+- Nothing about the card or the saved settings changed — same keys, same
+  save flow, same instant preview.
+
 ## 1.11.4 — 2026-07-31
 
 - The settings page now looks like the product it controls: the masthead is a
