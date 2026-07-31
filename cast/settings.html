@@ -221,14 +221,36 @@
   .scrim.on { opacity:1; pointer-events:auto; }
 
   .layout { display: grid; grid-template-columns: 1fr; gap: 18px; }
+  /* Route A editor shell: the card is the stage, the rail is a contextual
+     inspector. [hidden] does real work here — panes are plain markup the
+     inspector filters. */
+  [hidden] { display: none !important; }
+  .ctx-hide { display: none; }
+  /* A shell panel with every pane-row hidden vanishes whole. */
+  .panel:has([data-pane]):not(:has([data-pane]:not([hidden]))) { display: none; }
+  .insp-head { display: flex; align-items: baseline; gap: 12px; padding: 2px 2px 10px; }
+  .insp-title { font-family: var(--display); font-size: 21px; letter-spacing: .07em;
+    text-transform: uppercase; color: var(--amber); }
+  .top .actions { margin: 0; display: flex; align-items: center; gap: 12px; }
+  .top .status { max-width: 260px; }
   @media (min-width: 1180px) {
     .wrap { max-width: 1780px; }
-    .layout { grid-template-columns: minmax(430px, 46%) minmax(0, 1fr);
+    .layout { grid-template-columns: minmax(0, 1fr) 380px;
       gap: 26px; align-items: start; }
-    .preview-col { position: sticky; top: 14px; }
+    .controls { order: 2; position: sticky; top: 14px;
+      max-height: calc(100dvh - 28px); overflow-y: auto; }
+    .preview-col { order: 1; }
     .preview { margin-top: 0; }
-    .preview-col .actions { margin-top: 0; margin-bottom: 14px; }
+    .frame-box { max-width: none; }
+    /* The topbar line already explains the stage; no second headline. */
+    .preview > h2, .preview > .sub { display: none; }
   }
+  /* Inside the rail the template gallery is a compact 2-up strip, not a
+     column of posters. */
+  .controls .tpl-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .controls .tpl { padding: 8px; }
+  .controls .tpl strong { font-size: 13px; margin: 7px 0 2px; }
+  .controls .tpl small { font-size: 11px; line-height: 1.3; }
   .controls .panel { margin-bottom: 18px; }
 
   body { overflow-x: hidden; }
@@ -265,23 +287,21 @@
     .actions { flex-wrap:wrap; gap:8px; margin-bottom:10px; }
     .actions .save { flex:1; padding:11px 14px; }
     .actions .status { flex-basis:100%; }
-    /* Phones: preview, block controls, and Save ride together in one fixed
-       bottom sheet — tuning never fights the page scroll, and a stray swipe
-       can't land on a slider. */
-    .preview-col { position:fixed; left:0; right:0; bottom:0; z-index:30;
-      background:var(--bg); border-top:1px solid var(--line); box-sizing:border-box;
-      box-shadow:0 -8px 30px rgba(0,0,0,.6); max-height:85dvh; overflow-y:auto;
-      padding:8px 10px calc(8px + env(safe-area-inset-bottom)); }
+    /* Phones: the card rides sticky at the top — always in view while the
+       inspector scrolls beneath it. Keyboard up → card steps aside. */
+    .layout { display:flex; flex-direction:column; }
+    .preview-col { order:0; } .controls { order:1; }
+    .preview-col { position:sticky; top:0; z-index:30; background:var(--bg);
+      padding:6px 0 8px; box-shadow:0 10px 24px -18px rgba(0,0,0,.8); }
     .preview-col.kb-hidden { display:none; }
     .preview h2, .preview .sub { display:none; }
     .editor { padding:10px; }
     .frame-box { border-radius:10px; }
-    /* Replaced by the carousel above: template grid + inline vibes stepper
-       would otherwise eat most of the screen before you reach any control. */
-    .panel.wide, #vibes-row { display:none; }
+    .top .actions { width:100%; }
+    .top .actions .save { flex:1; }
   }
   .vibe-carousel { display:none; }
-  @media (max-width:760px) {
+  @media (max-width:0px) {
     .vibe-carousel { display:block; margin: 2px 0 18px; }
     .vc-track { display:flex; overflow-x:auto; scroll-snap-type:x mandatory;
       -webkit-overflow-scrolling:touch; gap:12px; padding:4px 21vw;
@@ -305,18 +325,27 @@
 </style>
 <div class="wrap">
   <div class="top"><h1>Marquee <span>settings</span></h1>
+    <div class="actions">
+      <button class="save" id="save">Save changes</button>
+      <span class="status" id="status"></span>
+    </div>
     <nav class="topnav">
+      <button class="linkbtn" id="signal-btn" type="button" title="Server, casting, filters, export">Connection &amp; casting</button>
       <a href="https://github.com/Jamisonfitz/marquee">GitHub</a>
       <button class="linkbtn" id="notes-btn">What’s new</button>
     </nav></div>
-  <p class="sub">Saves reach the Hub in about two seconds. The card lives at <code>/image</code>; the preview below always shows demo data.</p>
+  <p class="sub">The card is the settings: <b>tap anything on it</b> — the poster, the plot, the clock — and its controls appear on the right. Nothing reaches the Hub until you save.</p>
 
   <div class="vibe-carousel" id="vibe-carousel"><div class="vc-track" id="vc-track"></div></div>
 
   <div class="layout">
-  <div class="controls">
+  <div class="controls" id="controls">
+  <div class="insp-head">
+    <button class="linkbtn" id="insp-back" type="button" hidden>&#8249; Back to Look</button>
+    <span class="insp-title" id="insp-title">Look</span>
+  </div>
 
-  <div class="panel wide">
+  <div class="panel wide" data-pane="look">
     <h2>Template</h2>
     <div class="tpl-grid" id="templates">
       <button class="tpl" data-template="spotlight" type="button">
@@ -341,15 +370,15 @@
   </div>
 
   <div class="panel">
-    <h2>Look</h2>
-    <div class="row" id="vibes-row"><label>Vibes<small>Presets: theme + font + template. Step through, tune after, save to keep.</small></label>
+    <h2 class="ctx-hide">Look</h2>
+    <div class="row" id="vibes-row" data-pane="look"><label>Vibes<small>Presets: theme + font + template. Step through, tune after, save to keep.</small></label>
       <div class="vibes-step">
         <button class="secondary vprev" id="vibe-prev" type="button" aria-label="Previous vibe">&#9664;</button>
         <button class="vibe-now" id="vibe-now" type="button"><i id="vibe-dot"></i><b id="vibe-name">Pick a vibe</b><small id="vibe-tag">tap or step through</small></button>
         <button class="secondary vnext" id="vibe-next" type="button" aria-label="Next vibe">&#9654;</button>
       </div>
     </div>
-    <div class="row"><label>Theme<small>Card palette; pick the circle for a custom accent</small></label>
+    <div class="row" data-pane="look"><label>Theme<small>Card palette; pick the circle for a custom accent</small></label>
       <div class="swatches" id="theme">
         <button data-v="amber" style="--swatch:#E5A83B" title="Amber"></button>
         <button data-v="ice" style="--swatch:#7FB8E8" title="Ice"></button>
@@ -363,7 +392,7 @@
         <button class="clear" id="accent-clear" type="button">reset</button>
       </div>
     </div>
-    <div class="row"><label for="font">Title font<small>Free Google fonts; falls back to system offline</small></label>
+    <div class="row" data-pane="identity"><label for="font">Title font<small>Free Google fonts; falls back to system offline</small></label>
       <select id="font" class="mini">
         <option value="system">System</option>
         <option value="bebas">Bebas Neue</option>
@@ -373,7 +402,7 @@
         <option value="grotesk">Space Grotesk</option>
       </select>
     </div>
-    <div class="row"><label for="bodyfont">Card font<small>Everything else: plot, metadata, clock. Size per element lives in the block editor below.</small></label>
+    <div class="row" data-pane="look"><label for="bodyfont">Card font<small>Everything else: plot, metadata, clock. Size per element lives in the block editor below.</small></label>
       <select id="bodyfont" class="mini">
         <option value="system">System</option>
         <option value="bebas">Bebas Neue</option>
@@ -383,7 +412,7 @@
         <option value="grotesk">Space Grotesk</option>
       </select>
     </div>
-    <div class="row"><label>Poster side<small>Spotlight and Split templates</small></label>
+    <div class="row" data-pane="poster"><label>Poster side<small>Spotlight and Split templates</small></label>
       <div class="seg" id="side">
         <button data-v="left">Left</button><button data-v="right">Right</button>
       </div>
@@ -391,21 +420,21 @@
   </div>
 
   <div class="panel">
-    <h2>Card content</h2>
-    <div class="row"><label for="ck-backdrop">Backdrop art<small>Server background art behind the card</small></label>
+    <h2 class="ctx-hide">Card content</h2>
+    <div class="row" data-pane="look"><label for="ck-backdrop">Backdrop art<small>Server background art behind the card</small></label>
       <input type="checkbox" id="ck-backdrop" data-k="backdrop"></div>
-    <div class="row"><label for="ck-logo">Title logo<small>Movie/show logo cutout instead of text title</small></label>
+    <div class="row" data-pane="identity"><label for="ck-logo">Title logo<small>Movie/show logo cutout instead of text title</small></label>
       <input type="checkbox" id="ck-logo" data-k="logo"></div>
-    <div class="row"><label for="ck-plot">Plot</label><input type="checkbox" id="ck-plot" data-k="showPlot"></div>
-    <div class="row"><label for="ck-genres">Genres</label><input type="checkbox" id="ck-genres" data-k="showGenres"></div>
-    <div class="row"><label for="ck-scores">Scores (RT / IMDb)</label><input type="checkbox" id="ck-scores" data-k="showScores"></div>
-    <div class="row"><label for="ck-mediainfo">Media info</label><input type="checkbox" id="ck-mediainfo" data-k="showMediaInfo"></div>
-    <div class="row"><label for="ck-contentrating">Content rating</label><input type="checkbox" id="ck-contentrating" data-k="showContentRating"></div>
-    <div class="row"><label for="ck-runtime">Runtime</label><input type="checkbox" id="ck-runtime" data-k="showRuntime"></div>
-    <div class="row"><label for="ck-progress">Progress bar</label><input type="checkbox" id="ck-progress" data-k="showProgress"></div>
-    <div class="row group-start"><label for="ck-clock">Clock</label>
+    <div class="row" data-pane="plot"><label for="ck-plot">Plot</label><input type="checkbox" id="ck-plot" data-k="showPlot"></div>
+    <div class="row" data-pane="meta"><label for="ck-genres">Genres</label><input type="checkbox" id="ck-genres" data-k="showGenres"></div>
+    <div class="row" data-pane="ratings"><label for="ck-scores">Scores (RT / IMDb)</label><input type="checkbox" id="ck-scores" data-k="showScores"></div>
+    <div class="row" data-pane="meta"><label for="ck-mediainfo">Media info</label><input type="checkbox" id="ck-mediainfo" data-k="showMediaInfo"></div>
+    <div class="row" data-pane="meta"><label for="ck-contentrating">Content rating</label><input type="checkbox" id="ck-contentrating" data-k="showContentRating"></div>
+    <div class="row" data-pane="meta"><label for="ck-runtime">Runtime</label><input type="checkbox" id="ck-runtime" data-k="showRuntime"></div>
+    <div class="row" data-pane="progress"><label for="ck-progress">Progress bar</label><input type="checkbox" id="ck-progress" data-k="showProgress"></div>
+    <div class="row group-start" data-pane="clock"><label for="ck-clock">Clock</label>
       <input type="checkbox" id="ck-clock" data-k="showClock"></div>
-    <div class="dep-rows" id="clock-deps">
+    <div class="dep-rows" id="clock-deps" data-pane="clock">
       <div class="row"><label>Clock style</label>
         <div class="seg" id="clockfmt">
           <button data-v="12h">12h</button><button data-v="24h">24h</button>
@@ -414,11 +443,11 @@
       <div class="row"><label for="ck-clocksec">Clock seconds</label>
         <input type="checkbox" id="ck-clocksec" data-k="clockSeconds"></div>
     </div>
-    <div class="row group-start"><label for="ck-weather">Weather<small>Temperature and conditions beside the clock</small></label>
+    <div class="row group-start" data-pane="weather"><label for="ck-weather">Weather<small>Temperature and conditions beside the clock</small></label>
       <input type="checkbox" id="ck-weather" data-k="showWeather"></div>
-    <div class="row"><label for="ck-weatherfx">Weather effects<small>Live rain, snow, and fog on the Street template, reacting to your real local weather and time of day</small></label>
+    <div class="row" data-pane="weather"><label for="ck-weatherfx">Weather effects<small>Live rain, snow, and fog on the Street template, reacting to your real local weather and time of day</small></label>
       <input type="checkbox" id="ck-weatherfx" data-k="weatherFX"></div>
-    <div class="dep-rows" id="weather-deps">
+    <div class="dep-rows" id="weather-deps" data-pane="weather">
       <div class="row" id="row-wxintensity"><label for="wxintensity">Effect intensity<small>How strong the weather looks. Lower is calmer — good if the screen sits in the corner of your eye while you watch.</small></label>
         <select id="wxintensity" class="mini">
           <option value="1">1 — Subtle</option>
@@ -436,7 +465,7 @@
     </div>
   </div>
 
-  <div class="panel">
+  <div class="panel" data-pane="signal">
     <h2>Media server</h2>
     <div class="row"><label for="backend">Backend<small>Which server Marquee watches. Nothing changes until you press Save; a saved change is picked up within ~5s, no restart.</small></label>
       <select id="backend" class="mini">
@@ -450,7 +479,7 @@
       <input type="password" id="mskey" class="mini" placeholder="paste API key" autocomplete="new-password"></div>
   </div>
 
-  <div class="panel">
+  <div class="panel" data-pane="signal">
     <h2>Casting</h2>
     <div class="row"><label for="hub">Cast device<small>Scan finds Google Cast devices on your LAN</small></label>
       <div class="devpick">
@@ -466,6 +495,12 @@
       <input type="text" id="blocktags" class="mini" placeholder="e.g. adult, xxx, 18+" autocomplete="off"></div>
     <div class="row"><label for="rotate">Rotate between sessions<small>When more than one allowed session is playing, each takes the display for this many seconds. 0 pins the first one (alphabetical by user, then device).</small></label>
       <input type="number" id="rotate" class="mini" min="0" max="3600" step="5" placeholder="30"></div>
+    <div class="row"><label>Share setup<small>Export copies your whole setup as text; import pastes someone else&#39;s.</small></label>
+      <div class="devpick">
+        <button class="secondary" id="export" type="button">Export</button>
+        <button class="secondary" id="import" type="button">Import</button>
+      </div>
+    </div>
     <div class="row"><label>Active sessions<small>Copy exact user and device names from what's playing right now</small></label>
       <div class="devpick">
         <span class="sessions-list" id="sessions">—</span>
@@ -477,13 +512,6 @@
   </div>
 
   <div class="preview-col">
-  <div class="actions">
-    <button class="save" id="save">Save changes</button>
-    <button class="secondary" id="export" title="Copy your whole setup as text to share">Export</button>
-    <button class="secondary" id="import" title="Paste someone's exported setup">Import</button>
-    <span class="status" id="status"></span>
-  </div>
-
   <div class="preview">
     <h2>Preview (demo data)</h2>
     <p class="sub">Every change previews instantly below — nothing hits the Hub until you save. Tap a block to select it, drag to move; sliders fine-tune position, width, and size.</p>
@@ -819,6 +847,34 @@
     gate('#row-units', on('#ck-weather'));
   }
 
+  // Route A inspector: the rail shows one pane at a time. 'look' is home
+  // (template + vibes + theme + fonts); tapping a card region jumps to that
+  // region's pane; the gear-equivalent "Connection & casting" is just another
+  // pane. Panes are plain markup filtered by [data-pane] + [hidden].
+  const PANE_TITLES = { look: 'Look', identity: 'Title & logo', plot: 'Plot',
+    meta: 'Metadata', ratings: 'Ratings', progress: 'Progress', clock: 'Clock',
+    weather: 'Weather', poster: 'Poster', stinger: 'Credits badge',
+    signal: 'Connection & casting' };
+  let pane = 'look';
+  function showPane(name) {
+    pane = PANE_TITLES[name] ? name : 'look';
+    document.querySelectorAll('[data-pane]').forEach(el => {
+      el.hidden = el.dataset.pane !== pane;
+    });
+    $('#insp-title').textContent = PANE_TITLES[pane];
+    $('#insp-back').hidden = pane === 'look';
+    // Position editing belongs to block panes; Look keeps it folded (it's the
+    // only path back to "Add a block" when a template has none left to tap).
+    const blockish = !['look', 'signal'].includes(pane);
+    $('#editor-wrap').hidden = pane === 'signal';
+    if (!blockish) $('#editor-wrap').open = false;
+    $('#controls').scrollTop = 0;
+  }
+  $('#insp-back').addEventListener('click', () => showPane('look'));
+  $('#signal-btn').addEventListener('click', () =>
+    showPane(pane === 'signal' ? 'look' : 'signal'));
+  showPane('look');
+
   document.querySelectorAll('input[data-k]').forEach(i =>
     i.addEventListener('change', () => { syncDeps(); sendCfg(); }));
 
@@ -999,11 +1055,14 @@
       });
       // '' = template default: no Justify button lit until one is chosen.
       segSet('align', (msg.values || {}).align || '');
-      if (msg.tap) $('#editor-wrap').open = true;
+      if (msg.tap) { showPane(msg.name); $('#editor-wrap').open = true; }
       updateRemoveButton();
     }
   });
-  $('#element-select').addEventListener('change', event => selectBlock(event.target.value));
+  $('#element-select').addEventListener('change', event => {
+    showPane(event.target.value);
+    selectBlock(event.target.value);
+  });
   $('#add-block-select').addEventListener('change', event => {
     const name = event.target.value;
     event.target.value = '';  // one-shot: always resets to "+ Add…" after firing
@@ -1072,8 +1131,8 @@
   const phone = matchMedia('(max-width:760px)');
   if (phone.matches) $('#editor-wrap').open = false;
   new ResizeObserver(() => {
-    document.body.style.paddingBottom =
-      phone.matches ? sheet.offsetHeight + 16 + 'px' : '';
+    // Sticky-top card now rides in normal flow: no body padding to manage,
+    // but the frame still rescales when the column resizes.
     scaleFrame();
   }).observe(sheet);
 
