@@ -385,6 +385,9 @@
   body.editing [data-layout] { outline: 2px dashed rgba(229,168,59,.7);
     outline-offset: 5px; cursor: move; touch-action: none; }
   body.editing [data-layout].selected { outline-style: solid; outline-color: var(--accent); }
+  body.editing.backdrop-selected::before { content: ""; position: fixed; inset: 6px;
+    border: 1.5px dashed var(--accent); border-radius: 10px;
+    pointer-events: none; z-index: 30; }
   body.editing::after { content: ""; position: fixed; inset: 0; z-index: 20;
     pointer-events: none; background-image:
     linear-gradient(rgba(229,168,59,.13) 1px, transparent 1px),
@@ -432,12 +435,12 @@
   // ponytail: mirrors TEMPLATE_DEFAULT_BLOCKS in cast.py — no shared codegen
   // between the two, same as TEMPLATES/THEMES already being duplicated here.
   const TEMPLATE_DEFAULT_BLOCKS = {
-    spotlight: ['clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
-    split: ['clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
-    hero: ['clock', 'identity', 'meta', 'ratings', 'progress'],
-    lowerthird: ['clock', 'identity', 'meta', 'ratings', 'progress'],
-    bigclock: ['clock', 'identity', 'meta', 'plot', 'progress'],
-    street: ['clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
+    spotlight: ['backdrop', 'clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
+    split: ['backdrop', 'clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
+    hero: ['backdrop', 'clock', 'identity', 'meta', 'ratings', 'progress'],
+    lowerthird: ['backdrop', 'clock', 'identity', 'meta', 'ratings', 'progress'],
+    bigclock: ['backdrop', 'clock', 'identity', 'meta', 'plot', 'progress'],
+    street: ['backdrop', 'clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
   };
   // A block outside its template's default set has no grid-area or template
   // CSS anchor to offset from, so it needs a real starting position the
@@ -770,9 +773,8 @@ ${bulbs.join('')}
     // Landing on Street before the 10-minute weather poll has ever run
     // would otherwise leave the scene undimmed/dry until the next tick.
     if (tpl === 'street' && !lastWx) wxTick();
-    document.body.classList.toggle('flip',
-      (tpl === 'spotlight' || tpl === 'split') && c.posterSide === 'left');
 
+    const shown = visibleBlockSet(tpl, c.blockVisibility);
     $('eyebrow').textContent = c.showGenres !== false ? (d.genres || []).join('  ·  ') : '';
     $('title').textContent = d.title || '';
     $('subtitle').textContent = d.subtitle || '';
@@ -783,7 +785,7 @@ ${bulbs.join('')}
       $('logo').onerror = () => stage.classList.remove('has-logo');
       $('logo').src = DEMO ? demoM().logo : '/logo.png?k=' + d.key;
     }
-    const useBg = c.backdrop !== false && d.backdrop;
+    const useBg = shown.has('backdrop') && c.backdrop !== false && d.backdrop;
     if (useBg) { $('bg').src = DEMO ? demoM().backdrop : '/backdrop.jpg?k=' + d.key; }
     $('bg').classList.toggle('on', useBg);
 
@@ -794,7 +796,8 @@ ${bulbs.join('')}
       (c.showContentRating !== false ? ratingBadge(d.contentRating) : '');
     $('meta').innerHTML = metaHtml;
     const st = d.stinger
-      ? (d.stinger.includes('after') ? 'After-credits scene' : 'During-credits scene') : '';
+      ? (d.stinger.includes('after') ? 'After-credits scene' : 'During-credits scene')
+      : (EDIT && DEMO ? 'During-credits scene' : '');
     $('stinger').textContent = st;
     $('stinger').hidden = !st;
     $('plot').textContent = c.showPlot !== false ? (d.summary || '') : '';
@@ -808,7 +811,6 @@ ${bulbs.join('')}
       `<div class="score"><span class="imdb-tag">IMDb</span><div class="num">${esc(s.imdb)}</div></div>`);
     $('scores').innerHTML = parts.join('');
 
-    const shown = visibleBlockSet(tpl, c.blockVisibility);
     show('clock', shown.has('clock') && c.showClock !== false);
     show('weather', shown.has('weather') && c.showWeather !== false);
     show('identity', shown.has('identity'));
@@ -863,6 +865,18 @@ ${bulbs.join('')}
       el.style.fontFamily = font;
       if (font) el.style.setProperty('--title-font', font);
       else el.style.removeProperty('--title-font');
+      // Per-block color: plain text via color, themed pieces (progress fill,
+      // poster trim, stinger chip, title glow) via the element-scoped accent
+      // vars — shadows the theme's :root values only inside this block.
+      if (/^#[0-9a-fA-F]{6}$/.test(p.color || '')) {
+        el.style.color = p.color;
+        el.style.setProperty('--accent', p.color);
+        el.style.setProperty('--accent-glow', hexGlow(p.color));
+      } else {
+        el.style.color = '';
+        el.style.removeProperty('--accent');
+        el.style.removeProperty('--accent-glow');
+      }
     });
   }
 
@@ -872,7 +886,8 @@ ${bulbs.join('')}
     const rect = el.getBoundingClientRect();
     return { x: p.x || 0, y: p.y || 0,
       width: p.width || Math.round(rect.width / innerWidth * 100),
-      scale: p.scale || 1, align: p.align || '', font: p.font || 'system' };
+      scale: p.scale || 1, align: p.align || '', font: p.font || 'system',
+      color: p.color || '' };
   }
 
   function announceSelection(el, name, tap) {
@@ -880,12 +895,30 @@ ${bulbs.join('')}
       values: selectionValues(el, name) }, location.origin);
   }
 
+  // Backdrop has no [data-layout] element — selecting it means "the card
+  // background itself": dashed frame around the whole stage, presence-only
+  // editing (no sliders/color), announced like any other selection.
+  function selectBackdrop(tap) {
+    selectedLayout = 'backdrop';
+    document.querySelectorAll('[data-layout]').forEach(n => n.classList.remove('selected'));
+    document.body.classList.add('backdrop-selected');
+    parent.postMessage({ type: 'marquee-selection', name: 'backdrop', tap: !!tap,
+      values: { x: 0, y: 0, width: 100, scale: 1, align: '', font: 'system',
+                color: '' } }, location.origin);
+  }
+
   function enableEditor() {
     if (!EDIT) return;
     document.body.classList.add('editing');
+    // A tap that lands on no block is a tap on the backdrop.
+    document.body.addEventListener('pointerdown', event => {
+      if (event.target.closest('[data-layout]')) return;
+      selectBackdrop(true);
+    });
     document.querySelectorAll('[data-layout]').forEach(el => {
       el.addEventListener('pointerdown', event => {
         event.preventDefault(); event.stopPropagation();
+        document.body.classList.remove('backdrop-selected');
         document.querySelectorAll('[data-layout]').forEach(n => n.classList.remove('selected'));
         el.classList.add('selected');
         const name = el.dataset.layout;
@@ -1098,8 +1131,9 @@ ${bulbs.join('')}
     const msg = event.data || {};
     if (msg.type === 'marquee-cfg') {
       const fontChanged = draftCfg && (msg.cfg || {}).titleFont !== draftCfg.titleFont;
+      const logoChanged = draftCfg && (msg.cfg || {}).logo !== draftCfg.logo;
       draftCfg = msg.cfg || {};
-      if (fontChanged) peekTitle();
+      if (fontChanged || logoChanged) peekTitle();
       if (lastD) render(lastD), paint();
       wxTick();
     } else if (msg.type === 'marquee-demo-next') {
@@ -1112,6 +1146,8 @@ ${bulbs.join('')}
       draftLayout = structuredClone(msg.layout || {});
       applyBlockLayout();
     } else if (msg.type === 'marquee-select') {
+      if (msg.name === 'backdrop') { selectBackdrop(false); return; }
+      document.body.classList.remove('backdrop-selected');
       const el = document.querySelector(`[data-layout="${msg.name}"]`);
       if (!el) return;
       selectedLayout = msg.name;
@@ -1120,16 +1156,17 @@ ${bulbs.join('')}
       announceSelection(el, selectedLayout);
     } else if (msg.type === 'marquee-set') {
       const el = document.querySelector(`[data-layout="${selectedLayout}"]`);
-      if (!el || !['x', 'y', 'width', 'scale', 'align', 'font'].includes(msg.field)) return;
+      if (!el || !['x', 'y', 'width', 'scale', 'align', 'font', 'color'].includes(msg.field)) return;
       const tpl = document.body.dataset.template;
       const layout = draftLayout ||= structuredClone(activeCfg().blockLayout || {});
       const tplLayout = layout[tpl] ||= {};
       // Seed numbers only: writing align/font here would silently pin the
       // template's alignment (the old off-center-title bug).
-      const { align, font, ...seed } = selectionValues(el, selectedLayout);
+      const { align, font, color, ...seed } = selectionValues(el, selectedLayout);
       const p = tplLayout[selectedLayout] ||= seed;
-      p[msg.field] = ['align', 'font'].includes(msg.field)
+      p[msg.field] = ['align', 'font', 'color'].includes(msg.field)
         ? String(msg.value) : Number(msg.value);
+      if (msg.field === 'font' && selectedLayout === 'identity') peekTitle();
       applyBlockLayout();
       parent.postMessage({ type: 'marquee-layout', layout }, location.origin);
       announceSelection(el, selectedLayout);
