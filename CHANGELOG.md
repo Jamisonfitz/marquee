@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.12.1 — 2026-08-01
+
+- Course correction on the editor idea: nothing hides anymore. Every option
+  is on the page, organized under sticky section chips (Template · Look ·
+  Card · Connection); tapping a region of the card now scrolls its controls
+  into view and flashes them instead of swapping panes.
+- The preview is a small monitor — sticky top-right on desktop, and back in
+  the bottom sheet on phones (the pattern that worked), sized down so the
+  controls keep the room.
+
 ## 1.12.0 — 2026-07-31
 
 - The settings page is now an editor: the card fills the page and is the
