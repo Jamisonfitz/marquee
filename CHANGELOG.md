@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.12.2 — 2026-08-01
+
+- Real design work on the only page we have: the card-content toggle wall is
+  now a light board — every card element is a bulb chip, lit amber when it's
+  on the card, dim glass when off. Fourteen full-width switch rows became
+  three rows of chips, with the clock and weather fine-tuning grouped
+  beneath them, still gated by their chips.
+- Tapping a block on the preview flashes its chip, so on/off and
+  place-and-size always point at each other.
+
 ## 1.12.1 — 2026-08-01
 
 - Course correction on the editor idea: nothing hides anymore. Every option
