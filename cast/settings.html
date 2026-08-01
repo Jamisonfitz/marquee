@@ -234,8 +234,39 @@
   .section-nav a:hover { color: var(--amber); border-color: rgba(229,168,59,.55);
     box-shadow: 0 0 8px rgba(229,168,59,.2); }
   .panel { scroll-margin-top: 64px; }
+  /* The light board: every card element is a bulb chip — lit amber when it's
+     on the card, dim glass when off. Fourteen switch rows become three. */
+  .boardhint { color: var(--mut); font-size: 13px; margin: 2px 0 12px; }
+  .chipboard { display: flex; flex-wrap: wrap; gap: 9px; }
+  .tchip { position: relative; }
+  .tchip input { position: absolute; inset: 0; width: 100%; height: 100%;
+    opacity: 0; margin: 0; cursor: pointer; }
+  .tchip span { display: inline-flex; align-items: center; gap: 9px;
+    padding: 10px 16px; min-height: 21px; border: 1px solid var(--line);
+    border-radius: 99px; background: var(--bg); color: var(--mut);
+    font-size: 13.5px; font-weight: 650; letter-spacing: .02em;
+    transition: color .15s ease, border-color .15s ease, box-shadow .15s ease,
+      background .15s ease; }
+  .tchip span::before { content: ""; width: 8px; height: 8px; flex: none;
+    border-radius: 50%; background: #454B55; transition: inherit; }
+  .tchip input:checked + span { color: var(--text);
+    border-color: rgba(229,168,59,.6); background: rgba(229,168,59,.08); }
+  .tchip input:checked + span::before { background: var(--amber);
+    box-shadow: 0 0 8px rgba(229,168,59,.75); }
+  .tchip:hover span { border-color: rgba(229,168,59,.45); }
+  .tchip input:focus-visible + span { outline: 2px solid var(--amber);
+    outline-offset: 2px; }
+  /* Fine points under the board: the clock/weather tuners, still gated by
+     their chips. */
+  .tuners { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 4px; }
+  .tuners .dep-rows { padding-left: 0; }
+  @media (max-width:760px) {
+    .tchip span { padding: 12px 17px; }
+  }
   /* Tap-a-block wayfinding: the rows light for a beat. */
   .flash { background: rgba(229,168,59,.12); box-shadow: inset 0 0 0 1px rgba(229,168,59,.4); }
+  .tchip.flash span { border-color: var(--amber);
+    box-shadow: 0 0 10px rgba(229,168,59,.5); }
   .dep-rows.flash { border-radius: 8px; }
   @media (prefers-reduced-motion: no-preference) {
     .flash { transition: background .3s ease, box-shadow .3s ease; }
@@ -422,20 +453,23 @@
   </div>
 
   <div class="panel" id="sec-card">
-    <h2>Card content</h2>
-    <div class="row" data-pane="look"><label for="ck-backdrop">Backdrop art<small>Server background art behind the card</small></label>
-      <input type="checkbox" id="ck-backdrop" data-k="backdrop"></div>
-    <div class="row" data-pane="identity"><label for="ck-logo">Title logo<small>Movie/show logo cutout instead of text title</small></label>
-      <input type="checkbox" id="ck-logo" data-k="logo"></div>
-    <div class="row" data-pane="plot"><label for="ck-plot">Plot</label><input type="checkbox" id="ck-plot" data-k="showPlot"></div>
-    <div class="row" data-pane="meta"><label for="ck-genres">Genres</label><input type="checkbox" id="ck-genres" data-k="showGenres"></div>
-    <div class="row" data-pane="ratings"><label for="ck-scores">Scores (RT / IMDb)</label><input type="checkbox" id="ck-scores" data-k="showScores"></div>
-    <div class="row" data-pane="meta"><label for="ck-mediainfo">Media info</label><input type="checkbox" id="ck-mediainfo" data-k="showMediaInfo"></div>
-    <div class="row" data-pane="meta"><label for="ck-contentrating">Content rating</label><input type="checkbox" id="ck-contentrating" data-k="showContentRating"></div>
-    <div class="row" data-pane="meta"><label for="ck-runtime">Runtime</label><input type="checkbox" id="ck-runtime" data-k="showRuntime"></div>
-    <div class="row" data-pane="progress"><label for="ck-progress">Progress bar</label><input type="checkbox" id="ck-progress" data-k="showProgress"></div>
-    <div class="row group-start" data-pane="clock"><label for="ck-clock">Clock</label>
-      <input type="checkbox" id="ck-clock" data-k="showClock"></div>
+    <h2>On the card</h2>
+        <p class="boardhint">Lit = on the card. Tap to flip; tap the block on the preview to place and size it.</p>
+    <div class="chipboard">
+      <label class="tchip" title="Server background art behind the card"><input type="checkbox" id="ck-backdrop" data-k="backdrop"><span>Backdrop</span></label>
+      <label class="tchip" title="Movie/show logo cutout instead of text title" data-pane="identity"><input type="checkbox" id="ck-logo" data-k="logo"><span>Title logo</span></label>
+      <label class="tchip" data-pane="plot"><input type="checkbox" id="ck-plot" data-k="showPlot"><span>Plot</span></label>
+      <label class="tchip" data-pane="meta"><input type="checkbox" id="ck-genres" data-k="showGenres"><span>Genres</span></label>
+      <label class="tchip" title="Rotten Tomatoes / IMDb" data-pane="ratings"><input type="checkbox" id="ck-scores" data-k="showScores"><span>Scores</span></label>
+      <label class="tchip" data-pane="meta"><input type="checkbox" id="ck-mediainfo" data-k="showMediaInfo"><span>Media info</span></label>
+      <label class="tchip" data-pane="meta"><input type="checkbox" id="ck-contentrating" data-k="showContentRating"><span>Rating</span></label>
+      <label class="tchip" data-pane="meta"><input type="checkbox" id="ck-runtime" data-k="showRuntime"><span>Runtime</span></label>
+      <label class="tchip" data-pane="progress"><input type="checkbox" id="ck-progress" data-k="showProgress"><span>Progress</span></label>
+      <label class="tchip" data-pane="clock"><input type="checkbox" id="ck-clock" data-k="showClock"><span>Clock</span></label>
+      <label class="tchip" title="Temperature and conditions beside the clock" data-pane="weather"><input type="checkbox" id="ck-weather" data-k="showWeather"><span>Weather</span></label>
+      <label class="tchip" title="Live rain, snow, and fog on the Street template" data-pane="weather"><input type="checkbox" id="ck-weatherfx" data-k="weatherFX"><span>Weather FX</span></label>
+    </div>
+    <div class="tuners">
     <div class="dep-rows" id="clock-deps" data-pane="clock">
       <div class="row"><label>Clock style</label>
         <div class="seg" id="clockfmt">
@@ -445,10 +479,6 @@
       <div class="row"><label for="ck-clocksec">Clock seconds</label>
         <input type="checkbox" id="ck-clocksec" data-k="clockSeconds"></div>
     </div>
-    <div class="row group-start" data-pane="weather"><label for="ck-weather">Weather<small>Temperature and conditions beside the clock</small></label>
-      <input type="checkbox" id="ck-weather" data-k="showWeather"></div>
-    <div class="row" data-pane="weather"><label for="ck-weatherfx">Weather effects<small>Live rain, snow, and fog on the Street template, reacting to your real local weather and time of day</small></label>
-      <input type="checkbox" id="ck-weatherfx" data-k="weatherFX"></div>
     <div class="dep-rows" id="weather-deps" data-pane="weather">
       <div class="row" id="row-wxintensity"><label for="wxintensity">Effect intensity<small>How strong the weather looks. Lower is calmer — good if the screen sits in the corner of your eye while you watch.</small></label>
         <select id="wxintensity" class="mini">
@@ -464,6 +494,7 @@
           <button data-v="f">&deg;F</button><button data-v="c">&deg;C</button>
         </div>
       </div>
+    </div>
     </div>
   </div>
 
