@@ -1,5 +1,28 @@
 # Changelog
 
+## 2.0.0 — 2026-08-01
+
+Settings v2 — a ground-up rebuild of the settings page from a commissioned
+design, with the card itself at the center.
+
+- **Tabs**: Design · Connection · Tutorial · What's new · About.
+- **Template carousel** with your own **savable presets** riding beside the
+  built-ins — snapshot a look, apply it later, Export backs it up.
+- **Block chips** under the preview: every block on the card is a pill —
+  tap to edit, × to remove, "+ Add" brings anything back. The credits badge
+  is always editable and now always visible in the demo preview.
+- **Contextual block editor**: font, NEW per-block color, position, width,
+  size — plus each block's own settings (clock style/seconds, weather FX /
+  intensity / ZIP / units, metadata pieces, title logo art) right where you
+  select it. The backdrop is selectable too — tap the card's empty background.
+- **Tutorial**: a six-step guided tour over the real UI, auto-launches once.
+- Mobile: the preview pins to the top at a sensible size; the keyboard can
+  never cover it. The editor folds behind an "Edit blocks" button.
+- Gone: the vibes/theme rows (per-block color replaces them; saved themes
+  keep tinting until you recolor), the card-wide font rows, and poster side.
+- Old saves and old exports import cleanly — presence flags and ancient
+  flat layouts migrate automatically.
+
 ## 1.12.2 — 2026-08-01
 
 - Real design work on the only page we have: the card-content toggle wall is
