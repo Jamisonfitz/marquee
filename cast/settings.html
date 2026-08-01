@@ -221,36 +221,37 @@
   .scrim.on { opacity:1; pointer-events:auto; }
 
   .layout { display: grid; grid-template-columns: 1fr; gap: 18px; }
-  /* Route A editor shell: the card is the stage, the rail is a contextual
-     inspector. [hidden] does real work here — panes are plain markup the
-     inspector filters. */
   [hidden] { display: none !important; }
-  .ctx-hide { display: none; }
-  /* A shell panel with every pane-row hidden vanishes whole. */
-  .panel:has([data-pane]):not(:has([data-pane]:not([hidden]))) { display: none; }
-  .insp-head { display: flex; align-items: baseline; gap: 12px; padding: 2px 2px 10px; }
-  .insp-title { font-family: var(--display); font-size: 21px; letter-spacing: .07em;
-    text-transform: uppercase; color: var(--amber); }
   .top .actions { margin: 0; display: flex; align-items: center; gap: 12px; }
   .top .status { max-width: 260px; }
+  /* Sticky wayfinding chips — every section one tap away, nothing hidden. */
+  .section-nav { position: sticky; top: 0; z-index: 20; display: flex; gap: 8px;
+    flex-wrap: wrap; padding: 10px 2px; margin: 0 0 8px;
+    background: linear-gradient(180deg, var(--bg) 78%, transparent); }
+  .section-nav a { text-decoration: none; color: var(--mut); font-size: 13px;
+    font-weight: 700; letter-spacing: .04em; padding: 7px 14px; min-height: 0;
+    border: 1px solid var(--line); border-radius: 99px; background: var(--panel); }
+  .section-nav a:hover { color: var(--amber); border-color: rgba(229,168,59,.55);
+    box-shadow: 0 0 8px rgba(229,168,59,.2); }
+  .panel { scroll-margin-top: 64px; }
+  /* Tap-a-block wayfinding: the rows light for a beat. */
+  .flash { background: rgba(229,168,59,.12); box-shadow: inset 0 0 0 1px rgba(229,168,59,.4); }
+  .dep-rows.flash { border-radius: 8px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .flash { transition: background .3s ease, box-shadow .3s ease; }
+  }
+  /* Desktop: controls own the room; the preview is a small sticky monitor on
+     the right with the block editor tucked beneath it. */
   @media (min-width: 1180px) {
-    .wrap { max-width: 1780px; }
-    .layout { grid-template-columns: minmax(0, 1fr) 380px;
-      gap: 26px; align-items: start; }
-    .controls { order: 2; position: sticky; top: 14px;
-      max-height: calc(100dvh - 28px); overflow-y: auto; }
-    .preview-col { order: 1; }
+    .wrap { max-width: 1560px; }
+    .layout { grid-template-columns: minmax(0, 1fr) 430px;
+      gap: 30px; align-items: start; }
+    .controls { order: 1; }
+    .preview-col { order: 2; position: sticky; top: 14px; }
     .preview { margin-top: 0; }
     .frame-box { max-width: none; }
-    /* The topbar line already explains the stage; no second headline. */
-    .preview > h2, .preview > .sub { display: none; }
+    .preview > h2 { margin-top: 0; }
   }
-  /* Inside the rail the template gallery is a compact 2-up strip, not a
-     column of posters. */
-  .controls .tpl-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
-  .controls .tpl { padding: 8px; }
-  .controls .tpl strong { font-size: 13px; margin: 7px 0 2px; }
-  .controls .tpl small { font-size: 11px; line-height: 1.3; }
   .controls .panel { margin-bottom: 18px; }
 
   body { overflow-x: hidden; }
@@ -287,12 +288,14 @@
     .actions { flex-wrap:wrap; gap:8px; margin-bottom:10px; }
     .actions .save { flex:1; padding:11px 14px; }
     .actions .status { flex-basis:100%; }
-    /* Phones: the card rides sticky at the top — always in view while the
-       inspector scrolls beneath it. Keyboard up → card steps aside. */
-    .layout { display:flex; flex-direction:column; }
-    .preview-col { order:0; } .controls { order:1; }
-    .preview-col { position:sticky; top:0; z-index:30; background:var(--bg);
-      padding:6px 0 8px; box-shadow:0 10px 24px -18px rgba(0,0,0,.8); }
+    /* Phones: the small preview, block editor, and a Save ride together in a
+       fixed bottom sheet (the pattern that worked) — tuning never fights the
+       page scroll, and the card is always in view without eating the screen. */
+    .preview-col { position:fixed; left:0; right:0; bottom:0; z-index:30;
+      background:var(--bg); border-top:1px solid var(--line); box-sizing:border-box;
+      box-shadow:0 -8px 30px rgba(0,0,0,.6); max-height:60dvh; overflow-y:auto;
+      padding:8px 10px calc(8px + env(safe-area-inset-bottom)); }
+    .preview-col .frame-box { max-width: 300px; margin: 0 auto; }
     .preview-col.kb-hidden { display:none; }
     .preview h2, .preview .sub { display:none; }
     .editor { padding:10px; }
@@ -340,12 +343,11 @@
 
   <div class="layout">
   <div class="controls" id="controls">
-  <div class="insp-head">
-    <button class="linkbtn" id="insp-back" type="button" hidden>&#8249; Back to Look</button>
-    <span class="insp-title" id="insp-title">Look</span>
-  </div>
+  <nav class="section-nav" aria-label="Settings sections">
+    <a href="#sec-template">Template</a><a href="#sec-look">Look</a><a href="#sec-card">Card</a><a href="#sec-connect">Connection</a>
+  </nav>
 
-  <div class="panel wide" data-pane="look">
+  <div class="panel wide" id="sec-template" data-pane="look">
     <h2>Template</h2>
     <div class="tpl-grid" id="templates">
       <button class="tpl" data-template="spotlight" type="button">
@@ -369,8 +371,8 @@
     </div>
   </div>
 
-  <div class="panel">
-    <h2 class="ctx-hide">Look</h2>
+  <div class="panel" id="sec-look">
+    <h2>Look</h2>
     <div class="row" id="vibes-row" data-pane="look"><label>Vibes<small>Presets: theme + font + template. Step through, tune after, save to keep.</small></label>
       <div class="vibes-step">
         <button class="secondary vprev" id="vibe-prev" type="button" aria-label="Previous vibe">&#9664;</button>
@@ -419,8 +421,8 @@
     </div>
   </div>
 
-  <div class="panel">
-    <h2 class="ctx-hide">Card content</h2>
+  <div class="panel" id="sec-card">
+    <h2>Card content</h2>
     <div class="row" data-pane="look"><label for="ck-backdrop">Backdrop art<small>Server background art behind the card</small></label>
       <input type="checkbox" id="ck-backdrop" data-k="backdrop"></div>
     <div class="row" data-pane="identity"><label for="ck-logo">Title logo<small>Movie/show logo cutout instead of text title</small></label>
@@ -465,7 +467,7 @@
     </div>
   </div>
 
-  <div class="panel" data-pane="signal">
+  <div class="panel" id="sec-connect">
     <h2>Media server</h2>
     <div class="row"><label for="backend">Backend<small>Which server Marquee watches. Nothing changes until you press Save; a saved change is picked up within ~5s, no restart.</small></label>
       <select id="backend" class="mini">
@@ -479,7 +481,7 @@
       <input type="password" id="mskey" class="mini" placeholder="paste API key" autocomplete="new-password"></div>
   </div>
 
-  <div class="panel" data-pane="signal">
+  <div class="panel">
     <h2>Casting</h2>
     <div class="row"><label for="hub">Cast device<small>Scan finds Google Cast devices on your LAN</small></label>
       <div class="devpick">
@@ -847,33 +849,25 @@
     gate('#row-units', on('#ck-weather'));
   }
 
-  // Route A inspector: the rail shows one pane at a time. 'look' is home
-  // (template + vibes + theme + fonts); tapping a card region jumps to that
-  // region's pane; the gear-equivalent "Connection & casting" is just another
-  // pane. Panes are plain markup filtered by [data-pane] + [hidden].
-  const PANE_TITLES = { look: 'Look', identity: 'Title & logo', plot: 'Plot',
-    meta: 'Metadata', ratings: 'Ratings', progress: 'Progress', clock: 'Clock',
-    weather: 'Weather', poster: 'Poster', stinger: 'Credits badge',
-    signal: 'Connection & casting' };
-  let pane = 'look';
-  function showPane(name) {
-    pane = PANE_TITLES[name] ? name : 'look';
-    document.querySelectorAll('[data-pane]').forEach(el => {
-      el.hidden = el.dataset.pane !== pane;
-    });
-    $('#insp-title').textContent = PANE_TITLES[pane];
-    $('#insp-back').hidden = pane === 'look';
-    // Position editing belongs to block panes; Look keeps it folded (it's the
-    // only path back to "Add a block" when a template has none left to tap).
-    const blockish = !['look', 'signal'].includes(pane);
-    $('#editor-wrap').hidden = pane === 'signal';
-    if (!blockish) $('#editor-wrap').open = false;
-    $('#controls').scrollTop = 0;
+  // Everything stays visible; tapping a card region scrolls its rows into
+  // view and flashes them — wayfinding, never hiding. [data-pane] tags mark
+  // which rows belong to which card region.
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  let flashT = 0;
+  function reveal(name) {
+    const rows = document.querySelectorAll(`[data-pane="${name}"]`);
+    if (!rows.length) return;
+    rows[0].scrollIntoView({ behavior: reduceMotion.matches ? 'auto' : 'smooth',
+      block: 'center' });
+    document.querySelectorAll('.flash').forEach(n => n.classList.remove('flash'));
+    rows.forEach(n => n.classList.add('flash'));
+    clearTimeout(flashT);
+    flashT = setTimeout(() =>
+      document.querySelectorAll('.flash').forEach(n => n.classList.remove('flash')), 1800);
   }
-  $('#insp-back').addEventListener('click', () => showPane('look'));
   $('#signal-btn').addEventListener('click', () =>
-    showPane(pane === 'signal' ? 'look' : 'signal'));
-  showPane('look');
+    document.querySelector('#sec-connect').scrollIntoView(
+      { behavior: reduceMotion.matches ? 'auto' : 'smooth', block: 'start' }));
 
   document.querySelectorAll('input[data-k]').forEach(i =>
     i.addEventListener('change', () => { syncDeps(); sendCfg(); }));
@@ -1055,12 +1049,12 @@
       });
       // '' = template default: no Justify button lit until one is chosen.
       segSet('align', (msg.values || {}).align || '');
-      if (msg.tap) { showPane(msg.name); $('#editor-wrap').open = true; }
+      if (msg.tap) { reveal(msg.name); $('#editor-wrap').open = true; }
       updateRemoveButton();
     }
   });
   $('#element-select').addEventListener('change', event => {
-    showPane(event.target.value);
+    reveal(event.target.value);
     selectBlock(event.target.value);
   });
   $('#add-block-select').addEventListener('change', event => {
@@ -1131,8 +1125,8 @@
   const phone = matchMedia('(max-width:760px)');
   if (phone.matches) $('#editor-wrap').open = false;
   new ResizeObserver(() => {
-    // Sticky-top card now rides in normal flow: no body padding to manage,
-    // but the frame still rescales when the column resizes.
+    document.body.style.paddingBottom =
+      phone.matches ? sheet.offsetHeight + 16 + 'px' : '';
     scaleFrame();
   }).observe(sheet);
 
