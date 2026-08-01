@@ -13,28 +13,26 @@
     --display:'Bebas Neue', 'Arial Narrow', sans-serif; }
   html, body { margin:0; background:var(--bg); color:var(--text);
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  /* The lobby at night: the marquee's light pooling down from the masthead,
-     fading to black by the footer. One wash, not a pattern. */
   body { background:
     radial-gradient(60% 340px at 28% 0, rgba(229,168,59,.09), transparent 70%),
     linear-gradient(180deg, #0D0F13, var(--bg) 480px); }
   button:focus-visible, [tabindex]:focus-visible, input:focus-visible,
-  select:focus-visible, summary:focus-visible {
+  select:focus-visible, summary:focus-visible, a:focus-visible {
     outline: 2px solid var(--amber); outline-offset: 2px; }
   input[type=color]:focus-visible { outline-offset: 3px; }
   @media (prefers-reduced-motion: reduce) {
     * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
   }
-  .wrap { max-width: 1100px; margin: 0 auto; padding: 26px 24px 64px; }
-  /* Masthead = the marquee itself: letterboard wordmark between two bulb
-     rails, the same sign language the card's Street template speaks. */
-  h1 { font-family: var(--display); font-size: 46px; font-weight: 400;
-    letter-spacing: .045em; line-height: 1; margin: 0; text-transform: uppercase; }
-  h1 span { color: var(--amber);
-    text-shadow: 0 0 18px rgba(229,168,59,.45), 0 2px 12px rgba(229,168,59,.25); }
+  [hidden] { display: none !important; }
+  ::selection { background: rgba(229,168,59,.35); }
+
+  .wrap { max-width: 1460px; margin: 0 auto; padding: 18px 22px 56px;
+    display: flex; flex-direction: column; }
   a { color: var(--amber); }
+
+  /* ── Header: letterboard between bulb rails (unchanged brand) ── */
   .top { display:flex; justify-content:space-between; gap:16px; align-items:center;
-    padding: 14px 2px; position: relative; }
+    padding: 12px 2px; position: relative; flex-wrap: wrap; }
   .top::before, .top::after { content:""; position:absolute; left:0; right:0;
     height:5px; background-image:
       radial-gradient(2.5px 2.5px at 5px 2.5px, rgba(229,168,59,.9) 55%, transparent 62%),
@@ -43,559 +41,504 @@
     background-size: 48px 5px; background-repeat: repeat-x; }
   .top::before { top: 0; }
   .top::after { bottom: 0; }
-  .topnav { display:flex; gap:14px; flex-wrap:wrap; align-items:center;
-    font-size:14px; font-weight:700; }
-  .linkbtn { background:none; border:0; color:var(--amber); font:inherit;
-    font-weight:700; cursor:pointer; padding:0; }
-  .sub { color: var(--mut); margin: 6px 0 28px; font-size: 14px; }
-  .cols { display: flex; gap: 32px; flex-wrap: wrap; }
-  .panel { background: linear-gradient(180deg, #171B21, #12151A);
-    border: 1px solid var(--line);
-    border-radius: 14px; padding: 20px 22px; flex: 1; min-width: 320px;
-    box-shadow: inset 0 1px 0 rgba(242,238,230,.04); }
-  .panel.wide { flex-basis: 100%; margin-bottom: 24px; }
-  /* Section titles in the letterboard face — big enough to anchor a long
-     page, quiet enough to stay chrome. */
-  h2 { font-family: var(--display); font-size: 21px; font-weight: 400;
-    letter-spacing: .07em; text-transform: uppercase; color: var(--amber);
-    margin: 0 0 14px; padding-bottom: 9px; border-bottom: 1px solid var(--line); }
-  .row { display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 8px; margin: 0 -8px; border-bottom: 1px solid var(--line);
-    gap: 12px; border-radius: 8px; transition: background .15s ease; }
-  @media (hover:hover) { .row:hover { background: rgba(229,168,59,.045); } }
-  .row:last-child { border-bottom: 0; }
-  .row label { font-size: 15px; font-weight: 500; }
-  .row small { display: block; color: var(--mut); font-weight: 400; margin-top: 2px; }
-  /* Grouped dependents: indented under their parent toggle, and visibly dead
-     when the parent is off — a control that does nothing must look like it. */
-  .row.group-start { margin-top: 6px; }
-  .dep-rows { padding-left: 18px; }
-  .dep-rows .row label { font-size: 14px; }
-  .dep-rows.is-off, .row.is-off { opacity: .45; }
-  .is-off input, .is-off select, .is-off button { cursor: not-allowed; }
-
-  /* Template picker with sketch thumbnails */
-  .tpl-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:12px; }
-  .tpl { text-align:left; border:1px solid var(--line); border-radius:14px; padding:12px;
-    background:linear-gradient(180deg, rgba(229,168,59,.06), rgba(255,255,255,.02));
-    color:var(--text); cursor:pointer; }
-  .tpl:hover { border-color: rgba(229,168,59,.55); transform: translateY(-2px);
-    box-shadow: 0 10px 24px -14px rgba(0,0,0,.8); }
-  .tpl.on { border-color: var(--amber);
-    box-shadow: 0 0 0 1px rgba(229,168,59,.35), 0 0 18px -4px rgba(229,168,59,.35); }
-  .tpl strong { display:block; font-size:15px; margin:10px 0 3px; }
-  .tpl small { display:block; color:var(--mut); font-size:12.5px; line-height:1.35; }
-  .thumb { display:block; width:100%; aspect-ratio:16/10; border-radius:8px;
-    object-fit:cover; background:#07090C; border:1px solid var(--line); }
-  .thumb i { position:absolute; display:block; border-radius:2px; }
-  .thumb .txt { background:repeating-linear-gradient(#5A6068 0 8%, transparent 8% 26%); }
-  .thumb .art { background:linear-gradient(135deg, #3A414C, #262B33); }
-  .thumb .acc { background:var(--amber); opacity:.85; }
-  /* spotlight: text left, poster right */
-  .t-spotlight .txt { left:9%; top:26%; width:44%; height:48%; }
-  .t-spotlight .art { right:9%; top:18%; width:24%; height:64%; }
-  /* split: art wall left, text right */
-  .t-split .art { left:0; top:0; width:45%; height:100%; border-radius:0; }
-  .t-split .acc { left:45%; top:0; width:2px; height:100%; }
-  .t-split .txt { left:54%; top:28%; width:36%; height:44%; }
-  /* hero: centered */
-  .t-hero .txt { left:24%; top:32%; width:52%; height:36%;
-    background:repeating-linear-gradient(#7A828C 0 12%, transparent 12% 34%); }
-  .t-hero .acc { left:36%; bottom:12%; width:28%; height:3px; }
-  /* lowerthird: bar at bottom */
-  .t-lowerthird .art { inset:0; border-radius:0; opacity:.5; }
-  .t-lowerthird .txt { left:7%; bottom:12%; width:52%; height:22%; }
-  .t-lowerthird .acc { left:0; bottom:4%; width:100%; height:3px; }
-  /* bigclock: giant time */
-  .t-bigclock::before { content:"12:04"; position:absolute; inset:0;
-    display:flex; align-items:center; justify-content:center;
-    color:#C7CBD1; font-size:34px; font-weight:800; letter-spacing:-.02em; }
-  .t-bigclock .txt { left:34%; bottom:10%; width:32%; height:8%; }
-
-  input[type=checkbox] { width: 42px; height: 24px; appearance: none;
-    background: var(--line); border-radius: 12px; position: relative;
-    cursor: pointer; flex: none; }
-  input[type=checkbox]::after { content: ""; position: absolute; top: 3px; left: 3px;
-    width: 18px; height: 18px; border-radius: 50%; background: #6B7280; transition: .15s; }
-  input[type=checkbox]:checked { background: rgba(229,168,59,.35); }
-  input[type=checkbox]:checked::after { left: 21px; background: var(--amber);
-    box-shadow: 0 0 7px rgba(229,168,59,.55); }
-  .devpick { display: flex; gap: 8px; align-items: center; min-width: 0; }
-  .devpick select, select.mini, input.mini { max-width: 200px; min-height: 40px;
-    color: var(--text); background: var(--bg); border: 1px solid var(--line);
-    border-radius: 8px; padding: 6px 8px; font-size: 14px; }
-  input.mini::placeholder { color: var(--mut); opacity: 1; }
-  .vibes-step { display: flex; gap: 8px; align-items: stretch; }
-  .vibes-step .secondary { padding: 6px 12px; font-size: 13px; }
-  .vibe-now { background: var(--bg); border: 1px solid var(--line); border-radius: 12px;
-    color: var(--text); padding: 6px 14px; cursor: pointer; text-align: left;
-    min-width: 180px; }
-  .vibe-now:hover { border-color: var(--v, var(--amber)); }
-  .vibe-now b { display: block; font-size: 13.5px; }
-  .vibe-now small { color: var(--mut); font-size: 11.5px; }
-  .vibe-now i { float: left; width: 10px; height: 10px; border-radius: 50%;
-    background: var(--v, var(--line)); margin: 5px 9px 0 0; }
-  .sessions-list { color: var(--mut); font-size: 13px; text-align: right;
-    line-height: 1.6; }
-  .sessions-list b { color: var(--text); font-weight: 600; }
-  .devpick .secondary { padding: 8px 14px; }
-  .seg { display: flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
-  .seg button { background: none; border: 0; color: var(--mut); padding: 7px 16px;
-    font-size: 14px; font-weight: 600; cursor: pointer; }
-  .seg button.on { background: var(--amber); color: #0B0D10; }
-  .swatches { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;
-    align-items: center; }
-  .swatches button { width: 29px; height: 29px; padding: 0; border-radius: 50%;
-    border: 2px solid var(--line); background: var(--swatch); cursor: pointer; }
-  .swatches button.on { border-color: var(--text); box-shadow: 0 0 0 2px var(--bg); }
-  .swatches input[type=color] { width: 29px; height: 29px; padding: 0; border-radius: 50%;
-    border: 2px dashed var(--line); background: none; cursor: pointer; }
-  .swatches input[type=color].on { border-color: var(--text); border-style: solid; }
-  .swatches .clear { width:auto; border-radius:9px; padding:0 8px; background:none;
-    color:var(--mut); font-size:12px; font-weight:700; border:1px solid var(--line); }
-  .actions { margin-top: 18px; display: flex; align-items: center; gap: 14px; }
+  h1 { font-family: var(--display); font-size: 30px; font-weight: 400;
+    letter-spacing: .045em; line-height: 1; margin: 0; text-transform: uppercase; }
+  h1 span { color: var(--amber);
+    text-shadow: 0 0 18px rgba(229,168,59,.45), 0 2px 12px rgba(229,168,59,.25); }
+  .actions { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+  .status { color: var(--mut); font-size: 13px; max-width: 340px; }
   .save { background: var(--amber); color: #0B0D10; border: 0;
     font-family: var(--display); font-weight: 400; letter-spacing: .07em;
     text-transform: uppercase;
-    border-radius: 9px; padding: 10px 28px; font-size: 19px; cursor: pointer;
+    border-radius: 9px; padding: 9px 24px; font-size: 18px; cursor: pointer;
     box-shadow: 0 0 14px rgba(229,168,59,.28), 0 6px 18px -8px rgba(229,168,59,.5);
     transition: box-shadow .2s ease, transform .2s ease; }
   .save:hover { box-shadow: 0 0 20px rgba(229,168,59,.42),
     0 8px 22px -8px rgba(229,168,59,.6); transform: translateY(-1px); }
   .save:active { transform: translateY(0); }
-  .status { color: var(--mut); font-size: 14px; }
-  .secondary { background: transparent; color: var(--text); border: 1px solid var(--line);
-    border-radius: 9px; padding: 10px 16px; font-weight: 700; cursor: pointer; }
-  .preview { margin-top: 32px; }
-  .editor { display:grid; grid-template-columns:minmax(180px,.8fr) 2fr; gap:16px;
-    margin:0 0 16px; padding:14px; border:1px solid var(--line); border-radius:12px;
-    background:var(--panel); }
-  .editor label,.slider label { color:var(--mut); font-size:12px; font-weight:700;
-    letter-spacing:.08em; text-transform:uppercase; }
-  .editor select { display:block; width:100%; margin-top:7px; min-height:48px;
-    color:var(--text); background:var(--bg); border:1px solid var(--line);
-    border-radius:8px; padding:8px 10px; font-size:16px; }
-  .editor .picks label { display:block; }
-  .editor .picks label + label { margin-top:12px; }
-  .editor-foot { grid-column:1 / -1; display:flex; gap:10px; flex-wrap:wrap; }
-  .editor-foot .secondary { padding:8px 14px; font-size:13px; }
-  /* Preview leads, editor folds beneath it — "always see the preview" is the
-     product's core principle; tapping a block in the preview unfolds this. */
-  .editor-wrap { margin:14px 0 0; }
-  .editor-wrap .editor { margin-bottom:0; }
-  .editor-wrap summary { cursor:pointer; color:var(--mut); font-size:12px;
-    font-weight:700; letter-spacing:.08em; text-transform:uppercase;
-    padding:8px 0; user-select:none; }
-  .editor-wrap[open] summary { color:var(--amber); }
-  .sliders { display:grid; grid-template-columns:1fr 1fr; gap:12px 18px; }
-  .slider label { display:flex; justify-content:space-between; }
-  .slider output { color:var(--text); font-variant-numeric:tabular-nums; }
-  .slider input { width:100%; height:36px; margin:2px 0 0; accent-color:var(--amber);
-    touch-action:pan-y; }
-  /* The preview is the screen: a real bezel and the screen's own light
-     spilling onto the wall beneath it. */
+
+  /* ── Tabs ── */
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin: 12px 0 14px;
+    border-bottom: 1px solid var(--line); }
+  .tabs button { background: none; border: 0; border-bottom: 2px solid transparent;
+    color: var(--mut); font-family: var(--display); font-size: 17px;
+    letter-spacing: .06em; text-transform: uppercase; padding: 8px 14px 9px;
+    cursor: pointer; }
+  .tabs button:hover { color: var(--text); }
+  .tabs button[aria-selected="true"] { color: var(--amber);
+    border-bottom-color: var(--amber);
+    text-shadow: 0 0 14px rgba(229,168,59,.35); }
+
+  h2 { font-family: var(--display); font-size: 21px; font-weight: 400;
+    letter-spacing: .07em; text-transform: uppercase; color: var(--amber);
+    margin: 0 0 14px; padding-bottom: 9px; border-bottom: 1px solid var(--line); }
+
+  /* ── Template carousel ── */
+  .carousel { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 10px;
+    scrollbar-width: thin; }
+  .tcard { flex: none; width: 108px; background: none; border: 1px solid var(--line);
+    border-radius: 10px; padding: 7px; color: var(--text); cursor: pointer;
+    text-align: center; }
+  .tcard img, .tcard .pthumb { display: block; width: 92px; aspect-ratio: 16/10;
+    border-radius: 6px; object-fit: cover; background: #07090C;
+    border: 1px solid var(--line); margin: 0 auto; }
+  .tcard .pthumb { display: grid; place-items: center;
+    font-family: var(--display); font-size: 15px; color: var(--amber);
+    letter-spacing: .06em; }
+  .tcard b { display: block; font-size: 11.5px; font-weight: 650; margin-top: 6px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tcard.on { border-color: var(--amber);
+    box-shadow: 0 0 0 1px rgba(229,168,59,.35), 0 0 16px -4px rgba(229,168,59,.4); }
+  .tcard:hover { border-color: rgba(229,168,59,.5); }
+  .tcard.addcard { border-style: dashed; color: var(--mut); }
+  .tcard.addcard .pthumb { color: var(--mut); font-size: 22px; }
+  .tcard .pdel { position: absolute; }
+  .tcard { position: relative; }
+  .tcard .pdel { top: 2px; right: 2px; width: 20px; height: 20px; border: 0;
+    border-radius: 50%; background: rgba(11,13,16,.85); color: var(--mut);
+    font-size: 13px; line-height: 1; cursor: pointer; }
+  .tcard .pdel:hover { color: #E85454; }
+
+  /* ── Design layout ── */
+  .preview-row { display: grid; grid-template-columns: minmax(0,1fr) 360px;
+    gap: 22px; align-items: start; }
+  .mq-side { min-width: 0; }
   .frame-box { width: 100%; max-width: 1000px; aspect-ratio: 16 / 10;
-    border: 2px solid #1D2229; border-radius: 14px; overflow: hidden;
+    border: 2px solid #1D2229; border-radius: 12px; overflow: hidden;
     background: #07090C;
     box-shadow: 0 0 0 1px #060809, 0 18px 44px -18px rgba(0,0,0,.85),
       0 10px 60px -12px rgba(229,168,59,.14); }
   .frame-box iframe { width: 1280px; height: 800px; border: 0; transform-origin: 0 0; }
+  .side-sub { color: var(--mut); font-size: 12.5px; margin: 8px 2px 6px; }
 
-  /* Changelog slide-over */
-  .notes-panel { position:fixed; top:0; right:0; bottom:0; width:min(460px, 92vw);
-    background:var(--panel); border-left:1px solid var(--line); z-index:50;
-    transform:translateX(105%); transition:transform .25s ease;
-    display:flex; flex-direction:column; box-shadow:-24px 0 60px rgba(0,0,0,.5); }
-  .notes-panel.open { transform:none; }
-  .notes-head { display:flex; align-items:center; justify-content:space-between;
-    padding:18px 20px 12px; border-bottom:1px solid var(--line); }
-  .notes-head h2 { margin:0; }
-  .notes-close { background:none; border:0; color:var(--mut); font-size:26px;
-    line-height:1; cursor:pointer; padding:2px 6px; }
-  .notes-body { padding:16px 20px; overflow:auto; color:var(--mut); font-size:13.5px;
-    line-height:1.65; white-space:pre-wrap; flex:1; }
-  .notes-body b { color:var(--text); }
-  .notes-foot { padding:12px 20px 18px; border-top:1px solid var(--line); font-size:13px; }
-  .scrim { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:40;
-    opacity:0; pointer-events:none; transition:opacity .25s ease; }
-  .scrim.on { opacity:1; pointer-events:auto; }
+  /* Chip strip: block presence + selection */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .chip { display: inline-flex; align-items: stretch; border: 1px solid var(--line);
+    border-radius: 99px; background: var(--bg); overflow: hidden; }
+  .chip > .chip-label { background: none; border: 0; color: var(--mut);
+    font-size: 13px; font-weight: 650; padding: 9px 6px 9px 14px; cursor: pointer; }
+  .chip > .chip-x { background: none; border: 0; color: var(--mut); font-size: 14px;
+    padding: 0 11px 0 5px; cursor: pointer; }
+  .chip > .chip-x:hover { color: #E85454; }
+  .chip.no-x > .chip-label { padding-right: 14px; }
+  .chip:hover { border-color: rgba(229,168,59,.5); }
+  .chip.on { border-color: var(--amber); background: rgba(229,168,59,.08); }
+  .chip.on > .chip-label { color: var(--text); }
+  .chip.add { border-style: dashed; }
+  .chip.add > .chip-label { color: var(--mut); padding-right: 14px; }
+  .add-tray { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;
+    padding: 10px; border: 1px dashed var(--line); border-radius: 12px; }
+  .add-tray button { border: 1px solid var(--line); border-radius: 99px;
+    background: var(--panel); color: var(--text); font-size: 13px; font-weight: 650;
+    padding: 8px 14px; cursor: pointer; }
+  .add-tray button:hover { border-color: var(--amber); color: var(--amber); }
+  .add-tray .empty { color: var(--mut); font-size: 13px; padding: 6px 2px; }
 
-  .layout { display: grid; grid-template-columns: 1fr; gap: 18px; }
-  [hidden] { display: none !important; }
-  .top .actions { margin: 0; display: flex; align-items: center; gap: 12px; }
-  .top .status { max-width: 260px; }
-  /* Sticky wayfinding chips — every section one tap away, nothing hidden. */
-  .section-nav { position: sticky; top: 0; z-index: 20; display: flex; gap: 8px;
-    flex-wrap: wrap; padding: 10px 2px; margin: 0 0 8px;
-    background: linear-gradient(180deg, var(--bg) 78%, transparent); }
-  .section-nav a { text-decoration: none; color: var(--mut); font-size: 13px;
-    font-weight: 700; letter-spacing: .04em; padding: 7px 14px; min-height: 0;
-    border: 1px solid var(--line); border-radius: 99px; background: var(--panel); }
-  .section-nav a:hover { color: var(--amber); border-color: rgba(229,168,59,.55);
-    box-shadow: 0 0 8px rgba(229,168,59,.2); }
-  .panel { scroll-margin-top: 64px; }
-  /* The light board: every card element is a bulb chip — lit amber when it's
-     on the card, dim glass when off. Fourteen switch rows become three. */
-  .boardhint { color: var(--mut); font-size: 13px; margin: 2px 0 12px; }
-  .chipboard { display: flex; flex-wrap: wrap; gap: 9px; }
-  .tchip { position: relative; }
-  .tchip input { position: absolute; inset: 0; width: 100%; height: 100%;
+  /* ── Block editor ── */
+  .editor { background: linear-gradient(180deg, #171B21, #12151A);
+    border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px;
+    position: sticky; top: 12px;
+    box-shadow: inset 0 1px 0 rgba(242,238,230,.04); }
+  .ed-head { display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; margin-bottom: 10px; }
+  .ed-title { font-family: var(--display); font-size: 19px; letter-spacing: .07em;
+    text-transform: uppercase; color: var(--amber); }
+  .ed-head select { max-width: 150px; }
+  .ed-row { display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); }
+  .ed-row label, .ed-lab { font-size: 13.5px; font-weight: 550; }
+  .ed-row small { display: block; color: var(--mut); font-weight: 400;
+    font-size: 12px; margin-top: 1px; }
+  select, input[type=text], input[type=password], input[type=number] {
+    color: var(--text); background: var(--bg); border: 1px solid var(--line);
+    border-radius: 8px; padding: 7px 9px; font-size: 14px; min-height: 38px;
+    box-sizing: border-box; }
+  .swatches { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .swatches button { width: 27px; height: 27px; padding: 0; border-radius: 50%;
+    border: 2px solid var(--line); background: var(--swatch); cursor: pointer; }
+  .swatches button.on { border-color: var(--text); box-shadow: 0 0 0 2px var(--bg); }
+  .swatches input[type=color] { width: 27px; height: 27px; padding: 0;
+    border-radius: 50%; border: 2px dashed var(--line); background: none;
+    cursor: pointer; min-height: 0; }
+  .swatches input[type=color].on { border-color: var(--text); border-style: solid; }
+  input[type=checkbox].switch { width: 44px; height: 25px; appearance: none;
+    background: var(--line); border-radius: 13px; position: relative;
+    cursor: pointer; flex: none; margin: 0; }
+  input[type=checkbox].switch::after { content: ""; position: absolute; top: 3px;
+    left: 3px; width: 19px; height: 19px; border-radius: 50%; background: #6B7280;
+    transition: .15s; }
+  input[type=checkbox].switch:checked { background: rgba(229,168,59,.35); }
+  input[type=checkbox].switch:checked::after { left: 22px; background: var(--amber);
+    box-shadow: 0 0 7px rgba(229,168,59,.55); }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 9px;
+    overflow: hidden; flex: none; }
+  .seg button { background: none; border: 0; color: var(--mut); padding: 7px 14px;
+    font-size: 13.5px; font-weight: 600; cursor: pointer; min-height: 38px; }
+  .seg button.on { background: var(--amber); color: #0B0D10; }
+  .metachips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .metachips label { position: relative; }
+  .metachips input { position: absolute; inset: 0; width: 100%; height: 100%;
     opacity: 0; margin: 0; cursor: pointer; }
-  .tchip span { display: inline-flex; align-items: center; gap: 9px;
-    padding: 10px 16px; min-height: 21px; border: 1px solid var(--line);
-    border-radius: 99px; background: var(--bg); color: var(--mut);
-    font-size: 13.5px; font-weight: 650; letter-spacing: .02em;
-    transition: color .15s ease, border-color .15s ease, box-shadow .15s ease,
-      background .15s ease; }
-  .tchip span::before { content: ""; width: 8px; height: 8px; flex: none;
-    border-radius: 50%; background: #454B55; transition: inherit; }
-  .tchip input:checked + span { color: var(--text);
+  .metachips span { display: inline-flex; align-items: center; gap: 7px;
+    padding: 7px 12px; border: 1px solid var(--line); border-radius: 99px;
+    background: var(--bg); color: var(--mut); font-size: 12.5px; font-weight: 650; }
+  .metachips span::before { content: ""; width: 7px; height: 7px; flex: none;
+    border-radius: 50%; background: #454B55; }
+  .metachips input:checked + span { color: var(--text);
     border-color: rgba(229,168,59,.6); background: rgba(229,168,59,.08); }
-  .tchip input:checked + span::before { background: var(--amber);
-    box-shadow: 0 0 8px rgba(229,168,59,.75); }
-  .tchip:hover span { border-color: rgba(229,168,59,.45); }
-  .tchip input:focus-visible + span { outline: 2px solid var(--amber);
+  .metachips input:checked + span::before { background: var(--amber);
+    box-shadow: 0 0 7px rgba(229,168,59,.7); }
+  .metachips input:focus-visible + span { outline: 2px solid var(--amber);
     outline-offset: 2px; }
-  /* Fine points under the board: the clock/weather tuners, still gated by
-     their chips. */
-  .tuners { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 4px; }
-  .tuners .dep-rows { padding-left: 0; }
-  @media (max-width:760px) {
-    .tchip span { padding: 12px 17px; }
-  }
-  /* Tap-a-block wayfinding: the rows light for a beat. */
-  .flash { background: rgba(229,168,59,.12); box-shadow: inset 0 0 0 1px rgba(229,168,59,.4); }
-  .tchip.flash span { border-color: var(--amber);
-    box-shadow: 0 0 10px rgba(229,168,59,.5); }
-  .dep-rows.flash { border-radius: 8px; }
-  @media (prefers-reduced-motion: no-preference) {
-    .flash { transition: background .3s ease, box-shadow .3s ease; }
-  }
-  /* Desktop: controls own the room; the preview is a small sticky monitor on
-     the right with the block editor tucked beneath it. */
-  @media (min-width: 1180px) {
-    .wrap { max-width: 1560px; }
-    .layout { grid-template-columns: minmax(0, 1fr) 430px;
-      gap: 30px; align-items: start; }
-    .controls { order: 1; }
-    .preview-col { order: 2; position: sticky; top: 14px; }
-    .preview { margin-top: 0; }
-    .frame-box { max-width: none; }
-    .preview > h2 { margin-top: 0; }
-  }
-  .controls .panel { margin-bottom: 18px; }
+  .sliders { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px;
+    padding-top: 10px; border-top: 1px solid var(--line); margin-top: 4px; }
+  .slider label { display: flex; justify-content: space-between;
+    color: var(--mut); font-size: 11.5px; font-weight: 700;
+    letter-spacing: .07em; text-transform: uppercase; }
+  .slider output { color: var(--text); font-variant-numeric: tabular-nums; }
+  .slider input { width: 100%; height: 34px; margin: 2px 0 0;
+    accent-color: var(--amber); touch-action: pan-y; }
+  .editor-foot { display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    padding-top: 12px; border-top: 1px solid var(--line); margin-top: 8px; }
+  .secondary { background: transparent; color: var(--text);
+    border: 1px solid var(--line); border-radius: 9px; padding: 8px 13px;
+    font-weight: 700; font-size: 13px; cursor: pointer; }
+  .secondary:hover { border-color: rgba(229,168,59,.5); }
+  #no-blocks-note { color: var(--mut); font-size: 13px; margin: 0 0 8px; }
+  #editor-toggle { display: none; width: 100%; margin-top: 10px; }
 
-  body { overflow-x: hidden; }
-  .layout, .controls, .preview-col, .panel { min-width: 0; }
-  @media (max-width:760px) { .wrap { padding:20px 14px 44px; }
-    .top { align-items:flex-start; flex-direction:column; gap:10px; }
-    h1 { font-size: 38px; }
-    .panel { min-width:0; width:100%; box-sizing:border-box; }
-    .tpl-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
-    .tpl small { display:none; }
-    .row { align-items:flex-start; flex-wrap:wrap; row-gap:8px; }
-    .row label { flex: 1 1 100%; }
-    .row > *:not(label) { margin-left:auto; }
-    .devpick, .swatches, .vibes-step { max-width:100%; flex-wrap:wrap;
-      justify-content:flex-end; }
-    .devpick select, select.mini, input.mini { max-width:100%; }
-    .sessions-list { text-align:left; }
-    /* Bigger tap targets: the desktop-tuned 29px swatches and compact seg
-       buttons fall under the 44px touch minimum. */
-    .swatches button, .swatches input[type=color] { width:38px; height:38px; }
-    .seg button { padding:10px 16px; min-height:44px; }
-    input[type=checkbox] { width:48px; height:28px; }
-    input[type=checkbox]::after { width:22px; height:22px; }
-    input[type=checkbox]:checked::after { left:23px; }
-    /* Keep the editor short so it shares the sheet with the preview. */
-    .editor { grid-template-columns:1fr; gap:10px; }
-    .editor .picks { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-    .editor .picks label + label { margin-top:0; }
-    .editor select { min-height:42px; padding:6px 10px; }
-    .sliders { grid-template-columns:1fr 1fr; gap:6px 12px; }
-    .slider input { height:30px; }
-    .editor-wrap summary { padding:6px 0; }
-    .editor-foot .secondary { padding:6px 12px; }
-    .actions { flex-wrap:wrap; gap:8px; margin-bottom:10px; }
-    .actions .save { flex:1; padding:11px 14px; }
-    .actions .status { flex-basis:100%; }
-    /* Phones: the small preview, block editor, and a Save ride together in a
-       fixed bottom sheet (the pattern that worked) — tuning never fights the
-       page scroll, and the card is always in view without eating the screen. */
-    .preview-col { position:fixed; left:0; right:0; bottom:0; z-index:30;
-      background:var(--bg); border-top:1px solid var(--line); box-sizing:border-box;
-      box-shadow:0 -8px 30px rgba(0,0,0,.6); max-height:60dvh; overflow-y:auto;
-      padding:8px 10px calc(8px + env(safe-area-inset-bottom)); }
-    .preview-col .frame-box { max-width: 300px; margin: 0 auto; }
-    .preview-col.kb-hidden { display:none; }
-    .preview h2, .preview .sub { display:none; }
-    .editor { padding:10px; }
-    .frame-box { border-radius:10px; }
-    .top .actions { width:100%; }
-    .top .actions .save { flex:1; }
+  /* ── Connection tab (panel look preserved) ── */
+  .panel { background: linear-gradient(180deg, #171B21, #12151A);
+    border: 1px solid var(--line); border-radius: 14px; padding: 20px 22px;
+    margin-bottom: 18px; box-shadow: inset 0 1px 0 rgba(242,238,230,.04);
+    max-width: 860px; }
+  .row { display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 8px; margin: 0 -8px; border-bottom: 1px solid var(--line);
+    gap: 12px; border-radius: 8px; }
+  .row:last-child { border-bottom: 0; }
+  .row label { font-size: 15px; font-weight: 500; }
+  .row small { display: block; color: var(--mut); font-weight: 400; margin-top: 2px; }
+  .devpick { display: flex; gap: 8px; align-items: center; min-width: 0; }
+  .devpick select, select.mini, input.mini { max-width: 200px; }
+  input.mini::placeholder { color: var(--mut); opacity: 1; }
+  .sessions-list { color: var(--mut); font-size: 13px; text-align: right;
+    line-height: 1.6; }
+  .sessions-list b { color: var(--text); font-weight: 600; }
+
+  /* ── About / What's new ── */
+  .prosebox { max-width: 720px; color: var(--text); line-height: 1.6; }
+  .prosebox b { display: block; margin-top: 14px; color: var(--amber); }
+  .about-rows { display: grid; gap: 8px; max-width: 520px; }
+  .about-rows .row { border-bottom: 1px solid var(--line); }
+
+  /* ── Tutorial ── */
+  .tut-hl { outline: 2px dashed var(--amber) !important; outline-offset: 4px;
+    border-radius: 10px; box-shadow: 0 0 0 6px rgba(229,168,59,.12),
+      0 0 30px rgba(229,168,59,.25); }
+  @media (prefers-reduced-motion: no-preference) {
+    .tut-hl { animation: tutpulse 1.6s ease-in-out infinite; }
+    @keyframes tutpulse { 50% { outline-offset: 7px; } }
   }
-  .vibe-carousel { display:none; }
-  @media (max-width:0px) {
-    .vibe-carousel { display:block; margin: 2px 0 18px; }
-    .vc-track { display:flex; overflow-x:auto; scroll-snap-type:x mandatory;
-      -webkit-overflow-scrolling:touch; gap:12px; padding:4px 21vw;
-      scrollbar-width:none; }
-    .vc-track::-webkit-scrollbar { display:none; }
-    .vc-card { flex:0 0 58vw; scroll-snap-align:center; text-align:left;
-      border:1px solid var(--line); border-radius:14px; padding:10px;
-      background:linear-gradient(180deg, rgba(229,168,59,.06), rgba(255,255,255,.02));
-      color:var(--text); cursor:pointer; opacity:.55;
-      transition:opacity .2s ease, border-color .2s ease; }
-    .vc-card.on { opacity:1; border-color:var(--amber);
-      box-shadow:0 0 0 1px rgba(229,168,59,.35); }
-    .vc-card img { display:block; width:100%; aspect-ratio:16/10; border-radius:8px;
-      object-fit:cover; background:#07090C; border:1px solid var(--line); }
-    .vc-card b { display:block; font-size:14px; margin:8px 0 2px; }
-    .vc-card small { display:block; color:var(--mut); font-size:12px; }
-    @media (prefers-reduced-motion: reduce) {
-      .vc-track { scroll-behavior:auto; }
-    }
+  .tour { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%);
+    width: min(430px, calc(100vw - 24px)); z-index: 60;
+    background: linear-gradient(180deg, #171B21, #12151A);
+    border: 1px solid var(--amber); border-radius: 14px; padding: 14px 16px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.7), 0 0 24px rgba(229,168,59,.18); }
+  .tour .arrow { color: var(--amber); font-size: 18px; line-height: 1; }
+  .tour b { font-family: var(--display); font-size: 19px; font-weight: 400;
+    letter-spacing: .06em; text-transform: uppercase; color: var(--amber);
+    display: block; margin: 2px 0 4px; }
+  .tour p { margin: 0 0 10px; font-size: 13.5px; color: var(--text); line-height: 1.5; }
+  .tour-foot { display: flex; align-items: center; gap: 8px; }
+  .tour-n { color: var(--mut); font-size: 12px; margin-right: auto; }
+  .tour .primary { background: var(--amber); color: #0B0D10; border: 0;
+    border-radius: 8px; padding: 8px 16px; font-weight: 800; cursor: pointer; }
+  .linkbtn { background: none; border: 0; color: var(--mut); font: inherit;
+    font-weight: 700; cursor: pointer; padding: 8px 10px; }
+  .linkbtn:hover { color: var(--text); }
+
+  /* ── Mobile (≤900px): preview pinned to the TOP — a keyboard can never
+       cover a top-pinned element, so the old visualViewport hack is gone. ── */
+  @media (max-width: 900px) {
+    .wrap { padding: 12px 12px 44px; }
+    .top { padding-right: 2px; }
+    h1 { font-size: 26px; }
+    .status { flex-basis: 100%; order: 3; }
+    .preview-row { display: block; }
+    .mq-side { position: sticky; top: 0; z-index: 30; background: var(--bg);
+      padding: 6px 0 8px; border-bottom: 1px solid var(--line);
+      box-shadow: 0 10px 24px -18px rgba(0,0,0,.8); }
+    .frame-box { max-width: min(100%, 42dvh); margin: 0 auto; }
+    .tcard { width: 74px; padding: 5px; }
+    .tcard img, .tcard .pthumb { width: 60px; }
+    .tcard b { font-size: 9.5px; }
+    .editor { position: static; margin-top: 12px; }
+    .editor.collapsed { display: none; }
+    #editor-toggle { display: block; }
+    .chip > .chip-label { padding: 11px 6px 11px 15px; }
+    .chip.no-x > .chip-label, .chip.add > .chip-label { padding-right: 15px; }
+    .row { flex-wrap: wrap; row-gap: 8px; }
+    .row label { flex: 1 1 100%; }
+    .row > *:not(label) { margin-left: auto; }
+    .devpick { max-width: 100%; flex-wrap: wrap; justify-content: flex-end; }
+    .devpick select, select.mini, input.mini { max-width: 100%; }
+    .sessions-list { text-align: left; }
+    .seg button { padding: 10px 16px; min-height: 44px; }
+    .tabs button { font-size: 15px; padding: 8px 10px 9px; }
   }
 </style>
+
 <div class="wrap">
-  <div class="top"><h1>Marquee <span>settings</span></h1>
+  <div class="top">
+    <h1>Marquee <span>settings</span></h1>
     <div class="actions">
-      <button class="save" id="save">Save changes</button>
       <span class="status" id="status"></span>
-    </div>
-    <nav class="topnav">
-      <button class="linkbtn" id="signal-btn" type="button" title="Server, casting, filters, export">Connection &amp; casting</button>
-      <a href="https://github.com/Jamisonfitz/marquee">GitHub</a>
-      <button class="linkbtn" id="notes-btn">What’s new</button>
-    </nav></div>
-  <p class="sub">The card is the settings: <b>tap anything on it</b> — the poster, the plot, the clock — and its controls appear on the right. Nothing reaches the Hub until you save.</p>
-
-  <div class="vibe-carousel" id="vibe-carousel"><div class="vc-track" id="vc-track"></div></div>
-
-  <div class="layout">
-  <div class="controls" id="controls">
-  <nav class="section-nav" aria-label="Settings sections">
-    <a href="#sec-template">Template</a><a href="#sec-look">Look</a><a href="#sec-card">Card</a><a href="#sec-connect">Connection</a>
-  </nav>
-
-  <div class="panel wide" id="sec-template" data-pane="look">
-    <h2>Template</h2>
-    <div class="tpl-grid" id="templates">
-      <button class="tpl" data-template="spotlight" type="button">
-        <img class="thumb" src="data:image/jpeg;base64,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" alt="spotlight template preview">
-        <strong>Spotlight</strong><small>Poster beside the full metadata stack — the classic look.</small></button>
-      <button class="tpl" data-template="split" type="button">
-        <img class="thumb" src="data:image/jpeg;base64,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" alt="split template preview">
-        <strong>Split</strong><small>Hard split: full-height art wall on one side, info column on the other.</small></button>
-      <button class="tpl" data-template="hero" type="button">
-        <img class="thumb" src="data:image/jpeg;base64,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" alt="hero template preview">
-        <strong>Hero</strong><small>Big centered title over the backdrop, ratings row beneath.</small></button>
-      <button class="tpl" data-template="lowerthird" type="button">
-        <img class="thumb" src="data:image/jpeg;base64,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" alt="lowerthird template preview">
-        <strong>Lower Third</strong><small>Broadcast-style chyron bar over full-bleed art.</small></button>
-      <button class="tpl" data-template="street" type="button">
-        <img class="thumb" alt="street template preview" src='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><rect width="320" height="200" fill="%23261F1C"/><g stroke="%231B1613" stroke-width="1.5"><line x1="0" y1="40" x2="320" y2="40"/><line x1="0" y1="80" x2="320" y2="80"/><line x1="0" y1="120" x2="320" y2="120"/><line x1="0" y1="160" x2="320" y2="160"/><line x1="60" y1="0" x2="60" y2="40"/><line x1="160" y1="40" x2="160" y2="80"/><line x1="90" y1="80" x2="90" y2="120"/></g><rect x="0" y="182" width="320" height="18" fill="%2317191D"/><rect x="200" y="14" width="100" height="16" rx="2" fill="%2314161A" stroke="%23C9973B"/><text x="250" y="26" text-anchor="middle" font-size="9" fill="%23FFD9A0" font-family="sans-serif" letter-spacing="2">NOW PLAYING</text><rect x="202" y="36" width="96" height="140" rx="3" fill="%23241A16" stroke="%23C9973B" stroke-width="2"/><rect x="212" y="46" width="76" height="120" fill="%23555E68"/><circle cx="202" cy="60" r="2.4" fill="%23FFE9C8"/><circle cx="202" cy="90" r="2.4" fill="%23FFE9C8"/><circle cx="202" cy="120" r="2.4" fill="%23FFE9C8"/><circle cx="202" cy="150" r="2.4" fill="%23FFE9C8"/><circle cx="298" cy="60" r="2.4" fill="%23FFE9C8"/><circle cx="298" cy="90" r="2.4" fill="%23FFE9C8"/><circle cx="298" cy="120" r="2.4" fill="%23FFE9C8"/><circle cx="298" cy="150" r="2.4" fill="%23FFE9C8"/><rect x="28" y="96" width="26" height="52" rx="3" fill="%2323262B"/><rect x="32" y="102" width="18" height="40" rx="2" fill="%232E323A"/><rect x="24" y="82" width="34" height="11" rx="2" fill="%231F3A5F"/><text x="60" y="66" font-size="16" fill="%23E86A5A" font-family="sans-serif" font-weight="bold" opacity=".9" transform="rotate(-2 60 66)">SPRAYED</text><rect x="58" y="120" width="90" height="5" rx="2" fill="%23777"/><rect x="58" y="132" width="70" height="5" rx="2" fill="%23555"/><rect x="58" y="156" width="80" height="4" rx="2" fill="%23C9973B"/></svg>'>
-        <strong>Street</strong><small>Brick wall at night, your poster up in a bulb-lit marquee; the movie logo sprays onto the wall.</small></button>
-      <button class="tpl" data-template="bigclock" type="button">
-        <img class="thumb" src="data:image/jpeg;base64,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" alt="bigclock template preview">
-        <strong>Big Clock</strong><small>Ambient timepiece with a small now-playing strip.</small></button>
+      <button class="save" id="save" title="Push all draft changes to the Hub"
+        aria-label="Save changes — push all draft changes to the Hub">Save changes</button>
     </div>
   </div>
 
-  <div class="panel" id="sec-look">
-    <h2>Look</h2>
-    <div class="row" id="vibes-row" data-pane="look"><label>Vibes<small>Presets: theme + font + template. Step through, tune after, save to keep.</small></label>
-      <div class="vibes-step">
-        <button class="secondary vprev" id="vibe-prev" type="button" aria-label="Previous vibe">&#9664;</button>
-        <button class="vibe-now" id="vibe-now" type="button"><i id="vibe-dot"></i><b id="vibe-name">Pick a vibe</b><small id="vibe-tag">tap or step through</small></button>
-        <button class="secondary vnext" id="vibe-next" type="button" aria-label="Next vibe">&#9654;</button>
-      </div>
-    </div>
-    <div class="row" data-pane="look"><label>Theme<small>Card palette; pick the circle for a custom accent</small></label>
-      <div class="swatches" id="theme">
-        <button data-v="amber" style="--swatch:#E5A83B" title="Amber"></button>
-        <button data-v="ice" style="--swatch:#7FB8E8" title="Ice"></button>
-        <button data-v="crimson" style="--swatch:#E85454" title="Crimson"></button>
-        <button data-v="emerald" style="--swatch:#5BC98F" title="Emerald"></button>
-        <button data-v="campaign" style="--swatch:#E86A5A" title="Campaign — navy &amp; red tape"></button>
-        <button data-v="concrete" style="--swatch:#C9973B" title="Concrete — back-alley gold"></button>
-        <button data-v="trophy" style="--swatch:#FFD447" title="Trophy — gold star yellow"></button>
-        <button data-v="bsides" style="--swatch:#D96C2C" title="B-Sides — dollar-bin orange"></button>
-        <input type="color" id="accent" value="#E5A83B" title="Custom accent">
-        <button class="clear" id="accent-clear" type="button">reset</button>
-      </div>
-    </div>
-    <div class="row" data-pane="identity"><label for="font">Title font<small>Free Google fonts; falls back to system offline</small></label>
-      <select id="font" class="mini">
-        <option value="system">System</option>
-        <option value="bebas">Bebas Neue</option>
-        <option value="oswald">Oswald</option>
-        <option value="playfair">Playfair Display</option>
-        <option value="cinzel">Cinzel</option>
-        <option value="grotesk">Space Grotesk</option>
-      </select>
-    </div>
-    <div class="row" data-pane="look"><label for="bodyfont">Card font<small>Everything else: plot, metadata, clock. Size per element lives in the block editor below.</small></label>
-      <select id="bodyfont" class="mini">
-        <option value="system">System</option>
-        <option value="bebas">Bebas Neue</option>
-        <option value="oswald">Oswald</option>
-        <option value="playfair">Playfair Display</option>
-        <option value="cinzel">Cinzel</option>
-        <option value="grotesk">Space Grotesk</option>
-      </select>
-    </div>
-    <div class="row" data-pane="poster"><label>Poster side<small>Spotlight and Split templates</small></label>
-      <div class="seg" id="side">
-        <button data-v="left">Left</button><button data-v="right">Right</button>
-      </div>
-    </div>
+  <div class="tabs" role="tablist" aria-label="Settings sections">
+    <button role="tab" id="tab-design" aria-selected="true" data-tab="design">Design</button>
+    <button role="tab" id="tab-connection" aria-selected="false" data-tab="connection">Connection</button>
+    <button role="tab" id="tab-tutorial" aria-selected="false" data-tab="tutorial">Tutorial</button>
+    <button role="tab" id="tab-notes" aria-selected="false" data-tab="notes">What&rsquo;s new</button>
+    <button role="tab" id="tab-about" aria-selected="false" data-tab="about">About</button>
   </div>
 
-  <div class="panel" id="sec-card">
-    <h2>On the card</h2>
-        <p class="boardhint">Lit = on the card. Tap to flip; tap the block on the preview to place and size it.</p>
-    <div class="chipboard">
-      <label class="tchip" title="Server background art behind the card"><input type="checkbox" id="ck-backdrop" data-k="backdrop"><span>Backdrop</span></label>
-      <label class="tchip" title="Movie/show logo cutout instead of text title" data-pane="identity"><input type="checkbox" id="ck-logo" data-k="logo"><span>Title logo</span></label>
-      <label class="tchip" data-pane="plot"><input type="checkbox" id="ck-plot" data-k="showPlot"><span>Plot</span></label>
-      <label class="tchip" data-pane="meta"><input type="checkbox" id="ck-genres" data-k="showGenres"><span>Genres</span></label>
-      <label class="tchip" title="Rotten Tomatoes / IMDb" data-pane="ratings"><input type="checkbox" id="ck-scores" data-k="showScores"><span>Scores</span></label>
-      <label class="tchip" data-pane="meta"><input type="checkbox" id="ck-mediainfo" data-k="showMediaInfo"><span>Media info</span></label>
-      <label class="tchip" data-pane="meta"><input type="checkbox" id="ck-contentrating" data-k="showContentRating"><span>Rating</span></label>
-      <label class="tchip" data-pane="meta"><input type="checkbox" id="ck-runtime" data-k="showRuntime"><span>Runtime</span></label>
-      <label class="tchip" data-pane="progress"><input type="checkbox" id="ck-progress" data-k="showProgress"><span>Progress</span></label>
-      <label class="tchip" data-pane="clock"><input type="checkbox" id="ck-clock" data-k="showClock"><span>Clock</span></label>
-      <label class="tchip" title="Temperature and conditions beside the clock" data-pane="weather"><input type="checkbox" id="ck-weather" data-k="showWeather"><span>Weather</span></label>
-      <label class="tchip" title="Live rain, snow, and fog on the Street template" data-pane="weather"><input type="checkbox" id="ck-weatherfx" data-k="weatherFX"><span>Weather FX</span></label>
+  <!-- ═══════════ DESIGN ═══════════ -->
+  <div id="pane-design" role="tabpanel">
+    <div class="carousel" id="carousel">
+      <button class="tcard" data-template="spotlight" type="button" title="Poster beside the full metadata stack — the classic look." aria-label="Spotlight template — Poster beside the full metadata stack — the classic look.">
+        <img src="data:image/jpeg;base64,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" alt=""><b>Spotlight</b>
+      </button>
+      <button class="tcard" data-template="split" type="button" title="Hard split: full-height art wall on one side, info column on the other." aria-label="Split template — Hard split: full-height art wall on one side, info column on the other.">
+        <img src="data:image/jpeg;base64,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" alt=""><b>Split</b>
+      </button>
+      <button class="tcard" data-template="hero" type="button" title="Big centered title over the backdrop, ratings row beneath." aria-label="Hero template — Big centered title over the backdrop, ratings row beneath.">
+        <img src="data:image/jpeg;base64,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" alt=""><b>Hero</b>
+      </button>
+      <button class="tcard" data-template="lowerthird" type="button" title="Broadcast-style chyron bar over full-bleed art." aria-label="Lower Third template — Broadcast-style chyron bar over full-bleed art.">
+        <img src="data:image/jpeg;base64,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" alt=""><b>Lower Third</b>
+      </button>
+      <button class="tcard" data-template="street" type="button" title="Brick wall at night, your poster up in a bulb-lit marquee; the movie logo sprays onto the wall." aria-label="Street template — Brick wall at night, your poster up in a bulb-lit marquee; the movie logo sprays onto the wall.">
+        <img src='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><rect width="320" height="200" fill="%23261F1C"/><g stroke="%231B1613" stroke-width="1.5"><line x1="0" y1="40" x2="320" y2="40"/><line x1="0" y1="80" x2="320" y2="80"/><line x1="0" y1="120" x2="320" y2="120"/><line x1="0" y1="160" x2="320" y2="160"/><line x1="60" y1="0" x2="60" y2="40"/><line x1="160" y1="40" x2="160" y2="80"/><line x1="90" y1="80" x2="90" y2="120"/></g><rect x="0" y="182" width="320" height="18" fill="%2317191D"/><rect x="200" y="14" width="100" height="16" rx="2" fill="%2314161A" stroke="%23C9973B"/><text x="250" y="26" text-anchor="middle" font-size="9" fill="%23FFD9A0" font-family="sans-serif" letter-spacing="2">NOW PLAYING</text><rect x="202" y="36" width="96" height="140" rx="3" fill="%23241A16" stroke="%23C9973B" stroke-width="2"/><rect x="212" y="46" width="76" height="120" fill="%23555E68"/><circle cx="202" cy="60" r="2.4" fill="%23FFE9C8"/><circle cx="202" cy="90" r="2.4" fill="%23FFE9C8"/><circle cx="202" cy="120" r="2.4" fill="%23FFE9C8"/><circle cx="202" cy="150" r="2.4" fill="%23FFE9C8"/><circle cx="298" cy="60" r="2.4" fill="%23FFE9C8"/><circle cx="298" cy="90" r="2.4" fill="%23FFE9C8"/><circle cx="298" cy="120" r="2.4" fill="%23FFE9C8"/><circle cx="298" cy="150" r="2.4" fill="%23FFE9C8"/><rect x="28" y="96" width="26" height="52" rx="3" fill="%2323262B"/><rect x="32" y="102" width="18" height="40" rx="2" fill="%232E323A"/><rect x="24" y="82" width="34" height="11" rx="2" fill="%231F3A5F"/><text x="60" y="66" font-size="16" fill="%23E86A5A" font-family="sans-serif" font-weight="bold" opacity=".9" transform="rotate(-2 60 66)">SPRAYED</text><rect x="58" y="120" width="90" height="5" rx="2" fill="%23777"/><rect x="58" y="132" width="70" height="5" rx="2" fill="%23555"/><rect x="58" y="156" width="80" height="4" rx="2" fill="%23C9973B"/></svg>' alt=""><b>Street</b>
+      </button>
+      <button class="tcard" data-template="bigclock" type="button" title="Ambient timepiece with a small now-playing strip." aria-label="Big Clock template — Ambient timepiece with a small now-playing strip.">
+        <img src="data:image/jpeg;base64,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" alt=""><b>Big Clock</b>
+      </button>
+      <!-- preset cards render here -->
+      <button class="tcard addcard" id="save-preset" type="button"
+        title="Back up the current template + block layout as a preset"
+        aria-label="Save the current look as a preset">
+        <span class="pthumb">+</span><b>Save preset</b>
+      </button>
     </div>
-    <div class="tuners">
-    <div class="dep-rows" id="clock-deps" data-pane="clock">
-      <div class="row"><label>Clock style</label>
-        <div class="seg" id="clockfmt">
-          <button data-v="12h">12h</button><button data-v="24h">24h</button>
+
+    <div class="preview-row">
+      <div class="mq-side">
+        <div class="frame-box"><iframe id="frame" title="Live card preview"></iframe></div>
+        <p class="side-sub">Demo data — every change previews instantly; tap any block
+          to edit it. Nothing reaches the Hub until you save.</p>
+        <div class="chips" id="chips" role="toolbar" aria-label="Blocks on the card"></div>
+        <div class="add-tray" id="add-tray" hidden></div>
+      </div>
+
+      <div>
+        <button class="secondary" id="editor-toggle" type="button"
+          aria-expanded="false">Edit blocks</button>
+        <div class="editor" id="editor">
+          <p id="no-blocks-note" hidden>This template has no blocks — use + Add below the preview.</p>
+          <div class="ed-head">
+            <span class="ed-title" id="ed-title">Editing: Title</span>
+            <select id="block-font" data-layout-field="font" aria-label="Font for this block">
+              <option value="system">Theme default</option>
+              <option value="bebas">Bebas Neue</option>
+              <option value="oswald">Oswald</option>
+              <option value="playfair">Playfair Display</option>
+              <option value="cinzel">Cinzel</option>
+              <option value="grotesk">Space Grotesk</option>
+            </select>
+          </div>
+
+          <div class="ed-row" id="ed-color">
+            <span class="ed-lab">Color</span>
+            <div class="swatches" id="swatches">
+              <button data-color="#E5A83B" style="--swatch:#E5A83B" title="Amber" aria-label="Amber"></button>
+              <button data-color="#F2EEE6" style="--swatch:#F2EEE6" title="White" aria-label="White"></button>
+              <button data-color="#9AA1AB" style="--swatch:#9AA1AB" title="Muted" aria-label="Muted"></button>
+              <button data-color="#7FB8E8" style="--swatch:#7FB8E8" title="Ice" aria-label="Ice"></button>
+              <button data-color="#E85454" style="--swatch:#E85454" title="Crimson" aria-label="Crimson"></button>
+              <button data-color="#5BC98F" style="--swatch:#5BC98F" title="Emerald" aria-label="Emerald"></button>
+              <input type="color" id="block-color" data-layout-field="color"
+                value="#E5A83B" title="Custom color" aria-label="Custom color">
+            </div>
+          </div>
+
+          <div id="ctx-title" class="ed-row" hidden>
+            <label for="ck-logo">Use logo art<small>Movie/show logo cutout instead of text title</small></label>
+            <input type="checkbox" class="switch" id="ck-logo" data-k="logo" role="switch">
+          </div>
+
+          <div id="ctx-clock" hidden>
+            <div class="ed-row">
+              <span class="ed-lab">Clock style</span>
+              <div class="seg" id="clockfmt">
+                <button data-v="12h" type="button">12h</button><button data-v="24h" type="button">24h</button>
+              </div>
+            </div>
+            <div class="ed-row">
+              <label for="ck-clocksec">Seconds</label>
+              <input type="checkbox" class="switch" id="ck-clocksec" data-k="clockSeconds" role="switch">
+            </div>
+          </div>
+
+          <div id="ctx-weather" hidden>
+            <div class="ed-row">
+              <label for="ck-weatherfx">Weather FX<small>Live rain, snow, and fog on the Street template</small></label>
+              <input type="checkbox" class="switch" id="ck-weatherfx" data-k="weatherFX" role="switch">
+            </div>
+            <div class="ed-row" id="row-wxintensity">
+              <label for="wxintensity">Intensity<small>Lower is calmer — good in the corner of your eye</small></label>
+              <select id="wxintensity" class="mini">
+                <option value="1">1 — Subtle</option>
+                <option value="2">2 — Light</option>
+                <option value="3">3 — Medium</option>
+                <option value="4">4 — Bold</option>
+              </select>
+            </div>
+            <div class="ed-row">
+              <label for="zip">ZIP code<small>Blank = auto-locate from your server&rsquo;s IP</small></label>
+              <input type="text" id="zip" class="mini" placeholder="e.g. 30301" autocomplete="off">
+            </div>
+            <div class="ed-row">
+              <span class="ed-lab">Units</span>
+              <div class="seg" id="unitfmt">
+                <button data-v="f" type="button">&deg;F</button><button data-v="c" type="button">&deg;C</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="ctx-meta" class="ed-row" hidden>
+            <span class="ed-lab">Included in metadata</span>
+            <div class="metachips">
+              <label><input type="checkbox" id="ck-genres" data-k="showGenres"><span>Genres</span></label>
+              <label><input type="checkbox" id="ck-mediainfo" data-k="showMediaInfo"><span>Media info</span></label>
+              <label><input type="checkbox" id="ck-contentrating" data-k="showContentRating"><span>Rating</span></label>
+              <label><input type="checkbox" id="ck-runtime" data-k="showRuntime"><span>Runtime</span></label>
+            </div>
+          </div>
+
+          <div class="sliders" id="block-sliders">
+            <div class="slider"><label>Horizontal <output data-value="x">0</output></label>
+              <input data-layout-field="x" type="range" min="-100" max="100" step="1" value="0" aria-label="Horizontal position of this block"></div>
+            <div class="slider"><label>Vertical <output data-value="y">0</output></label>
+              <input data-layout-field="y" type="range" min="-100" max="100" step="1" value="0" aria-label="Vertical position of this block"></div>
+            <div class="slider"><label>Width <output data-value="width">25</output></label>
+              <input data-layout-field="width" type="range" min="5" max="100" step="1" value="25" aria-label="Width of this block"></div>
+            <div class="slider"><label>Size <output data-value="scale">1</output></label>
+              <input data-layout-field="scale" type="range" min="0.3" max="3" step="0.05" value="1" aria-label="Size of this block"></div>
+          </div>
+
+          <div class="editor-foot">
+            <div class="seg" id="align" aria-label="Justify">
+              <button data-v="left" type="button">Left</button>
+              <button data-v="center" type="button">Center</button>
+              <button data-v="right" type="button">Right</button>
+            </div>
+            <button class="secondary" id="snap" type="button"
+              title="Pull the selected block onto the nearest grid line">Snap to grid</button>
+            <button class="secondary" id="remove-block" type="button"
+              title="Remove this block from the current template">Remove</button>
+            <button class="secondary" id="reset-layout" type="button">Reset template</button>
+          </div>
         </div>
       </div>
-      <div class="row"><label for="ck-clocksec">Clock seconds</label>
-        <input type="checkbox" id="ck-clocksec" data-k="clockSeconds"></div>
-    </div>
-    <div class="dep-rows" id="weather-deps" data-pane="weather">
-      <div class="row" id="row-wxintensity"><label for="wxintensity">Effect intensity<small>How strong the weather looks. Lower is calmer — good if the screen sits in the corner of your eye while you watch.</small></label>
-        <select id="wxintensity" class="mini">
-          <option value="1">1 — Subtle</option>
-          <option value="2">2 — Light</option>
-          <option value="3">3 — Medium</option>
-          <option value="4">4 — Bold</option>
-        </select></div>
-      <div class="row" id="row-zip"><label for="zip">ZIP code<small>US ZIP for local weather and day/night; blank = auto-locate from your server's IP</small></label>
-        <input type="text" id="zip" class="mini" placeholder="e.g. 30301" autocomplete="off"></div>
-      <div class="row" id="row-units"><label>Units</label>
-        <div class="seg" id="unitfmt">
-          <button data-v="f">&deg;F</button><button data-v="c">&deg;C</button>
-        </div>
-      </div>
-    </div>
     </div>
   </div>
 
+  <!-- ═══════════ CONNECTION ═══════════ -->
+  <div id="pane-connection" role="tabpanel" hidden>
   <div class="panel" id="sec-connect">
-    <h2>Media server</h2>
-    <div class="row"><label for="backend">Backend<small>Which server Marquee watches. Nothing changes until you press Save; a saved change is picked up within ~5s, no restart.</small></label>
-      <select id="backend" class="mini">
-        <option value="plex">Plex</option>
-        <option value="emby">Emby</option>
-        <option value="jellyfin">Jellyfin</option>
-      </select></div>
-    <div class="row"><label for="mshost">Server<small>Address for the backend picked above — each keeps its own. Blank uses the container's env var.</small></label>
-      <input type="text" id="mshost" class="mini" placeholder="http://server:8096" autocomplete="off"></div>
-    <div class="row"><label for="mskey"><span id="mskey-name">API key</span><small>Stored on the server, never shown again. Blank keeps the saved one.</small></label>
-      <input type="password" id="mskey" class="mini" placeholder="paste API key" autocomplete="new-password"></div>
+      <h2>Media server</h2>
+      <div class="row"><label for="backend">Backend<small>Which server Marquee watches. Nothing changes until you press Save; a saved change is picked up within ~5s, no restart.</small></label>
+        <select id="backend" class="mini">
+          <option value="plex">Plex</option>
+          <option value="emby">Emby</option>
+          <option value="jellyfin">Jellyfin</option>
+        </select></div>
+      <div class="row"><label for="mshost">Server<small>Address for the backend picked above — each keeps its own. Blank uses the container's env var.</small></label>
+        <input type="text" id="mshost" class="mini" placeholder="http://server:8096" autocomplete="off"></div>
+      <div class="row"><label for="mskey"><span id="mskey-name">API key</span><small>Stored on the server, never shown again. Blank keeps the saved one.</small></label>
+        <input type="password" id="mskey" class="mini" placeholder="paste API key" autocomplete="new-password"></div>
+    </div>
+  
+    <div class="panel">
+      <h2>Casting</h2>
+      <div class="row"><label for="hub">Cast device<small>Scan finds Google Cast devices on your LAN</small></label>
+        <div class="devpick">
+          <select id="hub"><option value="">Use HUB_IP setting</option></select>
+          <button class="secondary" id="scan" type="button">Scan</button>
+        </div>
+      </div>
+      <div class="row"><label for="users">Users<small>Comma-separated usernames. Typing here replaces PLEX_USERS; empty inherits it (shown greyed) — or everyone when unset.</small></label>
+        <input type="text" id="users" class="mini" placeholder="e.g. jamison" autocomplete="off"></div>
+      <div class="row"><label for="devices">Devices<small>Comma-separated player names — only sessions on these devices cast. Typing here replaces PLEX_DEVICES; empty inherits it — or any device when unset.</small></label>
+        <input type="text" id="devices" class="mini" placeholder="e.g. Living Room TV" autocomplete="off"></div>
+      <div class="row"><label for="blocktags">Do not cast<small>Comma-separated words. A session whose genres, tags, or content rating match one is never cast — the marquee can't overshare. Words of 3+ letters match inside terms ("adult" also blocks "Adult Animation"); shorter ones match exactly, so "r" blocks the R rating, not Horror.</small></label>
+        <input type="text" id="blocktags" class="mini" placeholder="e.g. adult, xxx, 18+" autocomplete="off"></div>
+      <div class="row"><label for="rotate">Rotate between sessions<small>When more than one allowed session is playing, each takes the display for this many seconds. 0 pins the first one (alphabetical by user, then device).</small></label>
+        <input type="number" id="rotate" class="mini" min="0" max="3600" step="5" placeholder="30"></div>
+      <div class="row"><label>Share setup<small>Export copies your whole setup as text; import pastes someone else&#39;s.</small></label>
+        <div class="devpick">
+          <button class="secondary" id="export" type="button">Export</button>
+          <button class="secondary" id="import" type="button">Import</button>
+        </div>
+      </div>
+      <div class="row"><label>Active sessions<small>Copy exact user and device names from what's playing right now</small></label>
+        <div class="devpick">
+          <span class="sessions-list" id="sessions">—</span>
+          <button class="secondary" id="sessions-btn" type="button">Check</button>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div class="panel">
-    <h2>Casting</h2>
-    <div class="row"><label for="hub">Cast device<small>Scan finds Google Cast devices on your LAN</small></label>
-      <div class="devpick">
-        <select id="hub"><option value="">Use HUB_IP setting</option></select>
-        <button class="secondary" id="scan" type="button">Scan</button>
-      </div>
-    </div>
-    <div class="row"><label for="users">Users<small>Comma-separated usernames. Typing here replaces PLEX_USERS; empty inherits it (shown greyed) — or everyone when unset.</small></label>
-      <input type="text" id="users" class="mini" placeholder="e.g. jamison" autocomplete="off"></div>
-    <div class="row"><label for="devices">Devices<small>Comma-separated player names — only sessions on these devices cast. Typing here replaces PLEX_DEVICES; empty inherits it — or any device when unset.</small></label>
-      <input type="text" id="devices" class="mini" placeholder="e.g. Living Room TV" autocomplete="off"></div>
-    <div class="row"><label for="blocktags">Do not cast<small>Comma-separated words. A session whose genres, tags, or content rating match one is never cast — the marquee can't overshare. Words of 3+ letters match inside terms ("adult" also blocks "Adult Animation"); shorter ones match exactly, so "r" blocks the R rating, not Horror.</small></label>
-      <input type="text" id="blocktags" class="mini" placeholder="e.g. adult, xxx, 18+" autocomplete="off"></div>
-    <div class="row"><label for="rotate">Rotate between sessions<small>When more than one allowed session is playing, each takes the display for this many seconds. 0 pins the first one (alphabetical by user, then device).</small></label>
-      <input type="number" id="rotate" class="mini" min="0" max="3600" step="5" placeholder="30"></div>
-    <div class="row"><label>Share setup<small>Export copies your whole setup as text; import pastes someone else&#39;s.</small></label>
-      <div class="devpick">
-        <button class="secondary" id="export" type="button">Export</button>
-        <button class="secondary" id="import" type="button">Import</button>
-      </div>
-    </div>
-    <div class="row"><label>Active sessions<small>Copy exact user and device names from what's playing right now</small></label>
-      <div class="devpick">
-        <span class="sessions-list" id="sessions">—</span>
-        <button class="secondary" id="sessions-btn" type="button">Check</button>
+  <!-- ═══════════ WHAT'S NEW ═══════════ -->
+  <div id="pane-notes" role="tabpanel" hidden>
+    <h2>What&rsquo;s new</h2>
+    <div class="prosebox" id="notes">Loading&hellip;</div>
+    <p><a href="https://github.com/Jamisonfitz/marquee/releases">All releases on GitHub</a></p>
+  </div>
+
+  <!-- ═══════════ ABOUT ═══════════ -->
+  <div id="pane-about" role="tabpanel" hidden>
+    <h2>About</h2>
+    <div class="prosebox">
+      <p>Marquee casts a cinematic now-playing card from your media server to a
+        Google Nest Hub — five templates, live preview, weather on the Street
+        scene, all self-hosted.</p>
+      <div class="about-rows">
+        <div class="row"><label>Version</label><span id="about-version">&mdash;</span></div>
+        <div class="row"><label>Source</label><a href="https://github.com/Jamisonfitz/marquee">github.com/Jamisonfitz/marquee</a></div>
+        <div class="row"><label>Backup</label><span>Export on the Connection tab copies your whole setup (presets included)</span></div>
       </div>
     </div>
   </div>
 
-  </div>
-
-  <div class="preview-col">
-  <div class="preview">
-    <h2>Preview (demo data)</h2>
-    <p class="sub">Every change previews instantly below — nothing hits the Hub until you save. Tap a block to select it, drag to move; sliders fine-tune position, width, and size.</p>
-    <div class="frame-box"><iframe id="frame"></iframe></div>
-    <details class="editor-wrap" id="editor-wrap">
-    <summary>Block editor</summary>
-    <div class="editor">
-      <p class="sub" id="no-blocks-note" hidden>This template has no blocks — pick one below to add it.</p>
-      <div class="picks">
-      <label for="element-select">Selected block<select id="element-select"></select></label>
-      <label for="add-block-select">Add a block<select id="add-block-select">
-        <option value="" selected>+ Add…</option></select></label>
-      <label for="block-font">Block font<select id="block-font" data-layout-field="font">
-        <option value="system">Theme default</option>
-        <option value="bebas">Bebas Neue</option>
-        <option value="oswald">Oswald</option>
-        <option value="playfair">Playfair Display</option>
-        <option value="cinzel">Cinzel</option>
-        <option value="grotesk">Space Grotesk</option></select></label>
-      </div>
-      <div class="sliders" id="block-sliders">
-        <div class="slider"><label>Horizontal <output data-value="x">0</output></label><input data-layout-field="x" type="range" min="-100" max="100" step="1" value="0"></div>
-        <div class="slider"><label>Vertical <output data-value="y">0</output></label><input data-layout-field="y" type="range" min="-100" max="100" step="1" value="0"></div>
-        <div class="slider"><label>Width <output data-value="width">25</output></label><input data-layout-field="width" type="range" min="5" max="100" step="1" value="25"></div>
-        <div class="slider"><label>Size <output data-value="scale">1</output></label><input data-layout-field="scale" type="range" min="0.3" max="3" step="0.05" value="1"></div>
-        <div class="slider"><label>Justify</label>
-          <div class="seg" id="align">
-            <button data-v="left" type="button">Left</button>
-            <button data-v="center" type="button">Center</button>
-            <button data-v="right" type="button">Right</button>
-          </div></div>
-      </div>
-      <div class="editor-foot">
-        <button class="secondary" id="snap" type="button" title="Pull the selected block onto the nearest grid line">Snap to grid</button>
-        <button class="secondary" id="remove-block" type="button" title="Remove this block from the current template">Remove block</button>
-        <button class="secondary" id="reset-layout">Reset this template</button>
-      </div>
+  <!-- Tour card -->
+  <div class="tour" id="tour" hidden>
+    <span class="arrow" aria-hidden="true">&uarr;</span>
+    <b id="tour-title"></b>
+    <p id="tour-body"></p>
+    <div class="tour-foot">
+      <span class="tour-n" id="tour-n"></span>
+      <button class="linkbtn" id="tour-skip" type="button">Skip</button>
+      <button class="linkbtn" id="tour-back" type="button">Back</button>
+      <button class="primary" id="tour-next" type="button">Next</button>
     </div>
-    </details>
-  </div>
-  </div>
   </div>
 </div>
-
-<div class="scrim" id="scrim"></div>
-<aside class="notes-panel" id="notes-panel">
-  <div class="notes-head"><h2>What’s new</h2>
-    <button class="notes-close" id="notes-close" aria-label="Close">×</button></div>
-  <div class="notes-body" id="notes">Loading…</div>
-  <div class="notes-foot"><a href="https://github.com/Jamisonfitz/marquee/releases">All releases on GitHub</a></div>
-</aside>
 
 <script>
   const $ = s => document.querySelector(s);
@@ -603,28 +546,36 @@
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   const TEMPLATES = ['spotlight', 'split', 'hero', 'lowerthird', 'bigclock', 'street'];
   let cfg = { hubIp: '', template: 'spotlight', theme: 'amber', accent: '',
-    titleFont: 'system', posterSide: 'right', clockFormat: '12h', blockLayout: {},
-    blockVisibility: {}, showWeather: false, weatherFX: true, weatherIntensity: 2 };
+    titleFont: 'system', clockFormat: '12h', blockLayout: {},
+    blockVisibility: {}, presets: [],
+    showWeather: false, weatherFX: true, weatherIntensity: 2 };
   const cardBase = '/image';
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 
   // ponytail: mirrors TEMPLATE_DEFAULT_BLOCKS in cast.py / output/index.html
   // — no shared codegen between the three, same as TEMPLATES already being
   // duplicated across all of them.
   const TEMPLATE_DEFAULT_BLOCKS = {
-    spotlight: ['clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
-    split: ['clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
-    hero: ['clock', 'identity', 'meta', 'ratings', 'progress'],
-    lowerthird: ['clock', 'identity', 'meta', 'ratings', 'progress'],
-    bigclock: ['clock', 'identity', 'meta', 'plot', 'progress'],
-    street: ['clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
+    spotlight: ['backdrop', 'clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
+    split: ['backdrop', 'clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
+    hero: ['backdrop', 'clock', 'identity', 'meta', 'ratings', 'progress'],
+    lowerthird: ['backdrop', 'clock', 'identity', 'meta', 'ratings', 'progress'],
+    bigclock: ['backdrop', 'clock', 'identity', 'meta', 'plot', 'progress'],
+    street: ['backdrop', 'clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
   };
-  const BLOCK_LABEL = { clock: 'Clock', weather: 'Weather', identity: 'Title & logo',
-    meta: 'Metadata', plot: 'Plot', ratings: 'Ratings', progress: 'Progress',
-    poster: 'Poster', stinger: 'Credits badge' };
-  // Stinger excluded: it's a content-driven badge (only appears with a TMDB
-  // credits-scene tag), not something adding it would ever show anything.
-  const TOGGLEABLE = ['clock', 'weather', 'identity', 'meta', 'plot', 'ratings',
-    'progress', 'poster'];
+  const BLOCK_LABEL = { backdrop: 'Backdrop', clock: 'Clock', weather: 'Weather',
+    identity: 'Title', meta: 'Metadata', plot: 'Plot', ratings: 'Ratings',
+    progress: 'Progress', poster: 'Poster', stinger: 'Credits badge' };
+  // Chip order fixed per the design handoff. Stinger rides last, unremovable:
+  // it's a content-driven badge, not something adding would ever show.
+  const CHIP_ORDER = ['backdrop', 'clock', 'weather', 'identity', 'meta', 'plot',
+    'ratings', 'progress', 'poster'];
+  const TOGGLEABLE = ['backdrop', 'clock', 'weather', 'identity', 'meta', 'plot',
+    'ratings', 'progress', 'poster'];
+  // Which blocks carry text (get the font select) / take a color at all.
+  const TEXT_BLOCKS = ['clock', 'weather', 'identity', 'meta', 'plot', 'ratings', 'stinger'];
+  const COLORABLE = ['clock', 'weather', 'identity', 'meta', 'plot', 'ratings',
+    'progress', 'poster', 'stinger'];
   // Candidate spots for a freshly-added block, cycled by how many are
   // already on the template. Aligned to the editor's 2.5% grid so a fresh
   // add already sits on a line instead of needing an immediate Snap.
@@ -634,6 +585,8 @@
     { x: 35, y: 37.5, width: 30 },
   ];
 
+  let selectedBlock = 'identity';
+
   function visibleBlockSet(tpl) {
     const shown = new Set(TEMPLATE_DEFAULT_BLOCKS[tpl] || []);
     const overrides = (cfg.blockVisibility || {})[tpl] || {};
@@ -641,38 +594,82 @@
     return shown;
   }
 
-  // Rebuilds the "Selected block" dropdown for the current template: blocks
-  // already on it in one group, blocks that could be added in another.
-  // Picking an "on" option just selects it for editing; picking an "add"
-  // option (handled by the change listener below) adds it.
-  function rebuildBlockDropdown() {
+  // ── Chip strip: presence + selection, one pill per block on the card ──
+  function renderChips() {
     const shown = visibleBlockSet(cfg.template);
-    const sel = $('#element-select');
-    const prev = sel.value;
-    sel.innerHTML = '';
-    const on = [];
-    const toAdd = [];
-    TOGGLEABLE.forEach(name => (shown.has(name) ? on : toAdd).push(name));
-    const onCount = on.length;  // toggleable blocks only
-    on.forEach(name => sel.add(new Option(BLOCK_LABEL[name], name)));
-    // Content-driven, always positionable, never added/removed by hand —
-    // appended after onCount is read so it can't mask an all-removed template.
-    sel.add(new Option(BLOCK_LABEL.stinger, 'stinger'));
-    $('#no-blocks-note').hidden = onCount > 0;
-    $('#block-sliders').hidden = onCount === 0;
-    const stillOnScreen = [...sel.options].some(o => o.value === prev);
-    sel.value = stillOnScreen ? prev : (sel.options[0]?.value || '');
+    const strip = $('#chips');
+    strip.innerHTML = '';
+    const onCard = CHIP_ORDER.filter(n => shown.has(n));
+    const buildChip = (name, removable) => {
+      const chip = document.createElement('span');
+      chip.className = 'chip' + (removable ? '' : ' no-x');
+      chip.dataset.block = name;
+      const label = document.createElement('button');
+      label.type = 'button'; label.className = 'chip-label';
+      label.textContent = BLOCK_LABEL[name];
+      label.title = 'Select ' + BLOCK_LABEL[name] + ' block';
+      label.setAttribute('aria-label', 'Select ' + BLOCK_LABEL[name] + ' block');
+      label.setAttribute('aria-pressed', String(name === selectedBlock));
+      label.addEventListener('click', () => selectBlock(name));
+      chip.appendChild(label);
+      if (removable) {
+        const x = document.createElement('button');
+        x.type = 'button'; x.className = 'chip-x'; x.textContent = '×';
+        x.title = 'Remove ' + BLOCK_LABEL[name] + ' from card';
+        x.setAttribute('aria-label', 'Remove ' + BLOCK_LABEL[name] + ' from card');
+        x.addEventListener('click', () => removeBlock(name));
+        chip.appendChild(x);
+      }
+      chip.classList.toggle('on', name === selectedBlock);
+      return chip;
+    };
+    onCard.forEach(name => strip.appendChild(buildChip(name, true)));
+    strip.appendChild(buildChip('stinger', false));
+    const add = document.createElement('span');
+    add.className = 'chip add';
+    const addBtn = document.createElement('button');
+    addBtn.type = 'button'; addBtn.className = 'chip-label';
+    addBtn.textContent = '+ Add';
+    addBtn.title = 'Add a block to the card';
+    addBtn.setAttribute('aria-label', 'Add a block to the card');
+    addBtn.setAttribute('aria-expanded', String(!$('#add-tray').hidden));
+    addBtn.addEventListener('click', () => {
+      $('#add-tray').hidden = !$('#add-tray').hidden;
+      addBtn.setAttribute('aria-expanded', String(!$('#add-tray').hidden));
+      renderAddTray();
+    });
+    add.appendChild(addBtn);
+    strip.appendChild(add);
+    $('#no-blocks-note').hidden = onCard.length > 0;
+    renderAddTray();
+    updateRemoveButton();
+  }
 
-    // A separate control, not options mixed into the block above it: adding
-    // is a one-shot action, not a state to browse into and leave selected.
-    const addSel = $('#add-block-select');
-    addSel.innerHTML = '<option value="" selected>+ Add…</option>';
-    toAdd.forEach(name => addSel.add(new Option(BLOCK_LABEL[name], name)));
-    addSel.disabled = toAdd.length === 0;
+  function renderAddTray() {
+    const tray = $('#add-tray');
+    if (tray.hidden) return;
+    const shown = visibleBlockSet(cfg.template);
+    const missing = TOGGLEABLE.filter(n => !shown.has(n));
+    tray.innerHTML = '';
+    if (!missing.length) {
+      const note = document.createElement('span');
+      note.className = 'empty';
+      note.textContent = 'Everything is already on the card.';
+      tray.appendChild(note);
+      return;
+    }
+    missing.forEach(name => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = '+ ' + BLOCK_LABEL[name];
+      b.setAttribute('aria-label', 'Add ' + BLOCK_LABEL[name] + ' to the card');
+      b.addEventListener('click', () => { addBlock(name); $('#add-tray').hidden = true; });
+      tray.appendChild(b);
+    });
   }
 
   function selectBlock(name) {
     if (!name) return;
+    selectedBlock = name;
     $('#frame').contentWindow?.postMessage({ type: 'marquee-select', name }, location.origin);
     updateRemoveButton();
   }
@@ -683,25 +680,40 @@
     cfg.blockVisibility[tpl] ||= {};
     cfg.blockVisibility[tpl][name] = true;
     cfg.blockLayout[tpl] ||= {};
-    if (!cfg.blockLayout[tpl][name]) {
+    if (name !== 'backdrop' && !cfg.blockLayout[tpl][name]) {
       cfg.blockLayout[tpl][name] = { ...OPEN_SLOTS[usedCount % OPEN_SLOTS.length] };
     }
     // Weather is the one toggleable block whose data-fetch defaults off —
     // adding it to a template with nothing to show would be a dead end.
-    if (name === 'weather' && !cfg.showWeather) {
-      cfg.showWeather = true;
-      const ck = document.getElementById('ck-weather');
-      if (ck) ck.checked = true;
-    }
-    rebuildBlockDropdown();
+    if (name === 'weather' && !cfg.showWeather) cfg.showWeather = true;
+    renderChips();
     sendCfg(); sendLayout();
     selectBlock(name);
     $('#status').textContent = BLOCK_LABEL[name] + ' added — save to keep it.';
   }
 
+  function removeBlock(name) {
+    if (!TOGGLEABLE.includes(name)) return;
+    const tpl = cfg.template;
+    cfg.blockVisibility[tpl] ||= {};
+    cfg.blockVisibility[tpl][name] = false;
+    delete (cfg.blockLayout[tpl] || {})[name];
+    // Mirror of the add coupling: pulling the weather block off the card
+    // stops the weather fetch/chip too.
+    if (name === 'weather') cfg.showWeather = false;
+    if (selectedBlock === name) {
+      selectedBlock = visibleBlockSet(tpl).has('identity') ? 'identity'
+        : (CHIP_ORDER.find(n => visibleBlockSet(tpl).has(n)) || 'stinger');
+    }
+    renderChips();
+    sendCfg(); sendLayout();
+    selectBlock(selectedBlock);
+    $('#status').textContent = BLOCK_LABEL[name] + ' removed — save to apply.';
+  }
+
   function updateRemoveButton() {
-    const name = $('#element-select').value;
-    $('#remove-block').hidden = !(TOGGLEABLE.includes(name) && visibleBlockSet(cfg.template).has(name));
+    $('#remove-block').hidden =
+      !(TOGGLEABLE.includes(selectedBlock) && visibleBlockSet(cfg.template).has(selectedBlock));
   }
 
   function scaleFrame() {
@@ -709,6 +721,7 @@
     $('#frame').style.transform = `scale(${box.clientWidth / 1280})`;
   }
   window.addEventListener('resize', scaleFrame);
+  new ResizeObserver(scaleFrame).observe(document.querySelector('.mq-side'));
 
   // Push the whole draft config into the preview card — instant, no reload.
   function sendCfg() {
@@ -723,18 +736,20 @@
   function loadFrame() {
     $('#frame').onload = () => {
       sendCfg(); sendLayout();
-      selectBlock($('#element-select').value);
+      selectBlock(selectedBlock);
     };
     $('#frame').src = cardBase + '?demo=1&edit=1&t=' + Date.now(); scaleFrame();
   }
 
   function markTemplates() {
-    document.querySelectorAll('.tpl').forEach(b =>
+    document.querySelectorAll('.tcard[data-template]').forEach(b =>
       b.classList.toggle('on', b.dataset.template === cfg.template));
+    document.querySelectorAll('.tcard[data-preset-idx]').forEach(b =>
+      b.classList.remove('on'));
   }
-  document.querySelectorAll('.tpl').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.tcard[data-template]').forEach(b => b.addEventListener('click', () => {
     cfg.template = b.dataset.template; markTemplates(); sendCfg();
-    rebuildBlockDropdown(); selectBlock($('#element-select').value);
+    renderChips(); selectBlock(selectedBlock);
     // Clicking through templates also steps the demo film, so the preview
     // shows the reel instead of one movie forever.
     $('#frame').contentWindow?.postMessage({ type: 'marquee-demo-next' }, location.origin);
@@ -745,14 +760,6 @@
     document.querySelectorAll(`#${id} button`).forEach(b =>
       b.classList.toggle('on', b.dataset.v === v));
   }
-  document.querySelectorAll('#side button').forEach(b => b.addEventListener('click', () => {
-    cfg.posterSide = b.dataset.v; segSet('side', b.dataset.v); sendCfg(); }));
-  $('#font').addEventListener('change', () => {
-    cfg.titleFont = $('#font').value; sendCfg();
-    $('#status').textContent = 'Title font changed — save to apply.'; });
-  $('#bodyfont').addEventListener('change', () => {
-    cfg.bodyFont = $('#bodyfont').value; sendCfg();
-    $('#status').textContent = 'Card font changed — save to apply.'; });
   document.querySelectorAll('#align button').forEach(b => b.addEventListener('click', () => {
     segSet('align', b.dataset.v);
     $('#frame').contentWindow.postMessage(
@@ -760,148 +767,238 @@
   }));
   document.querySelectorAll('#clockfmt button').forEach(b => b.addEventListener('click', () => {
     cfg.clockFormat = b.dataset.v; segSet('clockfmt', b.dataset.v); sendCfg(); }));
-
-  // Vibes: each demo film's palette as a one-tap preset, plus a few
-  // for staring into the void between episodes.
-  const VIBES = [
-    { n: 'Campaign Trail', c: '#E86A5A', theme: 'campaign', font: 'bebas', tpl: 'spotlight', tag: 'firm grip, borrowed baby' },
-    { n: 'Back Alley', c: '#C9973B', theme: 'concrete', font: 'oswald', tpl: 'street', tag: 'post no sequels' },
-    { n: 'Gold Star', c: '#FFD447', theme: 'trophy', font: 'grotesk', tpl: 'hero', tag: 'u tried' },
-    { n: 'Dollar Bin', c: '#D96C2C', theme: 'bsides', font: 'playfair', tpl: 'split', tag: 'side 2 is the good one' },
-    { n: 'Simulation', c: '#7FB8E8', theme: 'ice', font: 'grotesk', tpl: 'bigclock', tag: 'we’re all just programming ourselves' },
-    { n: 'Third Act', c: '#E85454', theme: 'crimson', font: 'cinzel', tpl: 'lowerthird', tag: 'the universe is on its final reel' },
-  ];
-  let vibeIdx = -1;
-  function applyVibe(i) {
-    vibeIdx = (i + VIBES.length) % VIBES.length;
-    const v = VIBES[vibeIdx];
-    cfg.theme = v.theme; cfg.accent = ''; cfg.titleFont = v.font; cfg.template = v.tpl;
-    $('#font').value = v.font;
-    $('#vibe-name').textContent = v.n; $('#vibe-tag').textContent = v.tag;
-    $('.vibe-now').style.setProperty('--v', v.c);
-    markTheme(); markTemplates(); markCarousel(); sendCfg();
-    rebuildBlockDropdown(); selectBlock($('#element-select').value);
-    // each step also flips the demo film, so browsing vibes tours the reel
-    $('#frame').contentWindow?.postMessage({ type: 'marquee-demo-next' }, location.origin);
-    $('#status').textContent = `${v.n} — ${v.tag}. Save to keep the vibe.`;
-  }
-  $('#vibe-prev').addEventListener('click', () => applyVibe(vibeIdx - 1));
-  $('#vibe-next').addEventListener('click', () => applyVibe(vibeIdx + 1));
-  $('#vibe-now').addEventListener('click', () => applyVibe(vibeIdx < 0 ? 0 : vibeIdx));
-
-  // Mobile carousel: merges Template + Vibes into one looping swipeable
-  // strip. Reuses VIBES and applyVibe() wholesale — each card IS a vibe,
-  // so a swipe picks a full look (template + theme + font) in one motion,
-  // exactly what the desktop Vibes stepper already does.
-  let carouselBuilt = false, carouselProgrammatic = false, carouselSettleT = 0;
-  function buildCarousel() {
-    const track = $('#vc-track');
-    // Built via DOM APIs, not innerHTML — the Street thumbnail is an inline
-    // SVG data-URI containing literal double-quotes, which would break out
-    // of a string-templated src="..." attribute.
-    const buildCard = v => {
-      const thumb = document.querySelector(`.tpl[data-template="${v.tpl}"] img`);
-      const card = document.createElement('button');
-      card.className = 'vc-card'; card.type = 'button';
-      const img = document.createElement('img');
-      img.src = thumb ? thumb.src : ''; img.alt = v.n;
-      const b = document.createElement('b'); b.textContent = v.n;
-      const small = document.createElement('small'); small.textContent = v.tag;
-      card.append(img, b, small);
-      return card;
-    };
-    track.innerHTML = '';
-    // Tripled so scrolling past either end always lands on an identical
-    // clone card — the loop "teleports" there instantly, unnoticed.
-    for (let rep = 0; rep < 3; rep++) VIBES.forEach(v => track.appendChild(buildCard(v)));
-    [...track.children].forEach((el, domI) =>
-      el.addEventListener('click', () => applyVibe(domI % VIBES.length)));
-    track.addEventListener('scroll', () => {
-      if (carouselProgrammatic) return;
-      clearTimeout(carouselSettleT);
-      carouselSettleT = setTimeout(carouselSettled, 150);
-    });
-    carouselBuilt = true;
-    markCarousel(true);
-  }
-  function carouselSettled() {
-    const track = $('#vc-track');
-    const center = track.scrollLeft + track.clientWidth / 2;
-    let best = 0, bestDist = Infinity;
-    [...track.children].forEach((el, domI) => {
-      const dist = Math.abs(el.offsetLeft + el.offsetWidth / 2 - center);
-      if (dist < bestDist) { bestDist = dist; best = domI; }
-    });
-    const real = best % VIBES.length;
-    if (real === vibeIdx) markCarousel(); // same vibe: just re-center the clone
-    else applyVibe(real);
-  }
-  // Jumps the active card into the middle clone set (instant, no visible
-  // motion since every set looks identical) so there's always a full set
-  // of cards to swipe into on either side — the loop never dead-ends.
-  function markCarousel(instant) {
-    if (!carouselBuilt) return;
-    const track = $('#vc-track');
-    [...track.children].forEach((el, domI) =>
-      el.classList.toggle('on', domI % VIBES.length === vibeIdx));
-    const middleDomI = VIBES.length + Math.max(vibeIdx, 0);
-    carouselProgrammatic = true;
-    track.children[middleDomI]?.scrollIntoView(
-      { inline: 'center', block: 'nearest', behavior: instant ? 'instant' : 'smooth' });
-    requestAnimationFrame(() => { carouselProgrammatic = false; });
-  }
-
-  function markTheme() {
-    document.querySelectorAll('#theme button[data-v]').forEach(b =>
-      b.classList.toggle('on', !cfg.accent && b.dataset.v === cfg.theme));
-    $('#accent').classList.toggle('on', !!cfg.accent);
-  }
-  document.querySelectorAll('#theme button[data-v]').forEach(b => b.addEventListener('click', () => {
-    cfg.theme = b.dataset.v; cfg.accent = ''; markTheme(); sendCfg(); }));
-  $('#accent').addEventListener('input', () => {
-    cfg.accent = $('#accent').value; markTheme(); sendCfg(); });
-  $('#accent-clear').addEventListener('click', () => {
-    cfg.accent = ''; markTheme(); sendCfg(); });
-
-  // Dependent controls go dead (dimmed + disabled) when their parent toggle
-  // is off: clock style/seconds need the clock, effect intensity needs the
-  // effects, ZIP feeds either weather feature's location, units only label
-  // the text chip. A live-looking control that does nothing is a lie.
-  function syncDeps() {
-    const on = id => $(id).checked;
-    const gate = (sel, ok) => {
-      const el = document.querySelector(sel);
-      el.classList.toggle('is-off', !ok);
-      el.querySelectorAll('input,select,button').forEach(c => { c.disabled = !ok; });
-    };
-    gate('#clock-deps', on('#ck-clock'));
-    gate('#row-wxintensity', on('#ck-weatherfx'));
-    gate('#row-zip', on('#ck-weather') || on('#ck-weatherfx'));
-    gate('#row-units', on('#ck-weather'));
-  }
-
-  // Everything stays visible; tapping a card region scrolls its rows into
-  // view and flashes them — wayfinding, never hiding. [data-pane] tags mark
-  // which rows belong to which card region.
-  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
-  let flashT = 0;
-  function reveal(name) {
-    const rows = document.querySelectorAll(`[data-pane="${name}"]`);
-    if (!rows.length) return;
-    rows[0].scrollIntoView({ behavior: reduceMotion.matches ? 'auto' : 'smooth',
-      block: 'center' });
-    document.querySelectorAll('.flash').forEach(n => n.classList.remove('flash'));
-    rows.forEach(n => n.classList.add('flash'));
-    clearTimeout(flashT);
-    flashT = setTimeout(() =>
-      document.querySelectorAll('.flash').forEach(n => n.classList.remove('flash')), 1800);
-  }
-  $('#signal-btn').addEventListener('click', () =>
-    document.querySelector('#sec-connect').scrollIntoView(
-      { behavior: reduceMotion.matches ? 'auto' : 'smooth', block: 'start' }));
-
+  document.querySelectorAll('#unitfmt button').forEach(b => b.addEventListener('click', () => {
+    cfg.weatherUnits = b.dataset.v; segSet('unitfmt', b.dataset.v); sendCfg();
+  }));
+  $('#wxintensity').addEventListener('change', () => {
+    cfg.weatherIntensity = parseInt($('#wxintensity').value, 10) || 2;
+    sendCfg();
+    $('#status').textContent = 'Effect intensity changed — save to apply.';
+  });
+  $('#zip').addEventListener('input', () => {
+    cfg.weatherZip = $('#zip').value.trim();
+    $('#status').textContent = 'ZIP changed — save to apply.';
+  });
   document.querySelectorAll('input[data-k]').forEach(i =>
-    i.addEventListener('change', () => { syncDeps(); sendCfg(); }));
+    i.addEventListener('change', () => { syncFx(); sendCfg(); }));
+  // Intensity only matters while the FX layer is on.
+  function syncFx() {
+    const ok = $('#ck-weatherfx').checked;
+    $('#row-wxintensity').style.opacity = ok ? '' : '.45';
+    $('#wxintensity').disabled = !ok;
+  }
+
+  // ── Per-block color ──
+  function markSwatches(color) {
+    document.querySelectorAll('#swatches button[data-color]').forEach(b =>
+      b.classList.toggle('on', b.dataset.color.toLowerCase() === (color || '').toLowerCase()));
+    const custom = $('#block-color');
+    const isPreset = [...document.querySelectorAll('#swatches button[data-color]')]
+      .some(b => b.dataset.color.toLowerCase() === (color || '').toLowerCase());
+    custom.classList.toggle('on', !!color && !isPreset);
+    if (color) custom.value = color;
+  }
+  document.querySelectorAll('#swatches button[data-color]').forEach(b =>
+    b.addEventListener('click', () => {
+      const next = b.classList.contains('on') ? '' : b.dataset.color;
+      markSwatches(next);
+      $('#frame').contentWindow.postMessage(
+        { type: 'marquee-set', field: 'color', value: next }, location.origin);
+    }));
+
+  // ── Contextual editor: show only what the selected block owns ──
+  function showEditorFor(name) {
+    $('#ed-title').textContent = 'Editing: ' + (BLOCK_LABEL[name] || name);
+    $('#ctx-title').hidden = name !== 'identity';
+    $('#ctx-clock').hidden = name !== 'clock';
+    $('#ctx-weather').hidden = name !== 'weather';
+    $('#ctx-meta').hidden = name !== 'meta';
+    $('#block-font').hidden = !TEXT_BLOCKS.includes(name);
+    $('#ed-color').hidden = !COLORABLE.includes(name);
+    const positionable = name !== 'backdrop';
+    $('#block-sliders').hidden = !positionable;
+    $('#align').hidden = !positionable;
+    $('#snap').hidden = !positionable;
+    document.querySelectorAll('#chips .chip').forEach(c => {
+      const on = c.dataset.block === name;
+      c.classList.toggle('on', on);
+      c.querySelector('.chip-label')?.setAttribute('aria-pressed', String(on));
+    });
+    updateRemoveButton();
+  }
+
+  // ── Presets: the current look, bottled, riding the carousel ──
+  function metaOptsSnapshot() {
+    return { genres: cfg.showGenres !== false, mediainfo: cfg.showMediaInfo !== false,
+      rating: cfg.showContentRating !== false, runtime: cfg.showRuntime !== false };
+  }
+  function renderPresets() {
+    document.querySelectorAll('.tcard[data-preset-idx]').forEach(el => el.remove());
+    const anchor = $('#save-preset');
+    (cfg.presets || []).forEach((p, i) => {
+      const card = document.createElement('button');
+      card.type = 'button'; card.className = 'tcard';
+      card.dataset.presetIdx = i;
+      card.title = 'Your saved preset ' + p.name;
+      card.setAttribute('aria-label', 'Apply your saved preset ' + p.name);
+      const thumbSrc = document.querySelector(
+        `.tcard[data-template="${p.template}"] img`)?.src || '';
+      const img = document.createElement('img');
+      img.src = thumbSrc; img.alt = '';
+      const b = document.createElement('b'); b.textContent = p.name;
+      const del = document.createElement('span');
+      del.className = 'pdel'; del.textContent = '×';
+      del.title = 'Delete preset ' + p.name;
+      del.setAttribute('role', 'button');
+      del.setAttribute('aria-label', 'Delete preset ' + p.name);
+      del.addEventListener('click', e => {
+        e.stopPropagation();
+        cfg.presets.splice(i, 1);
+        renderPresets();
+        $('#status').textContent = 'Preset deleted — save to apply.';
+      });
+      card.append(img, b, del);
+      card.addEventListener('click', () => applyPreset(p));
+      anchor.parentNode.insertBefore(card, anchor);
+    });
+  }
+  function applyPreset(p) {
+    cfg.template = p.template;
+    cfg.blockLayout = structuredClone(p.blockLayout || {});
+    cfg.blockVisibility = structuredClone(p.blockVisibility || {});
+    const m = p.metaOpts || {};
+    cfg.showGenres = m.genres !== false;
+    cfg.showMediaInfo = m.mediainfo !== false;
+    cfg.showContentRating = m.rating !== false;
+    cfg.showRuntime = m.runtime !== false;
+    ['ck-genres', 'ck-mediainfo', 'ck-contentrating', 'ck-runtime'].forEach((id, i) => {
+      const key = ['genres', 'mediainfo', 'rating', 'runtime'][i];
+      const el = document.getElementById(id);
+      if (el) el.checked = m[key] !== false;
+    });
+    markTemplates(); sendCfg(); sendLayout();
+    renderChips(); selectBlock(selectedBlock);
+    $('#frame').contentWindow?.postMessage({ type: 'marquee-demo-next' }, location.origin);
+    $('#status').textContent = '“' + p.name + '” applied — save to keep it.';
+  }
+  $('#save-preset').addEventListener('click', () => {
+    cfg.presets ||= [];
+    if (cfg.presets.length >= 20) {
+      $('#status').textContent = 'Preset limit reached (20) — delete one first.';
+      return;
+    }
+    cfg.presets.push({ name: 'My preset ' + (cfg.presets.length + 1),
+      template: cfg.template,
+      blockLayout: structuredClone(cfg.blockLayout || {}),
+      blockVisibility: structuredClone(cfg.blockVisibility || {}),
+      metaOpts: metaOptsSnapshot() });
+    renderPresets();
+    $('#status').textContent = 'Preset saved — it rides the carousel and Export backs it up.';
+  });
+
+  // ── Tabs ──
+  const PANES = { design: 'pane-design', connection: 'pane-connection',
+    notes: 'pane-notes', about: 'pane-about' };
+  let notesLoaded = false, aboutLoaded = false;
+  function activateTab(tab) {
+    const target = tab === 'tutorial' ? 'design' : tab;
+    document.querySelectorAll('.tabs button').forEach(b =>
+      b.setAttribute('aria-selected', String(b.dataset.tab === tab)));
+    Object.entries(PANES).forEach(([name, id]) =>
+      { document.getElementById(id).hidden = name !== target; });
+    if (tab === 'notes' && !notesLoaded) loadNotes();
+    if (tab === 'about' && !aboutLoaded) loadAbout();
+    if (tab === 'tutorial') startTour();
+    else stopTour();
+    scaleFrame();
+  }
+  document.querySelectorAll('.tabs button').forEach(b =>
+    b.addEventListener('click', () => activateTab(b.dataset.tab)));
+
+  async function loadNotes() {
+    try {
+      const md = await (await fetch('/release-notes')).text();
+      $('#notes').innerHTML = md.replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/^## (.*)$/gm, '<b>$1</b>').replace(/^# .*$/gm, '');
+      notesLoaded = true;
+    } catch (e) { $('#notes').textContent = 'Release notes unavailable.'; }
+  }
+  async function loadAbout() {
+    try {
+      const h = await (await fetch('/healthz')).json();
+      $('#about-version').textContent = 'v' + (h.version || '?');
+      aboutLoaded = true;
+    } catch (e) { $('#about-version').textContent = 'unknown'; }
+  }
+
+  // ── Tutorial: a tour over the real UI ──
+  const TOUR = [
+    { s: '#carousel', t: 'Pick a template',
+      b: 'Tap a card to change the whole layout. Your saved presets ride here too — "+ Save preset" backs up the current look.' },
+    { s: '.frame-box', t: 'This is your card',
+      b: 'Every change previews instantly. Tap any block on the card to select it — drag to move it.' },
+    { s: '#chips', t: 'Blocks on the card',
+      b: 'Tap a chip to edit that block, × to take it off the card, and "+ Add" brings anything back.' },
+    { s: '#editor', t: 'Make it yours',
+      b: 'Font, color, position, width, size — per block. Clock and weather bring their own settings when selected.' },
+    { s: '.tabs', t: 'Everything else',
+      b: 'Connection holds your server, casting, filters, and backup (Export / Import).' },
+    { s: '#save', t: 'Save when ready',
+      b: 'Changes are drafts until you save — then the Hub picks them up within ~5 seconds.' },
+  ];
+  let tourStep = -1;
+  function clearHl() { document.querySelectorAll('.tut-hl').forEach(el => el.classList.remove('tut-hl')); }
+  function stepTo(i) {
+    tourStep = i;
+    clearHl();
+    const step = TOUR[i];
+    const el = document.querySelector(step.s);
+    if (el) {
+      el.classList.add('tut-hl');
+      const top = el.getBoundingClientRect().top + window.scrollY - 110;
+      window.scrollTo({ top: Math.max(0, top),
+        behavior: reduceMotion.matches ? 'auto' : 'smooth' });
+    }
+    $('#tour-title').textContent = step.t;
+    $('#tour-body').textContent = step.b;
+    $('#tour-n').textContent = (i + 1) + ' of ' + TOUR.length;
+    $('#tour-back').hidden = i === 0;
+    $('#tour-next').textContent = i === TOUR.length - 1 ? 'Done' : 'Next';
+  }
+  function startTour() {
+    $('#tour').hidden = false;
+    // Tour spotlights the editor: make sure it's open on phones.
+    $('#editor').classList.remove('collapsed');
+    stepTo(0);
+  }
+  function stopTour(done) {
+    if ($('#tour').hidden) return;
+    $('#tour').hidden = true;
+    clearHl();
+    if (done) localStorage.marqueeTourDone = '1';
+  }
+  $('#tour-skip').addEventListener('click', () => { stopTour(true); activateTab('design'); });
+  $('#tour-back').addEventListener('click', () => stepTo(Math.max(0, tourStep - 1)));
+  $('#tour-next').addEventListener('click', () => {
+    if (tourStep >= TOUR.length - 1) { stopTour(true); activateTab('design'); }
+    else stepTo(tourStep + 1);
+  });
+
+  // ── Mobile editor collapse ──
+  const phone = matchMedia('(max-width:900px)');
+  $('#editor-toggle').addEventListener('click', () => {
+    const ed = $('#editor');
+    ed.classList.toggle('collapsed');
+    const open = !ed.classList.contains('collapsed');
+    $('#editor-toggle').textContent = open ? 'Hide editor' : 'Edit blocks';
+    $('#editor-toggle').setAttribute('aria-expanded', String(open));
+  });
+  function openEditorMobile() {
+    if (!phone.matches) return;
+    $('#editor').classList.remove('collapsed');
+    $('#editor-toggle').textContent = 'Hide editor';
+    $('#editor-toggle').setAttribute('aria-expanded', 'true');
+  }
 
   async function loadDevices(refresh) {
     try {
@@ -968,18 +1065,7 @@
     cfg.rotateSeconds = Number.isFinite(n) ? n : 30;
     $('#status').textContent = 'Rotation changed — save to apply.';
   });
-  $('#zip').addEventListener('input', () => {
-    cfg.weatherZip = $('#zip').value.trim();
-    $('#status').textContent = 'ZIP changed — save to apply.';
-  });
-  document.querySelectorAll('#unitfmt button').forEach(b => b.addEventListener('click', () => {
-    cfg.weatherUnits = b.dataset.v; segSet('unitfmt', b.dataset.v); sendCfg();
-  }));
-  $('#wxintensity').addEventListener('change', () => {
-    cfg.weatherIntensity = parseInt($('#wxintensity').value, 10) || 2;
-    sendCfg();
-    $('#status').textContent = 'Effect intensity changed — save to apply.';
-  });
+
   $('#sessions-btn').addEventListener('click', async () => {
     $('#sessions').textContent = '…';
     try {
@@ -997,6 +1083,29 @@
     $('#scan').disabled = false; $('#scan').textContent = 'Scan';
     $('#status').textContent = n ? `Found ${n} device${n > 1 ? 's' : ''}.`
       : 'No devices found — the scan needs the container on the same network as the Hub.';
+  });
+
+  // Share your look: export copies the full setup as JSON; import pastes
+  // someone else's. The server validates on save, so junk can't break it.
+  $('#export').addEventListener('click', async () => {
+    document.querySelectorAll('input[data-k]').forEach(i => { cfg[i.dataset.k] = i.checked; });
+    const text = JSON.stringify(cfg);
+    try { await navigator.clipboard.writeText(text);
+      $('#status').textContent = 'Setup copied to clipboard — paste it anywhere.'; }
+    catch (e) { window.prompt('Copy your setup:', text); }
+  });
+  $('#import').addEventListener('click', async () => {
+    const text = window.prompt('Paste an exported Marquee setup:');
+    if (!text) return;
+    try {
+      const incoming = JSON.parse(text);
+      const keep = cfg.hubIp;
+      cfg = { ...cfg, ...incoming, hubIp: keep };
+      const r = await (await fetch('/save', { method: 'POST',
+        body: JSON.stringify(cfg) })).json();
+      if (!r.ok) throw new Error(r.error);
+      location.reload();
+    } catch (e) { $('#status').textContent = 'Import failed: ' + e.message; }
   });
 
   async function load() {
@@ -1020,9 +1129,6 @@
       const v = cfg[i.dataset.k];
       i.checked = v === undefined ? i.dataset.k !== 'clockSeconds' : v !== false;
     });
-    if (cfg.accent) $('#accent').value = cfg.accent;
-    $('#font').value = cfg.titleFont || 'system';
-    $('#bodyfont').value = cfg.bodyFont || 'system';
     // The dropdown shows the backend in force: the saved choice, or the
     // container's env default. The server never sends secrets back, only
     // whether one is saved — msShow() renders those hints.
@@ -1036,12 +1142,15 @@
     $('#zip').value = cfg.weatherZip || '';
     $('#wxintensity').value = String(cfg.weatherIntensity || 2);
     segSet('unitfmt', cfg.weatherUnits || 'f');
-    segSet('side', cfg.posterSide || 'right');
     segSet('clockfmt', cfg.clockFormat || '12h');
-    cfg.blockLayout ||= {}; cfg.blockVisibility ||= {};
-    syncDeps();
-    markTheme(); markTemplates(); rebuildBlockDropdown(); buildCarousel(); loadFrame();
+    cfg.blockLayout ||= {}; cfg.blockVisibility ||= {}; cfg.presets ||= [];
+    syncFx();
+    markTemplates(); renderChips(); renderPresets();
+    showEditorFor(selectedBlock);
+    loadFrame();
     loadDevices(false);
+    if (phone.matches) $('#editor').classList.add('collapsed');
+    if (!localStorage.marqueeTourDone) activateTab('tutorial');
   }
 
   $('#save').addEventListener('click', async () => {
@@ -1070,131 +1179,47 @@
       cfg.blockLayout = msg.layout || {};
       $('#status').textContent = 'Block layout changed — save to apply.';
     } else if (msg.type === 'marquee-selection') {
-      $('#element-select').value = msg.name;
+      selectedBlock = msg.name;
       Object.entries(msg.values || {}).forEach(([field, value]) => {
         const input = document.querySelector(`[data-layout-field="${field}"]`);
         if (!input) return;
+        if (field === 'color') { markSwatches(value); return; }
         input.value = value;
         const out = document.querySelector(`[data-value="${field}"]`);
         if (out) out.value = value;
       });
+      markSwatches((msg.values || {}).color || '');
       // '' = template default: no Justify button lit until one is chosen.
       segSet('align', (msg.values || {}).align || '');
-      if (msg.tap) { reveal(msg.name); $('#editor-wrap').open = true; }
-      updateRemoveButton();
+      showEditorFor(msg.name);
+      if (msg.tap) openEditorMobile();
     }
   });
-  $('#element-select').addEventListener('change', event => {
-    reveal(event.target.value);
-    selectBlock(event.target.value);
-  });
-  $('#add-block-select').addEventListener('change', event => {
-    const name = event.target.value;
-    event.target.value = '';  // one-shot: always resets to "+ Add…" after firing
-    if (name) addBlock(name);
-  });
-  $('#remove-block').addEventListener('click', () => {
-    const name = $('#element-select').value;
-    if (!TOGGLEABLE.includes(name)) return;
-    const tpl = cfg.template;
-    cfg.blockVisibility[tpl] ||= {};
-    cfg.blockVisibility[tpl][name] = false;
-    delete (cfg.blockLayout[tpl] || {})[name];
-    rebuildBlockDropdown();
-    sendCfg(); sendLayout();
-    selectBlock($('#element-select').value);
-    $('#status').textContent = BLOCK_LABEL[name] + ' removed — save to apply.';
-  });
+
   document.querySelectorAll('[data-layout-field]').forEach(input =>
     input.addEventListener('input', () => {
       const field = input.dataset.layoutField;
       const out = document.querySelector(`[data-value="${field}"]`);
       if (out) out.value = input.value;
       $('#frame').contentWindow.postMessage({ type: 'marquee-set',
-        field, value: field === 'font' ? input.value : Number(input.value) },
+        field, value: ['font', 'color'].includes(field) ? input.value : Number(input.value) },
         location.origin);
     }));
   $('#snap').addEventListener('click', () =>
     $('#frame').contentWindow.postMessage({ type: 'marquee-snap' }, location.origin));
-  // Share your look: export copies the full setup as JSON; import pastes
-  // someone else's. The server validates on save, so junk can't break it.
-  $('#export').addEventListener('click', async () => {
-    document.querySelectorAll('input[data-k]').forEach(i => { cfg[i.dataset.k] = i.checked; });
-    const text = JSON.stringify(cfg);
-    try { await navigator.clipboard.writeText(text);
-      $('#status').textContent = 'Setup copied to clipboard — paste it anywhere.'; }
-    catch (e) { window.prompt('Copy your setup:', text); }
-  });
-  $('#import').addEventListener('click', async () => {
-    const text = window.prompt('Paste an exported Marquee setup:');
-    if (!text) return;
-    try {
-      const incoming = JSON.parse(text);
-      const keep = cfg.hubIp;
-      cfg = { ...cfg, ...incoming, hubIp: keep };
-      const r = await (await fetch('/save', { method: 'POST',
-        body: JSON.stringify(cfg) })).json();
-      if (!r.ok) throw new Error(r.error);
-      location.reload();
-    } catch (e) { $('#status').textContent = 'Import failed: ' + e.message; }
-  });
+
+  $('#remove-block').addEventListener('click', () => removeBlock(selectedBlock));
   $('#reset-layout').addEventListener('click', () => {
     // Scoped to the template you're looking at — back to how it shipped,
     // added/removed blocks included, not just positions.
     const tpl = cfg.template;
     delete cfg.blockLayout[tpl];
     delete cfg.blockVisibility[tpl];
-    rebuildBlockDropdown();
+    renderChips();
     sendCfg(); sendLayout();
-    selectBlock($('#element-select').value);
+    selectBlock(selectedBlock);
     $('#status').textContent = 'This template reset to its defaults — save to apply.';
   });
-
-  // Phones: the preview column is a fixed bottom sheet. Pad the page so the
-  // last panel can scroll clear of it, and start with the editor folded.
-  const sheet = document.querySelector('.preview-col');
-  const phone = matchMedia('(max-width:760px)');
-  if (phone.matches) $('#editor-wrap').open = false;
-  new ResizeObserver(() => {
-    document.body.style.paddingBottom =
-      phone.matches ? sheet.offsetHeight + 16 + 'px' : '';
-    scaleFrame();
-  }).observe(sheet);
-
-  // A focused text field elsewhere on the page pops the on-screen keyboard,
-  // which shrinks the *visual* viewport without shrinking the fixed sheet
-  // pinned to the bottom of the (unchanged) layout viewport — the sheet
-  // then eats most of the little space the keyboard left, crushing the
-  // field you're actually typing into down to a sliver. Hide the sheet
-  // while a keyboard is up; nothing in it needs a keyboard to use.
-  if (window.visualViewport) {
-    const updateKeyboardState = () => {
-      if (!phone.matches) { sheet.classList.remove('kb-hidden'); return; }
-      const shrunk = visualViewport.height < window.innerHeight * 0.75;
-      sheet.classList.toggle('kb-hidden', shrunk);
-    };
-    visualViewport.addEventListener('resize', updateKeyboardState);
-  }
-
-  // Changelog slide-over
-  let notesLoaded = false;
-  async function openNotes() {
-    $('#notes-panel').classList.add('open'); $('#scrim').classList.add('on');
-    if (notesLoaded) return;
-    try {
-      const md = await (await fetch('/release-notes')).text();
-      $('#notes').innerHTML = md.replace(/&/g, '&amp;').replace(/</g, '&lt;')
-        .replace(/^## (.*)$/gm, '<b>$1</b>').replace(/^# .*$/gm, '');
-      notesLoaded = true;
-    } catch (e) { $('#notes').textContent = 'Release notes unavailable.'; }
-  }
-  function closeNotes() {
-    $('#notes-panel').classList.remove('open'); $('#scrim').classList.remove('on');
-  }
-  $('#notes-btn').addEventListener('click', openNotes);
-  $('#notes-close').addEventListener('click', closeNotes);
-  $('#scrim').addEventListener('click', closeNotes);
-  window.addEventListener('keydown', e => { if (e.key === 'Escape') closeNotes(); });
 
   load();
 </script>

@@ -43,7 +43,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "1.12.2"
+VERSION = "2.0.0"
 HUB_IP = os.environ.get("HUB_IP", "")
 PAGE_URL = os.environ.get("PAGE_URL", "")
 PLEX = os.environ.get("PLEX_HOST", "").rstrip("/")
@@ -172,7 +172,6 @@ DEFAULT_SETTINGS = {
     "accent": "",
     "titleFont": "system",
     "bodyFont": "system",
-    "posterSide": "right",
     "clockFormat": "12h",
     "clockSeconds": False,
     "showPlot": True, "showGenres": True, "showScores": True,
@@ -184,7 +183,8 @@ DEFAULT_SETTINGS = {
     "rotateSeconds": 30,
     "showWeather": False, "weatherZip": "", "weatherUnits": "f",
     "weatherFX": True, "weatherIntensity": 2,
-    "blockLayout": {},       # {template: {block: {x,y,width,scale,align,font}}}
+    "blockLayout": {},       # {template: {block: {x,y,width,scale,align,font,color}}}
+    "presets": [],           # user-saved looks: {name, template, blockLayout, blockVisibility, metaOpts}
     "blockVisibility": {},  # {template: {block: bool}}, sparse — only overrides
     "mediaBackend": "",       # "" = inherit MEDIA_BACKEND env (plex when unset)
     "plexHost": "", "plexToken": "",
@@ -213,17 +213,17 @@ EDITABLE_BLOCKS = ("clock", "weather", "identity", "meta", "plot", "ratings",
 # excluded: it's a content-driven badge (only appears when TMDB has a
 # credits-scene tag), not something toggling it on would ever show anything.
 TOGGLEABLE_BLOCKS = ("clock", "weather", "identity", "meta", "plot",
-                     "ratings", "progress", "poster")
+                     "ratings", "progress", "poster", "backdrop")
 # Each template's shipped block set, mirrored from the display:none rules in
 # output/index.html. A user's blockVisibility only needs to store where they
 # differ from this — the default itself never touches settings.json.
 TEMPLATE_DEFAULT_BLOCKS = {
-    "spotlight": ("clock", "identity", "meta", "plot", "ratings", "progress", "poster"),
-    "split": ("clock", "identity", "meta", "plot", "ratings", "progress", "poster"),
-    "hero": ("clock", "identity", "meta", "ratings", "progress"),
-    "lowerthird": ("clock", "identity", "meta", "ratings", "progress"),
-    "bigclock": ("clock", "identity", "meta", "plot", "progress"),
-    "street": ("clock", "identity", "meta", "plot", "ratings", "progress", "poster"),
+    "spotlight": ("backdrop", "clock", "identity", "meta", "plot", "ratings", "progress", "poster"),
+    "split": ("backdrop", "clock", "identity", "meta", "plot", "ratings", "progress", "poster"),
+    "hero": ("backdrop", "clock", "identity", "meta", "ratings", "progress"),
+    "lowerthird": ("backdrop", "clock", "identity", "meta", "ratings", "progress"),
+    "bigclock": ("backdrop", "clock", "identity", "meta", "plot", "progress"),
+    "street": ("backdrop", "clock", "identity", "meta", "plot", "ratings", "progress", "poster"),
 }
 
 _meta_cache = {}  # ratingKey -> extras dict
@@ -925,13 +925,13 @@ def load_settings():
         merged = {**DEFAULT_SETTINGS, **{k: v for k, v in saved.items() if k in DEFAULT_SETTINGS}}
         merged["blockLayout"] = migrate_block_layout(
             merged["blockLayout"], merged.get("template") or "spotlight")
-        return merged
+        return migrate_show_flags(merged)
     except Exception:
         return dict(DEFAULT_SETTINGS)
 
 
 def clean_block_position(position):
-    """One block's {x,y,width,scale,align,font}, numbers clamped to sane
+    """One block's {x,y,width,scale,align,font,color}, numbers clamped to sane
     ranges, unknown keys dropped."""
     item = {}
     for key, low, high in (("x", -100, 100), ("y", -100, 100),
@@ -943,6 +943,9 @@ def clean_block_position(position):
         item["align"] = position["align"]
     if position.get("font") in TITLE_FONTS:
         item["font"] = position["font"]
+    color = position.get("color")
+    if isinstance(color, str) and ACCENT_RE.match(color):
+        item["color"] = color
     return item
 
 
@@ -980,6 +983,53 @@ def clean_block_visibility(value):
         if per_template:
             cleaned[template] = per_template
     return cleaned
+
+
+def clean_presets(value):
+    """User-saved looks, capped and clamped: each rides the same cleaners as
+    the live config so Import can't smuggle junk through a preset."""
+    if not isinstance(value, list):
+        return []
+    cleaned = []
+    for preset in value[:20]:
+        if not isinstance(preset, dict) or preset.get("template") not in TEMPLATES:
+            continue
+        name = preset.get("name")
+        if not isinstance(name, str) or not name.strip():
+            continue
+        cleaned.append({
+            "name": name.strip()[:40],
+            "template": preset["template"],
+            "blockLayout": clean_block_layout(preset.get("blockLayout")),
+            "blockVisibility": clean_block_visibility(preset.get("blockVisibility")),
+            "metaOpts": {k: bool(preset.get("metaOpts", {}).get(k, True))
+                         for k in ("genres", "mediainfo", "rating", "runtime")},
+        })
+    return cleaned
+
+
+# Old flat presence gates -> per-template visibility overrides. The v2 settings
+# page has no global show* switches; presence lives in blockVisibility (which
+# now includes backdrop). Old saves and old exports still carry the flags, so
+# fold them in wherever they say "off", then neutralize to True — idempotent,
+# and an explicit visibility override always wins (setdefault).
+# ponytail: one-shot migration like migrate_block_layout; delete both together.
+SHOW_FLAG_BLOCKS = {"showPlot": "plot", "showClock": "clock",
+                    "showScores": "ratings", "showProgress": "progress",
+                    "backdrop": "backdrop"}
+
+
+def migrate_show_flags(settings):
+    if not isinstance(settings.get("blockVisibility"), dict):
+        settings["blockVisibility"] = {}
+    for flag, block in SHOW_FLAG_BLOCKS.items():
+        if settings.get(flag) is False:
+            for template in TEMPLATES:
+                if block in TEMPLATE_DEFAULT_BLOCKS[template]:
+                    settings["blockVisibility"].setdefault(
+                        template, {}).setdefault(block, False)
+        settings[flag] = True
+    return settings
 
 
 def visible_blocks(template, visibility):
@@ -1069,8 +1119,13 @@ class WebHandler(BaseHTTPRequestHandler):
             body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
             merged = {**DEFAULT_SETTINGS,
                       **{k: v for k, v in body.items() if k in DEFAULT_SETTINGS}}
-            if merged["posterSide"] not in ("left", "right"):
-                merged["posterSide"] = "right"
+            # Old-shape imports migrate on the way in too: pre-v1.10 flat
+            # blockLayout nests under the incoming template, and old flat
+            # show*/backdrop gates fold into blockVisibility — so an ancient
+            # export pasted into Import round-trips instead of losing data.
+            merged["blockLayout"] = migrate_block_layout(
+                merged["blockLayout"], merged.get("template") or "spotlight")
+            migrate_show_flags(merged)
             if merged["theme"] not in THEMES:
                 merged["theme"] = "amber"
             if merged["template"] not in TEMPLATES:
@@ -1123,6 +1178,7 @@ class WebHandler(BaseHTTPRequestHandler):
                 merged["hubIp"] = ""
             merged["blockLayout"] = clean_block_layout(merged["blockLayout"])
             merged["blockVisibility"] = clean_block_visibility(merged["blockVisibility"])
+            merged["presets"] = clean_presets(merged["presets"])
             atomic_write(SETTINGS_PATH, json.dumps(merged))
             self._send(json.dumps({"ok": True}), "application/json")
         except Exception as e:
@@ -1312,10 +1368,37 @@ def selftest():
     info = parse_session(ep, extras=lambda k, m: dict(SAMPLE_EXTRAS, stinger=[]))
     assert info["title"] == "Severance"
     assert info["subtitle"] == "S2 · E5 · The Devil Wears Prada 2"
-    merged = {**DEFAULT_SETTINGS, **{"posterSide": "left", "bogus": 1, "showPlot": False}}
-    assert "bogus" not in DEFAULT_SETTINGS and merged["posterSide"] == "left" \
+    merged = {**DEFAULT_SETTINGS, **{"bogus": 1, "showPlot": False}}
+    assert "bogus" not in DEFAULT_SETTINGS and "posterSide" not in DEFAULT_SETTINGS \
         and merged["showPlot"] is False and merged["showClock"] is True \
         and merged["template"] == "spotlight"
+    # show*-flag migration: off-flags become per-template visibility overrides
+    # (only on templates that carry the block), explicit overrides win, flags
+    # neutralize to True so the migration is idempotent.
+    mig = migrate_show_flags({"showPlot": False, "backdrop": False,
+                              "blockVisibility": {"spotlight": {"plot": True}}})
+    assert mig["showPlot"] is True and mig["backdrop"] is True
+    assert mig["blockVisibility"]["spotlight"]["plot"] is True  # explicit wins
+    assert mig["blockVisibility"]["split"]["plot"] is False
+    assert "plot" not in mig["blockVisibility"].get("hero", {})  # hero has no plot
+    assert mig["blockVisibility"]["hero"]["backdrop"] is False
+    assert all("backdrop" in TEMPLATE_DEFAULT_BLOCKS[t] for t in TEMPLATES)
+    assert "backdrop" in TOGGLEABLE_BLOCKS
+    # per-block color: hex accepted, junk dropped
+    assert clean_block_position({"color": "#AaBbCc"})["color"] == "#AaBbCc"
+    assert "color" not in clean_block_position({"color": "red"})
+    # presets: capped at 20, names clamped, nested shapes ride the cleaners
+    junk = [{"name": "  Look %d  " % i, "template": "spotlight",
+             "blockLayout": {"spotlight": {"identity": {"x": 999}}},
+             "blockVisibility": {"spotlight": {"plot": False}},
+             "metaOpts": {"genres": 0}} for i in range(25)]
+    junk.append({"name": "bad", "template": "nope"})
+    presets = clean_presets(junk)
+    assert len(presets) == 20 and presets[0]["name"] == "Look 0"
+    assert presets[0]["blockLayout"]["spotlight"]["identity"]["x"] == 100
+    assert presets[0]["metaOpts"]["genres"] is False \
+        and presets[0]["metaOpts"]["rating"] is True
+    assert clean_presets("junk") == []
     layout = clean_block_layout({"spotlight": {
         "identity": {"x": 12.345, "y": -200, "width": 140,
                      "scale": 9, "height": 50, "align": "center", "font": "bebas"},
@@ -1335,9 +1418,10 @@ def selftest():
                                             "stinger": True, "bogus": 1},
                                   "not-a-template": {"plot": False}})
     assert vis == {"street": {"plot": False, "weather": True}}
-    assert visible_blocks("hero", {}) == {"clock", "identity", "meta", "ratings", "progress"}
+    assert visible_blocks("hero", {}) == {"backdrop", "clock", "identity", "meta",
+                                          "ratings", "progress"}
     assert visible_blocks("hero", {"hero": {"plot": True, "clock": False}}) == \
-        {"identity", "meta", "ratings", "progress", "plot"}
+        {"backdrop", "identity", "meta", "ratings", "progress", "plot"}
     assert ACCENT_RE.match("#A1b2C3") and not ACCENT_RE.match("red") \
         and not ACCENT_RE.match("#12345")
     v = ET.fromstring(SAMPLE_SESSION)
