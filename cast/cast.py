@@ -184,7 +184,7 @@ DEFAULT_SETTINGS = {
     "rotateSeconds": 30,
     "showWeather": False, "weatherZip": "", "weatherUnits": "f",
     "weatherFX": True, "weatherIntensity": 2,
-    "fanartKey": "", "fanartType": "background", "fanartRotateSeconds": 30,
+    "fanartKey": "", "fanartType": "background", "fanartRotateSeconds": 600,
     "blockLayout": {},       # {template: {block: {x,y,width,scale,align,font,color}}}
     "presets": [],           # user-saved looks: {name, template, blockLayout, blockVisibility, metaOpts}
     "blockVisibility": {},  # {template: {block: bool}}, sparse — only overrides
@@ -241,6 +241,16 @@ FANART_TYPES = {
     "banner": ("moviebanner", "tvbanner"),
     "thumb": ("moviethumb", "tvthumb"),
 }
+
+
+def clamp_fanart_rotate(value):
+    """Fanart rotation seconds: 300 (5 min) floor — the Hub is ambient, not a
+    slideshow, and fanart.tv's CDN deserves the courtesy. 3600 ceiling."""
+    try:
+        seconds = int(value)
+    except (TypeError, ValueError):
+        return 600
+    return max(300, min(3600, seconds))
 
 
 def fanart_api_key(settings=None):
@@ -1140,7 +1150,7 @@ def clean_presets(value):
             if kept.get("fanartType") not in FANART_TYPES:
                 kept.pop("fanartType", None)
             if not (isinstance(kept.get("fanartRotateSeconds"), int)
-                    and 5 <= kept["fanartRotateSeconds"] <= 3600):
+                    and 300 <= kept["fanartRotateSeconds"] <= 3600):
                 kept.pop("fanartRotateSeconds", None)
             if kept:
                 item["extras"] = kept
@@ -1311,7 +1321,7 @@ class WebHandler(BaseHTTPRequestHandler):
             merged["weatherIntensity"] = clean_intensity(merged["weatherIntensity"])
             if merged["fanartType"] not in FANART_TYPES:
                 merged["fanartType"] = "background"
-            merged["fanartRotateSeconds"] = clamp_rotate(merged["fanartRotateSeconds"])
+            merged["fanartRotateSeconds"] = clamp_fanart_rotate(merged["fanartRotateSeconds"])
             merged["clockSeconds"] = bool(merged["clockSeconds"])
             if not (isinstance(merged["accent"], str)
                     and (merged["accent"] == "" or ACCENT_RE.match(merged["accent"]))):
@@ -1461,6 +1471,10 @@ def selftest():
     assert fanart_urls(_fa, True, {"fanartType": "bogus"}) == ["u2", "u1"]
     assert fanart_urls({}, True, {"fanartType": "background"}) == []
     assert fanart_api_key({"fanartKey": "abc"}) == "abc"
+    assert clamp_fanart_rotate(30) == 300      # 5-minute floor
+    assert clamp_fanart_rotate(99999) == 3600
+    assert clamp_fanart_rotate("junk") == 600
+    assert clamp_fanart_rotate(900) == 900
     assert "fanartKey" in SECRET_SETTINGS  # write-only, never served or exported
 
     # plex creds: settings page wins, env is the fallback
