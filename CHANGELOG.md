@@ -17,6 +17,14 @@
   frame rate also uncovered that fog had always dragged a whole-scene blur
   with it (7fps in software rendering) — the blur is gone, and every
   condition now runs at full speed.
+- New Fanart template: a blank canvas where fanart.tv artwork for whatever's
+  playing crossfades on a timer — backgrounds by default, or posters, logos,
+  clear art, banners, and thumbs. It ships with no blocks on purpose; add
+  only what you want over the art. Tap the background to pick the art type
+  and rotation speed; paste your free fanart.tv API key on the Connection
+  tab (stored server-side and write-only, like every key). Without a key it
+  falls back to the regular backdrop, and shared setups carry your art type
+  and pace — never your key.
 - The Weather editor grew a 'Try a condition' row: preview rain, snow, storm,
   fog, or cloudy — and force day or night — right in the settings preview, so
   you know exactly what to expect before the sky delivers it. Testing only;

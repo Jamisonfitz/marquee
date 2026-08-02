@@ -50,6 +50,16 @@
     linear-gradient(90deg, var(--bg) 8%, transparent 130%); opacity: .92; }
   body.flip .bg-shade { transform: scaleX(-1); }
 
+  /* Fanart template: rotating fanart.tv art is the whole scene. Two stacked
+     imgs crossfade; logos/clearart/posters letterbox instead of cropping. */
+  .fa { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover;
+    opacity: 0; transition: opacity 1.4s ease; display: none; }
+  body[data-template="fanart"] .fa { display: block; }
+  body[data-template="fanart"] .bg, body[data-template="fanart"] .bg-shade {
+    display: none; }
+  .fa.on { opacity: 1; }
+  body.fa-contain .fa { object-fit: contain; padding: 6%; box-sizing: border-box; }
+
   /* ── Blocks: each is a self-contained, internally designed group ─ */
   .stage { position: fixed; inset: 0; display: grid; box-sizing: border-box;
     padding: 6vh 5vw; column-gap: 4vw; row-gap: 0;
@@ -309,8 +319,9 @@
   body[data-template="street"].street-day .scene .np { filter: none; }
 
   @media (prefers-reduced-motion: reduce) {
-    .fog span, body[data-template="street"].wx-cloud::after,
+    body[data-template="street"].wx-cloud::after,
     body[data-template="street"] .scene .np { animation: none; }
+    .fa { transition: none; }
   }
 
   /* LED trim: the theme accent bleeds around the poster like backlighting
@@ -379,6 +390,7 @@
 </style>
 <body data-template="spotlight">
 <img class="bg" id="bg" alt="">
+<img class="fa" id="fa1" alt=""><img class="fa" id="fa2" alt="">
 <div class="bg-shade"></div>
 <div class="scene" id="scene"></div>
 <canvas class="wx-canvas" id="wxcanvas" aria-hidden="true"></canvas>
@@ -409,7 +421,7 @@
   // ?tpl= previews a template without changing saved settings — handy for
   // sharing a self-contained demo link (e.g. ?demo=1&tpl=street&wx=rain).
   const TPL_FORCE = new URLSearchParams(location.search).get('tpl');
-  const TEMPLATES = ['spotlight', 'split', 'hero', 'lowerthird', 'bigclock', 'street'];
+  const TEMPLATES = ['spotlight', 'split', 'hero', 'lowerthird', 'bigclock', 'street', 'fanart'];
   // ponytail: mirrors TEMPLATE_DEFAULT_BLOCKS in cast.py — no shared codegen
   // between the two, same as TEMPLATES/THEMES already being duplicated here.
   const TEMPLATE_DEFAULT_BLOCKS = {
@@ -419,6 +431,7 @@
     lowerthird: ['backdrop', 'clock', 'identity', 'meta', 'ratings', 'progress'],
     bigclock: ['backdrop', 'clock', 'identity', 'progress'],
     street: ['clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
+    fanart: [],
   };
   // A block outside its template's default set has no grid-area or template
   // CSS anchor to offset from, so it needs a real starting position the
@@ -798,6 +811,7 @@ ${bulbs.join('')}
     show('progress', shown.has('progress') && !!d.progress && c.showProgress !== false);
     show('poster', shown.has('poster') && !!d.poster);
     paintWx();
+    faApply(c, d);
     applyBlockLayout();
     if (EDIT) {
       const rendered = [...document.querySelectorAll('[data-layout]')]
@@ -813,6 +827,47 @@ ${bulbs.join('')}
       announced = true;
       const el = document.querySelector(`[data-layout="${selectedLayout}"]`);
       if (el) requestAnimationFrame(() => announceSelection(el, selectedLayout));
+    }
+  }
+
+  // ── Fanart template: crossfade through fanart.tv art on a timer ──
+  // Art-with-edges (logos, posters, clearart, banners) letterboxes; only
+  // backgrounds and thumbs crop to fill.
+  const FA_CONTAIN = ['poster', 'logo', 'clearart', 'banner'];
+  let faTimer = 0, faIdx = 0, faSig = '', faFront = 0;
+  function faShow(urls) {
+    const imgs = [$('fa1'), $('fa2')];
+    faFront = 1 - faFront;
+    const img = imgs[faFront], other = imgs[1 - faFront];
+    img.onload = () => { img.classList.add('on'); other.classList.remove('on'); };
+    img.onerror = () => { other.classList.remove('on'); };
+    img.src = urls[faIdx % urls.length];
+  }
+  function faApply(c, d) {
+    const on = document.body.dataset.template === 'fanart';
+    document.body.classList.toggle('fa-contain',
+      on && FA_CONTAIN.includes(c.fanartType));
+    // Demo rotates the demo films' backdrops so the preview shows the
+    // behavior; a live card with no key/match falls back to the backdrop.
+    let urls = [];
+    if (on) {
+      if (DEMO) urls = DEMOS.map(m => m.backdrop);
+      else if (d.fanart && d.fanart.length) urls = d.fanart;
+      else if (d.backdrop) urls = ['/backdrop.jpg?k=' + d.key];
+    }
+    const secs = Math.max(5, Number(c.fanartRotateSeconds) || 30);
+    const sig = urls.join('|') + '@' + secs;
+    if (sig === faSig) return;
+    faSig = sig;
+    clearInterval(faTimer); faTimer = 0;
+    if (!urls.length) {
+      $('fa1').classList.remove('on'); $('fa2').classList.remove('on');
+      return;
+    }
+    faIdx = 0;
+    faShow(urls);
+    if (urls.length > 1 && !REDUCE) {
+      faTimer = setInterval(() => { faIdx++; faShow(urls); }, secs * 1000);
     }
   }
 
