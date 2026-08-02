@@ -222,8 +222,8 @@ TEMPLATE_DEFAULT_BLOCKS = {
     "split": ("backdrop", "clock", "identity", "meta", "plot", "ratings", "progress", "poster"),
     "hero": ("backdrop", "clock", "identity", "meta", "ratings", "progress"),
     "lowerthird": ("backdrop", "clock", "identity", "meta", "ratings", "progress"),
-    "bigclock": ("backdrop", "clock", "identity", "meta", "plot", "progress"),
-    "street": ("backdrop", "clock", "identity", "meta", "plot", "ratings", "progress", "poster"),
+    "bigclock": ("backdrop", "clock", "identity", "progress"),
+    "street": ("clock", "identity", "meta", "plot", "ratings", "progress", "poster"),
 }
 
 _meta_cache = {}  # ratingKey -> extras dict
@@ -1410,7 +1410,9 @@ def selftest():
     assert mig["blockVisibility"]["split"]["plot"] is False
     assert "plot" not in mig["blockVisibility"].get("hero", {})  # hero has no plot
     assert mig["blockVisibility"]["hero"]["backdrop"] is False
-    assert all("backdrop" in TEMPLATE_DEFAULT_BLOCKS[t] for t in TEMPLATES)
+    assert all("backdrop" in TEMPLATE_DEFAULT_BLOCKS[t] for t in TEMPLATES if t != "street")
+    assert "backdrop" not in TEMPLATE_DEFAULT_BLOCKS["street"]
+    assert TEMPLATE_DEFAULT_BLOCKS["bigclock"] == ("backdrop", "clock", "identity", "progress")
     assert "backdrop" in TOGGLEABLE_BLOCKS
     # per-block color: hex accepted, junk dropped
     assert clean_block_position({"color": "#AaBbCc"})["color"] == "#AaBbCc"
