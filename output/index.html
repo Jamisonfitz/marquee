@@ -821,6 +821,12 @@ ${bulbs.join('')}
     show('poster', shown.has('poster') && !!d.poster);
     paintWx();
     applyBlockLayout();
+    if (EDIT) {
+      const rendered = [...document.querySelectorAll('[data-layout]')]
+        .filter(el => !el.hidden).map(el => el.dataset.layout);
+      if ($('bg').classList.contains('on')) rendered.push('backdrop');
+      parent.postMessage({ type: 'marquee-blocks', rendered }, location.origin);
+    }
     if (EDIT && !announced) {
       // First render: blocks finally have real sizes, so the settings sliders
       // can show true values instead of zeros.

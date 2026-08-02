@@ -43,7 +43,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-VERSION = "2.0.0"
+VERSION = "2.1.0"
 HUB_IP = os.environ.get("HUB_IP", "")
 PAGE_URL = os.environ.get("PAGE_URL", "")
 PLEX = os.environ.get("PLEX_HOST", "").rstrip("/")
@@ -985,9 +985,15 @@ def clean_block_visibility(value):
     return cleaned
 
 
+# Display-only keys a shared setup may carry along (never location or creds).
+PRESET_EXTRA_KEYS = ("clockFormat", "clockSeconds", "weatherFX",
+                     "weatherIntensity", "weatherUnits")
+
+
 def clean_presets(value):
     """User-saved looks, capped and clamped: each rides the same cleaners as
-    the live config so Import can't smuggle junk through a preset."""
+    the live config so Import can't smuggle junk through a preset. `author`
+    credits whoever exported a shared setup; `extras` are display-only keys."""
     if not isinstance(value, list):
         return []
     cleaned = []
@@ -997,14 +1003,36 @@ def clean_presets(value):
         name = preset.get("name")
         if not isinstance(name, str) or not name.strip():
             continue
-        cleaned.append({
+        item = {
             "name": name.strip()[:40],
             "template": preset["template"],
             "blockLayout": clean_block_layout(preset.get("blockLayout")),
             "blockVisibility": clean_block_visibility(preset.get("blockVisibility")),
             "metaOpts": {k: bool(preset.get("metaOpts", {}).get(k, True))
                          for k in ("genres", "mediainfo", "rating", "runtime")},
-        })
+        }
+        author = preset.get("author")
+        if isinstance(author, str) and author.strip():
+            item["author"] = author.strip()[:40]
+        extras = preset.get("extras")
+        if isinstance(extras, dict):
+            kept = {}
+            for k in PRESET_EXTRA_KEYS:
+                if k in extras:
+                    kept[k] = extras[k]
+            if kept.get("clockFormat") not in ("12h", "24h"):
+                kept.pop("clockFormat", None)
+            if kept.get("weatherUnits") not in ("f", "c"):
+                kept.pop("weatherUnits", None)
+            if not isinstance(kept.get("weatherIntensity"), int) \
+                    or not 1 <= kept.get("weatherIntensity", 0) <= 4:
+                kept.pop("weatherIntensity", None)
+            for boolean in ("clockSeconds", "weatherFX"):
+                if boolean in kept and not isinstance(kept[boolean], bool):
+                    kept.pop(boolean, None)
+            if kept:
+                item["extras"] = kept
+        cleaned.append(item)
     return cleaned
 
 
@@ -1399,6 +1427,14 @@ def selftest():
     assert presets[0]["metaOpts"]["genres"] is False \
         and presets[0]["metaOpts"]["rating"] is True
     assert clean_presets("junk") == []
+    # shared-setup credit + display extras: author clamped, junk extras dropped
+    shared = clean_presets([{"name": "Neon", "template": "street",
+                             "author": "  TRusselo  " + "x" * 60,
+                             "extras": {"clockFormat": "24h", "weatherIntensity": 9,
+                                        "weatherFX": "yes", "weatherZip": "30301",
+                                        "clockSeconds": True}}])[0]
+    assert shared["author"].startswith("TRusselo") and len(shared["author"]) == 40
+    assert shared["extras"] == {"clockFormat": "24h", "clockSeconds": True}
     layout = clean_block_layout({"spotlight": {
         "identity": {"x": 12.345, "y": -200, "width": 140,
                      "scale": 9, "height": 50, "align": "center", "font": "bebas"},
