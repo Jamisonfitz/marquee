@@ -10,15 +10,9 @@
 
 Marquee turns a Google Nest Hub into a clean now-playing display for Plex, Emby, or Jellyfin. It shows artwork, title, plot, genres, ratings, media details, progress, and a clock, then returns the Hub to ambient mode when playback stops.
 
-![One app, many looks — templates × themes × fonts](docs/screenshots/variety.jpg)
+![Marquee — Street template](https://github.com/Jamisonfitz/marquee/releases/download/v2.2.1/street.jpg)
 
-*Same app, many looks: seven templates, per-block colors and fonts, and every block movable — your setup will not look like anyone else&rsquo;s.*
-
-With your own library it looks like this — real posters, backdrops, and clear-logos straight from Plex:
-
-| | |
-|:---:|:---:|
-| ![Street with a real library](docs/screenshots/live-street.jpg) | ![Spotlight with a real library](docs/screenshots/live-spotlight.jpg) |
+*Seven templates, per-block colors and fonts, every block movable — your setup will not look like anyone else's.*
 
 ## Templates
 
@@ -26,15 +20,10 @@ Seven layouts, switchable live from the settings page:
 
 | | |
 |:---:|:---:|
-| ![Spotlight](docs/screenshots/spotlight.jpg) **Spotlight** — poster beside the full metadata stack | ![Hero](docs/screenshots/hero.jpg) **Hero** — big centered title over the backdrop |
-| ![Lower Third](docs/screenshots/lowerthird.jpg) **Lower Third** — broadcast-style chyron over full-bleed art | ![Big Clock](docs/screenshots/bigclock.jpg) **Big Clock** — ambient timepiece with a now-playing strip |
-| ![Street](docs/screenshots/street.jpg) **Street** — a living night scene: your poster glowing in a bulb-lit marquee, the movie logo sprayed on brick, real weather on the wall | ![Split](docs/screenshots/split.jpg) **Split** — hard split: full-height art wall beside the info column |
-
-Plus **Fanart** — a blank canvas where [fanart.tv](https://fanart.tv) artwork
-for whatever's playing crossfades on a timer (backgrounds, posters, logos,
-clear art, banners, or thumbs). It ships with no blocks; add only what you
-want over the art. Needs a free fanart.tv API key (Connection tab, or
-`FANART_API_KEY`).
+| ![Spotlight](https://github.com/Jamisonfitz/marquee/releases/download/v2.2.1/spotlight.jpg) **Spotlight** — poster beside the full metadata stack | ![Hero](https://github.com/Jamisonfitz/marquee/releases/download/v2.2.1/hero.jpg) **Hero** — big centered title over the backdrop |
+| ![Lower Third](https://github.com/Jamisonfitz/marquee/releases/download/v2.2.1/lowerthird.jpg) **Lower Third** — broadcast-style chyron over full-bleed art | ![Big Clock](https://github.com/Jamisonfitz/marquee/releases/download/v2.2.1/bigclock.jpg) **Big Clock** — ambient timepiece with a now-playing strip |
+| ![Street](https://github.com/Jamisonfitz/marquee/releases/download/v2.2.1/street.jpg) **Street** — a living night scene: your poster in a bulb-lit marquee, the logo sprayed on brick, real weather on the wall | ![Split](https://github.com/Jamisonfitz/marquee/releases/download/v2.2.1/split.jpg) **Split** — hard split: full-height art wall beside the info column |
+| ![Fanart](https://github.com/Jamisonfitz/marquee/releases/download/v2.2.1/fanart.jpg) **Fanart** — fanart.tv artwork rotating on a blank canvas; add only the blocks you want (free API key required) | |
 
 Every template is built from the same set of blocks — backdrop, clock, weather,
 title, metadata, plot, ratings, progress, poster — and every block carries its
@@ -46,7 +35,7 @@ never moves anything in Street.
 Settings v2 has no wall of options. The card fills the page; you edit what
 you're looking at.
 
-![Settings v2 — the card is the page](docs/screenshots/settings-design.jpg)
+![Settings v2 — the card is the page](https://github.com/Jamisonfitz/marquee/releases/download/v2.2.1/settings-design.jpg)
 
 - **Tap anything.** Tap a block on the live preview — or its chip below — and
   the editor shows just that block's controls: font, color, position, width,
@@ -70,7 +59,7 @@ you're looking at.
 
 | | |
 |:---:|:---:|
-| ![Contextual editor](docs/screenshots/settings-editor.jpg) | ![Guided tour](docs/screenshots/settings-tutorial.jpg) |
+| ![Contextual editor](https://github.com/Jamisonfitz/marquee/releases/download/v2.2.1/settings-editor.jpg) | ![Guided tour](https://github.com/Jamisonfitz/marquee/releases/download/v2.2.1/settings-tutorial.jpg) |
 
 ## Features
 
