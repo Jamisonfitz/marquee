@@ -1,4 +1,5 @@
 <!doctype html>
+<html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Marquee — Settings</title>
@@ -344,7 +345,7 @@
   </div>
 
   <!-- ═══════════ DESIGN ═══════════ -->
-  <div id="pane-design" role="tabpanel">
+  <div id="pane-design" role="tabpanel" aria-labelledby="tab-design">
     <div class="carousel" id="carousel">
       <button class="tcard" data-template="spotlight" type="button" title="Poster beside the full metadata stack — the classic look." aria-label="Spotlight template — Poster beside the full metadata stack — the classic look.">
         <img src="data:image/jpeg;base64,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" alt=""><b>Spotlight</b>
@@ -381,7 +382,7 @@
 
     <div class="preview-row">
       <div class="mq-side">
-        <div class="frame-box"><iframe id="frame" title="Live card preview"></iframe></div>
+        <div class="frame-box"><iframe id="frame" title="Live card preview" tabindex="-1"></iframe></div>
         <p class="side-sub">Demo data — every change previews instantly; tap any block
           to edit it. Nothing reaches the Hub until you save.</p>
         <div class="chips" id="chips" role="toolbar" aria-label="Blocks on the card"></div>
@@ -503,7 +504,7 @@
   </div>
 
   <!-- ═══════════ CONNECTION ═══════════ -->
-  <div id="pane-connection" role="tabpanel" hidden>
+  <div id="pane-connection" role="tabpanel" aria-labelledby="tab-connection" hidden>
   <div class="panel" id="sec-connect">
       <h2>Media server</h2>
       <div class="row"><label for="backend">Backend<small>Which server Marquee watches. Nothing changes until you press Save; a saved change is picked up within ~5s, no restart.</small></label>
@@ -550,14 +551,14 @@
   </div>
 
   <!-- ═══════════ WHAT'S NEW ═══════════ -->
-  <div id="pane-notes" role="tabpanel" hidden>
+  <div id="pane-notes" role="tabpanel" aria-labelledby="tab-notes" hidden>
     <h2>What&rsquo;s new</h2>
     <div class="prosebox" id="notes">Loading&hellip;</div>
     <p><a href="https://github.com/Jamisonfitz/marquee/releases">All releases on GitHub</a></p>
   </div>
 
   <!-- ═══════════ ABOUT ═══════════ -->
-  <div id="pane-about" role="tabpanel" hidden>
+  <div id="pane-about" role="tabpanel" aria-labelledby="tab-about" hidden>
     <h2>About</h2>
     <div class="prosebox">
       <p>Marquee casts a cinematic now-playing card from your media server to a
