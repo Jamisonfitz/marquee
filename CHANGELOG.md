@@ -1,84 +1,51 @@
 # Changelog
 
-## Unreleased
+## 2.2.0 — 2026-08-02
 
-- Every block-presence bug of the 'chip says on, card says nothing' kind is
-  gone: the block tables are now the single authority (the card's per-template
-  CSS no longer overrules them), so adding a block to any template actually
-  shows it — including Metadata, Plot, Ratings, and Poster on Big Clock, and
-  Plot/Poster on Hero and Lower Third, which had been silently impossible.
-  Chips also now verify a block really painted, not just that it isn't
-  flagged hidden.
-- Fog got real: the drifting gradient haze is now rising smoke — canvas
-  particles that climb from the street, drift, swell, and thin out, adapted
-  from dburrell's Particle Fog Generator (credited in CREDITS.md) and rebuilt
-  sprite-free so the card stays self-contained. Density follows Effect
-  intensity, and reduced-motion still gets a single still frame. Hunting its
-  frame rate also uncovered that fog had always dragged a whole-scene blur
-  with it (7fps in software rendering) — the blur is gone, and every
-  condition now runs at full speed.
-- New Fanart template: a blank canvas where fanart.tv artwork for whatever's
-  playing crossfades on a timer — backgrounds by default, or posters, logos,
-  clear art, banners, and thumbs. It ships with no blocks on purpose; add
-  only what you want over the art. Tap the background to pick the art type
-  and rotation speed; paste your free fanart.tv API key on the Connection
-  tab (stored server-side and write-only, like every key). Without a key it
-  falls back to the regular backdrop, and shared setups carry your art type
-  and pace — never your key.
-- The Weather editor grew a 'Try a condition' row: preview rain, snow, storm,
-  fog, or cloudy — and force day or night — right in the settings preview, so
-  you know exactly what to expect before the sky delivers it. Testing only;
-  nothing is saved, and 'Live' hands back to your real local weather.
+- **New: Fanart template.** Rotating fanart.tv artwork for whatever's
+  playing — backgrounds by default, or posters, logos, clear art, banners,
+  thumbs — crossfading on a timer you set. It starts empty on purpose: add
+  only the blocks you want over the art. Tap the background for art type and
+  speed; paste a free fanart.tv API key on the Connection tab (stored
+  server-side, write-only, like every key).
+- **New: fog is real smoke.** Rising particle smoke replaces the old flat
+  haze (technique by dburrell, credited), and fixing it uncovered a
+  frame-rate bug foggy weather had always carried — gone.
+- **New: try any weather.** The Weather editor previews rain, snow, storm,
+  fog, cloudy, and day/night on demand. Preview only; never saved.
+- **Fixed: adding a block always shows it.** Some combos (Metadata on Big
+  Clock, Plot on Hero and Lower Third…) silently never appeared. Chips also
+  now verify a block really painted before claiming it's on screen.
 
 ## 2.1.0 — 2026-08-01
 
-Two ideas from living with Settings v2 for a day.
-
-- **The chips stopped assuming.** A block can be on your card yet have nothing
-  to show — no scores for this title, an emptied metadata line, no poster art.
-  The old page let you select it and drag sliders at a block that wasn't on
-  screen, which felt broken even though it wasn't. Now the card reports what it
-  actually rendered after every frame: chips for absent blocks go dashed and
-  dim, and the editor says plainly that there's nothing to show right now and
-  that your changes still save for when there is.
-- **Looks are shareable now.** "Share this look" (Design tab) copies your
-  current screen setup as a small, versioned JSON file — the template, every
-  block's position, size, font, and color, plus the display settings that
-  travel well (clock style, weather effects — never your location or
-  credentials). It's credited to whatever name you choose, and the credit
-  travels: when someone imports it, it lands on their carousel as a preset
-  tagged "by you", one tap from applied. If people start trading these, the
-  format is ready for a community repo.
-- **About grew a memory.** The people who built pieces of this are now named
-  where users can see them: TRusselo's backends and filters, catt (the casting
-  engine underneath everything), and the CodePen artists behind the weather.
-  And if Marquee makes your living room better, there's a Buy Me a Coffee
-  button — entirely optional, it changes nothing.
-- **What's new reads like this now** — release cards that explain what changed
-  and why, instead of a wall of changelog text.
+- **New: share your look.** "Share this look" exports your setup as a small
+  credited file; anyone importing it gets it on their carousel as a preset
+  "by you", one tap from applied. Credentials and location never ride along.
+- **New: honest chips.** A block that's on your card but has nothing to show
+  for the current title goes dim and dashed, and the editor says so —
+  instead of letting you drag sliders at nothing.
+- **New: About credits + support.** Contributors, catt, and the CodePen
+  artists behind the weather are named — plus an optional Buy Me a Coffee
+  button.
+- What's new renders as release cards now instead of a wall of text.
 
 ## 2.0.0 — 2026-08-01
 
-Settings v2 — a ground-up rebuild of the settings page from a commissioned
-design, with the card itself at the center.
+Settings v2: the card fills the page and you edit what you're looking at.
 
-- **Tabs**: Design · Connection · Tutorial · What's new · About.
-- **Template carousel** with your own **savable presets** riding beside the
-  built-ins — snapshot a look, apply it later, Export backs it up.
-- **Block chips** under the preview: every block on the card is a pill —
-  tap to edit, × to remove, "+ Add" brings anything back. The credits badge
-  is always editable and now always visible in the demo preview.
-- **Contextual block editor**: font, NEW per-block color, position, width,
-  size — plus each block's own settings (clock style/seconds, weather FX /
-  intensity / ZIP / units, metadata pieces, title logo art) right where you
-  select it. The backdrop is selectable too — tap the card's empty background.
-- **Tutorial**: a six-step guided tour over the real UI, auto-launches once.
-- Mobile: the preview pins to the top at a sensible size; the keyboard can
-  never cover it. The editor folds behind an "Edit blocks" button.
-- Gone: the vibes/theme rows (per-block color replaces them; saved themes
-  keep tinting until you recolor), the card-wide font rows, and poster side.
-- Old saves and old exports import cleanly — presence flags and ancient
-  flat layouts migrate automatically.
+- **New: tap-to-edit.** Tap any block on the live preview — or the card's
+  background — and only that block's controls appear: font, per-block color
+  (new), position, size, and its own settings.
+- **New: presets.** Snapshot your current look onto the template carousel;
+  Export backs presets up.
+- **New: block chips.** One pill per block on the card — tap to edit,
+  × to remove, "+ Add" brings anything back.
+- **New: a six-step guided tour**, once, on first run — and a phone layout
+  where the preview pins to the top so the keyboard can never cover it.
+- **Removed:** the vibes/theme rows (per-block color replaces them; saved
+  themes keep tinting until you recolor), card-wide font rows, and poster
+  side. Every old save and export still imports cleanly.
 
 ## 1.12.2 — 2026-08-01
 

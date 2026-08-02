@@ -10,9 +10,10 @@ container, no accounts, no cloud.
 
 ## Why people like it
 
-- **Six designed templates** — Spotlight, Split, Hero, Lower Third, Big Clock,
-  and Street: a living night scene with marquee bulbs, sprayed logos, and
-  rain, snow, or fog that follows your real local weather.
+- **Seven templates** — Spotlight, Split, Hero, Lower Third, Big Clock,
+  Street (a living night scene with marquee bulbs, sprayed logos, and rain,
+  snow, or smoke-fog that follows your real weather), and Fanart (rotating
+  fanart.tv artwork on a blank canvas — bring a free fanart.tv API key).
 - **The settings page is the card.** Tap any block on the live preview and its
   controls appear — font, color, position, size, and that block's own
   settings. No wall of toggles; chips under the preview tell you exactly
