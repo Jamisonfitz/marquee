@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.2.1 — 2026-08-02
+
+- **Fanart rotation now floors at 5 minutes** (up to 60), picked from a
+  dropdown — the Hub is ambient, not a slideshow. The settings preview still
+  rotates fast so you can see it working.
+- **Weather only runs where it shows.** A weather block on one template no
+  longer keeps the weather fetch alive on every other template.
+- **Fixed: chips now see the card's edges.** A block dragged off the edge
+  reported as visible; now it ghosts its chip the moment it leaves the frame,
+  and truth updates on every slider move instead of waiting for a re-render.
+
 ## 2.2.0 — 2026-08-02
 
 - **New: Fanart template.** Rotating fanart.tv artwork for whatever's
