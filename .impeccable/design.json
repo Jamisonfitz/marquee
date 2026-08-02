@@ -1,0 +1,34 @@
+{
+  "sidecar": 1,
+  "for": "DESIGN.md",
+  "shadows": {
+    "save-glow": "0 0 14px rgba(229,168,59,.28), 0 6px 18px -8px rgba(229,168,59,.5)",
+    "save-glow-hover": "0 0 20px rgba(229,168,59,.42), 0 8px 22px -8px rgba(229,168,59,.6)",
+    "card-selected-halo": "0 0 0 1px rgba(229,168,59,.35), 0 0 16px -4px rgba(229,168,59,.4)",
+    "bezel": "0 0 0 1px #060809, 0 18px 44px -18px rgba(0,0,0,.85), 0 10px 60px -12px rgba(229,168,59,.14)",
+    "switch-knob-on": "0 0 7px rgba(229,168,59,.55)",
+    "tour-card": "0 12px 40px rgba(0,0,0,.7), 0 0 24px rgba(229,168,59,.18)",
+    "wordmark-glow": "0 0 18px rgba(229,168,59,.45), 0 2px 12px rgba(229,168,59,.25)"
+  },
+  "focus": {
+    "ring": "2px solid #E5A83B",
+    "offset": "2px",
+    "note": "never the default blue; color inputs get 3px offset"
+  },
+  "motion": {
+    "transitions": "0.15-0.2s ease on color/border/box-shadow only; no layout animation",
+    "tour-pulse": "outline-offset 4px→7px, 1.6s ease-in-out infinite; removed under prefers-reduced-motion",
+    "reduced-motion": "global kill: animation/transition durations → .001ms",
+    "save-hover": "translateY(-1px) + glow brighten"
+  },
+  "backgrounds": {
+    "page-wash": "radial-gradient(60% 340px at 28% 0, rgba(229,168,59,.09), transparent 70%), linear-gradient(180deg,#0D0F13,#0B0D10 480px)",
+    "panel-sheen": "linear-gradient(180deg,#171B21,#12151A) + inset 0 1px 0 rgba(242,238,230,.04)",
+    "bulb-rail": "repeating radial-gradient dots, 48px period, 1 amber bulb : 2 dim; masthead top+bottom only"
+  },
+  "grammar": {
+    "absent": "dashed border + opacity .55 (ghost chips, add tray, save-preset card)",
+    "dead-controls": "opacity .45 + disabled + cursor not-allowed",
+    "destructive-hover": "#E85454 on chip × only"
+  }
+}

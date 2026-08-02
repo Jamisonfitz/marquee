@@ -1,4 +1,5 @@
 <!doctype html>
+<html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Marquee</title>
@@ -49,6 +50,16 @@
     linear-gradient(90deg, var(--bg) 8%, transparent 130%); opacity: .92; }
   body.flip .bg-shade { transform: scaleX(-1); }
 
+  /* Fanart template: rotating fanart.tv art is the whole scene. Two stacked
+     imgs crossfade; logos/clearart/posters letterbox instead of cropping. */
+  .fa { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover;
+    opacity: 0; transition: opacity 1.4s ease; display: none; }
+  body[data-template="fanart"] .fa { display: block; }
+  body[data-template="fanart"] .bg, body[data-template="fanart"] .bg-shade {
+    display: none; }
+  .fa.on { opacity: 1; }
+  body.fa-contain .fa { object-fit: contain; padding: 6%; box-sizing: border-box; }
+
   /* ── Blocks: each is a self-contained, internally designed group ─ */
   .stage { position: fixed; inset: 0; display: grid; box-sizing: border-box;
     padding: 6vh 5vw; column-gap: 4vw; row-gap: 0;
@@ -56,6 +67,7 @@
   .stage.fade { opacity: 0; }
   .stage.hidden { display: none; }
   .block { min-width: 0; position: relative; padding: 1.2vh 0; }
+  .stage [data-layout][hidden] { display: none !important; }
   .block[hidden] { display: none !important; }
   /* per-block justify: left / center / right */
   .block.al-left   { justify-self: start;  text-align: left; }
@@ -133,8 +145,9 @@
 
   .b-progress { width: 42vw; }
   .bar { height: .9vh; background: var(--track); border-radius: 1vh; overflow: hidden; }
-  .fill { height: 100%; width: 0; background: var(--accent); border-radius: 1vh;
-    box-shadow: 0 0 1.2vh var(--accent-glow); transition: width 1s linear; }
+  .fill { height: 100%; width: 100%; background: var(--accent); border-radius: 1vh;
+    box-shadow: 0 0 1.2vh var(--accent-glow); transform: scaleX(0);
+    transform-origin: left; transition: transform 1s linear; }
   .paused .fill { background: var(--pause); }
   .ptime { display: flex; justify-content: space-between; margin-top: 1.2vh;
     color: var(--faint); font-size: 1.5vw; font-weight: 600;
@@ -192,7 +205,6 @@
     grid-template-areas: "." "identity" "meta" "ratings" "." "progress";
     justify-items: center; text-align: center; }
   body[data-template="hero"] .b-identity { justify-items: center; row-gap: 2.2vh; }
-  body[data-template="hero"] .b-plot, body[data-template="hero"] .b-poster { display: none; }
   body[data-template="hero"] .logo { max-height: 32vh; max-width: 56vw; }
   body[data-template="hero"] .title { font-size: 7vw; }
   body[data-template="hero"] .subtitle { font-size: 2.5vw; }
@@ -210,7 +222,6 @@
   body[data-template="lowerthird"] .stage::before { content: ""; position: absolute;
     left: 0; right: 0; bottom: 0; height: 44vh; pointer-events: none;
     background: linear-gradient(transparent, rgba(4, 5, 7, .88) 62%); }
-  body[data-template="lowerthird"] .b-plot, body[data-template="lowerthird"] .b-poster { display: none; }
   body[data-template="lowerthird"] .b-identity { margin-left: 5vw; row-gap: .8vh; }
   body[data-template="lowerthird"] .b-meta { margin-left: 5vw; }
   body[data-template="lowerthird"] .b-ratings { margin-right: 5vw; align-self: end; }
@@ -231,8 +242,6 @@
   body[data-template="bigclock"] .clock { font-size: 15vw; font-weight: 800;
     color: var(--accent); letter-spacing: -.02em;
     text-shadow: 0 0 6vh var(--accent-glow), 0 1vh 5vh rgba(0,0,0,.6); }
-  body[data-template="bigclock"] .b-meta, body[data-template="bigclock"] .b-plot,
-  body[data-template="bigclock"] .b-ratings, body[data-template="bigclock"] .b-poster { display: none; }
   body[data-template="bigclock"] .b-identity { justify-items: center; row-gap: .6vh; }
   body[data-template="bigclock"] .logo { max-height: 9vh; max-width: 24vw; }
   body[data-template="bigclock"] .title { font-size: 2.4vw; color: var(--text-soft); }
@@ -267,29 +276,9 @@
     display: none; }
   body[data-template="street"].wx-rain .wx-canvas,
   body[data-template="street"].wx-snow .wx-canvas,
+  body[data-template="street"].wx-fog .wx-canvas,
   body[data-template="street"].wx-storm .wx-canvas { display: block; }
 
-  /* Fog: three soft layers that drift on their own speeds and pulse opacity
-     independently, under a blur so it reads as haze rather than a flat wash.
-     Technique adapted from Braeden Craig's CSS fog (which uses Daniel
-     Stuart's fog PNGs); rebuilt PNG-free with gradient tiles so the card
-     stays self-contained. */
-  @keyframes fog-move { from { background-position: 0 0; } to { background-position: -64vw 0; } }
-  @keyframes fog-op1 { 0%,100% { opacity: .12; } 22% { opacity: .5; } 40% { opacity: .3; } 58% { opacity: .42; } 80% { opacity: .18; } }
-  @keyframes fog-op2 { 0%,100% { opacity: .5; } 25% { opacity: .22; } 50% { opacity: .14; } 80% { opacity: .34; } }
-  @keyframes fog-op3 { 0%,100% { opacity: .78; } 27% { opacity: .24; } 52% { opacity: .6; } 68% { opacity: .32; } }
-  .fog { position: fixed; inset: 0; pointer-events: none; z-index: 3; display: none;
-    opacity: var(--wx-layer, .72); filter: blur(2px) saturate(1.05); }
-  body[data-template="street"].wx-fog .fog { display: block; }
-  .fog span { position: absolute; inset: 0; background-repeat: repeat-x;
-    background-image: radial-gradient(ellipse 50% 62% at 50% 55%,
-      rgba(216,224,236,.85), rgba(216,224,236,0) 72%); }
-  .fog span:nth-child(1) { background-size: 64vw 130vh;
-    animation: fog-move 34s linear infinite, fog-op1 10s ease-in-out infinite; }
-  .fog span:nth-child(2) { background-size: 52vw 150vh;
-    animation: fog-move 23s linear infinite, fog-op2 21s ease-in-out infinite; }
-  .fog span:nth-child(3) { background-size: 78vw 120vh;
-    animation: fog-move 44s linear infinite, fog-op3 17s ease-in-out infinite; }
 
   /* Overcast: a slow, subtle cloud-shadow drift instead of flat dimming alone. */
   @keyframes cloud-drift { 0%, 100% { transform: translateX(-4%); } 50% { transform: translateX(4%); } }
@@ -303,7 +292,7 @@
   .scene svg { filter: brightness(var(--sb, 1)) blur(var(--sblur, 0px)); }
   body[data-template="street"].wx-cloud { --sb: .82; }
   body[data-template="street"].wx-storm { --sb: .74; }
-  body[data-template="street"].wx-fog { --sb: .96; --sblur: 2.6px; }
+  body[data-template="street"].wx-fog { --sb: .93; }
   body[data-template="street"].street-day { --sb: 1.75; }
   body[data-template="street"].street-day.wx-cloud { --sb: 1.35; }
   body[data-template="street"].street-day.wx-storm { --sb: 1.2; }
@@ -330,8 +319,9 @@
   body[data-template="street"].street-day .scene .np { filter: none; }
 
   @media (prefers-reduced-motion: reduce) {
-    .fog span, body[data-template="street"].wx-cloud::after,
+    body[data-template="street"].wx-cloud::after,
     body[data-template="street"] .scene .np { animation: none; }
+    .fa { transition: none; }
   }
 
   /* LED trim: the theme accent bleeds around the poster like backlighting
@@ -400,10 +390,10 @@
 </style>
 <body data-template="spotlight">
 <img class="bg" id="bg" alt="">
+<img class="fa" id="fa1" alt=""><img class="fa" id="fa2" alt="">
 <div class="bg-shade"></div>
 <div class="scene" id="scene"></div>
 <canvas class="wx-canvas" id="wxcanvas" aria-hidden="true"></canvas>
-<div class="fog" id="fog" aria-hidden="true"><span></span><span></span><span></span></div>
 <div class="stage hidden">
   <div class="block b-clock" data-layout="clock"><div class="clock" id="clock"></div></div>
   <div class="block b-weather" data-layout="weather"><div class="wx" id="wx"></div></div>
@@ -431,7 +421,7 @@
   // ?tpl= previews a template without changing saved settings — handy for
   // sharing a self-contained demo link (e.g. ?demo=1&tpl=street&wx=rain).
   const TPL_FORCE = new URLSearchParams(location.search).get('tpl');
-  const TEMPLATES = ['spotlight', 'split', 'hero', 'lowerthird', 'bigclock', 'street'];
+  const TEMPLATES = ['spotlight', 'split', 'hero', 'lowerthird', 'bigclock', 'street', 'fanart'];
   // ponytail: mirrors TEMPLATE_DEFAULT_BLOCKS in cast.py — no shared codegen
   // between the two, same as TEMPLATES/THEMES already being duplicated here.
   const TEMPLATE_DEFAULT_BLOCKS = {
@@ -439,8 +429,9 @@
     split: ['backdrop', 'clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
     hero: ['backdrop', 'clock', 'identity', 'meta', 'ratings', 'progress'],
     lowerthird: ['backdrop', 'clock', 'identity', 'meta', 'ratings', 'progress'],
-    bigclock: ['backdrop', 'clock', 'identity', 'meta', 'plot', 'progress'],
-    street: ['backdrop', 'clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
+    bigclock: ['backdrop', 'clock', 'identity', 'progress'],
+    street: ['clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
+    fanart: [],
   };
   // A block outside its template's default set has no grid-area or template
   // CSS anchor to offset from, so it needs a real starting position the
@@ -820,10 +811,13 @@ ${bulbs.join('')}
     show('progress', shown.has('progress') && !!d.progress && c.showProgress !== false);
     show('poster', shown.has('poster') && !!d.poster);
     paintWx();
+    faApply(c, d);
     applyBlockLayout();
     if (EDIT) {
       const rendered = [...document.querySelectorAll('[data-layout]')]
-        .filter(el => !el.hidden).map(el => el.dataset.layout);
+        .filter(el => !el.hidden && el.getClientRects().length > 0
+          && el.getBoundingClientRect().height > 1)
+        .map(el => el.dataset.layout);
       if ($('bg').classList.contains('on')) rendered.push('backdrop');
       parent.postMessage({ type: 'marquee-blocks', rendered }, location.origin);
     }
@@ -833,6 +827,47 @@ ${bulbs.join('')}
       announced = true;
       const el = document.querySelector(`[data-layout="${selectedLayout}"]`);
       if (el) requestAnimationFrame(() => announceSelection(el, selectedLayout));
+    }
+  }
+
+  // ── Fanart template: crossfade through fanart.tv art on a timer ──
+  // Art-with-edges (logos, posters, clearart, banners) letterboxes; only
+  // backgrounds and thumbs crop to fill.
+  const FA_CONTAIN = ['poster', 'logo', 'clearart', 'banner'];
+  let faTimer = 0, faIdx = 0, faSig = '', faFront = 0;
+  function faShow(urls) {
+    const imgs = [$('fa1'), $('fa2')];
+    faFront = 1 - faFront;
+    const img = imgs[faFront], other = imgs[1 - faFront];
+    img.onload = () => { img.classList.add('on'); other.classList.remove('on'); };
+    img.onerror = () => { other.classList.remove('on'); };
+    img.src = urls[faIdx % urls.length];
+  }
+  function faApply(c, d) {
+    const on = document.body.dataset.template === 'fanart';
+    document.body.classList.toggle('fa-contain',
+      on && FA_CONTAIN.includes(c.fanartType));
+    // Demo rotates the demo films' backdrops so the preview shows the
+    // behavior; a live card with no key/match falls back to the backdrop.
+    let urls = [];
+    if (on) {
+      if (DEMO) urls = DEMOS.map(m => m.backdrop);
+      else if (d.fanart && d.fanart.length) urls = d.fanart;
+      else if (d.backdrop) urls = ['/backdrop.jpg?k=' + d.key];
+    }
+    const secs = Math.max(5, Number(c.fanartRotateSeconds) || 30);
+    const sig = urls.join('|') + '@' + secs;
+    if (sig === faSig) return;
+    faSig = sig;
+    clearInterval(faTimer); faTimer = 0;
+    if (!urls.length) {
+      $('fa1').classList.remove('on'); $('fa2').classList.remove('on');
+      return;
+    }
+    faIdx = 0;
+    faShow(urls);
+    if (urls.length > 1 && !REDUCE) {
+      faTimer = setInterval(() => { faIdx++; faShow(urls); }, secs * 1000);
     }
   }
 
@@ -972,8 +1007,10 @@ ${bulbs.join('')}
   // / ?day= test override) triggers the fetch; neither is coupled to the
   // other, so you can have the chip without effects or vice-versa.
   let lastWx = null;
-  const WX_FORCE = new URLSearchParams(location.search).get('wx');
-  const DAY_FORCE = new URLSearchParams(location.search).get('day');
+  // let, not const: the settings editor can retune the force live via the
+  // marquee-wx message — same semantics as ?wx=/?day=, preview-only.
+  let WX_FORCE = new URLSearchParams(location.search).get('wx');
+  let DAY_FORCE = new URLSearchParams(location.search).get('day');
   const wxWord = c =>
     c == null ? '' :
     c >= 95 ? 'storms' :
@@ -1001,10 +1038,10 @@ ${bulbs.join('')}
   // particle opacity, and the CSS opacity of the fog/cloud layers. Level 2
   // is the default — present but easy to ignore in peripheral vision.
   const WX_LEVELS = {
-    1: { rain: 90,  storm: 150, snow: 65,  alpha: .34, layer: .5 },
-    2: { rain: 160, storm: 240, snow: 110, alpha: .5,  layer: .72 },
-    3: { rain: 250, storm: 360, snow: 165, alpha: .64, layer: .9 },
-    4: { rain: 360, storm: 480, snow: 230, alpha: .82, layer: 1 },
+    1: { rain: 90,  storm: 150, snow: 65,  fog: 9,  alpha: .34, layer: .5 },
+    2: { rain: 160, storm: 240, snow: 110, fog: 14, alpha: .5,  layer: .72 },
+    3: { rain: 250, storm: 360, snow: 165, fog: 20, alpha: .64, layer: .9 },
+    4: { rain: 360, storm: 480, snow: 230, fog: 27, alpha: .82, layer: 1 },
   };
   const WXI_FORCE = new URLSearchParams(location.search).get('wxi');
   let wxAlpha = WX_LEVELS[2].alpha, wxLevelUsed = 0;
@@ -1026,6 +1063,47 @@ ${bulbs.join('')}
       vy: rnd(6, 15), vx: rnd(-0.4, 0.9), len: 0 });
     drops.forEach(d => d.len = d.vy * 1.6);
   }
+  // Fog adapts dburrell's "Particle Fog Generator" (canvas smoke puffs that
+  // rise from the bottom, drift, grow, and fade — credited in CREDITS.md).
+  // His smoke PNG is replaced by a procedural sprite (layered soft radial
+  // blobs on an offscreen canvas) so the card stays self-contained, and the
+  // one-shot burst becomes a looping field: a particle past its life
+  // respawns at the bottom with fresh randoms.
+  // Sprites are baked at five fixed sizes per variant and always drawn
+  // unscaled: a continuously-rescaled canvas-source drawImage forces a full
+  // resample every frame in software rasterizers (measured 7fps vs 50).
+  const FOG_SIZES = [120, 150, 180, 210, 240];
+  let fogSprites = null;
+  function makeFogSprites() {
+    fogSprites = [0, 1].map(v => FOG_SIZES.map(size => {
+      const c = document.createElement('canvas'); c.width = c.height = size;
+      const g = c.getContext('2d'), h = size / 2, k = size / 192;
+      for (let i = 0; i < 5; i++) {
+        const x = h + rnd(-34, 34) * k, y = h + rnd(-26, 26) * k,
+          r = rnd(40, 78 - v * 12) * k;
+        const grad = g.createRadialGradient(x, y, 0, x, y, r);
+        grad.addColorStop(0, 'rgba(212,220,232,.16)');
+        grad.addColorStop(1, 'rgba(212,220,232,0)');
+        g.fillStyle = grad;
+        g.beginPath(); g.arc(x, y, r, 0, 6.2832); g.fill();
+      }
+      return c;
+    }));
+  }
+  function seedFog(n) {
+    if (!fogSprites) makeFogSprites();
+    drops = []; splashes = [];
+    for (let i = 0; i < n; i++) drops.push(fogParticle(Math.random()));
+  }
+  function fogParticle(frac) {
+    // frac staggers the field at seed time so fog never starts empty.
+    const life = rnd(9, 15) * 60;                       // frames (~60fps)
+    return { sprite: Math.random() < 0.5 ? 0 : 1,
+      x: rnd(-wxW * 0.2, wxW), y: wxH - rnd(0, wxH * 0.12),
+      rise: rnd(0.22, 0.55), drift: rnd(0.08, 0.45),
+      size: rnd(120, 210), grow: rnd(0.06, 0.14),
+      maxA: rnd(0.75, 1.3), age: frac * life, life };
+  }
   function seedSnow(n) {
     drops = []; splashes = [];
     for (let i = 0; i < n; i++) drops.push({
@@ -1042,6 +1120,25 @@ ${bulbs.join('')}
         f.y += f.vy; f.x += f.wind + Math.sin((f.ph += 0.01)) * 0.4;
         if (f.y > wxH + 4) { f.y = -4; f.x = rnd(0, wxW); }
         if (f.x > wxW + 4) f.x = -4; else if (f.x < -4) f.x = wxW + 4;
+      }
+      wxCtx.globalAlpha = 1;
+    } else if (wxMode === 'fog') {
+      const boost = wxAlpha * 2;                       // intensity → density
+      for (let i = 0; i < drops.length; i++) {
+        const f = drops[i];
+        const frac = f.age / f.life;
+        if (frac >= 1) { drops[i] = fogParticle(0); continue; }
+        // fade in fast, fade out across the back half (pen fades linearly;
+        // the fade-in stops respawn pops)
+        const a = Math.min(frac / 0.15, (1 - frac) / 0.55, 1) * f.maxA * boost;
+        wxCtx.globalAlpha = Math.max(0, Math.min(0.85, a));
+        const s = f.size + f.grow * f.age;
+        const step = Math.max(0, Math.min(FOG_SIZES.length - 1,
+          Math.round((s - FOG_SIZES[0]) / 30)));
+        const sprite = fogSprites[f.sprite][step];
+        wxCtx.drawImage(sprite, (f.x - sprite.width / 2) | 0,
+          (f.y - sprite.width / 2) | 0);
+        f.x += f.drift; f.y -= f.rise; f.age++;
       }
       wxCtx.globalAlpha = 1;
     } else {
@@ -1075,6 +1172,7 @@ ${bulbs.join('')}
   function wxSeed() {
     const L = WX_LEVELS[wxLevelUsed]; wxAlpha = L.alpha;
     if (wxMode === 'snow') seedSnow(L.snow);
+    else if (wxMode === 'fog') seedFog(L.fog);
     else seedRain(wxMode === 'storm' ? L.storm : L.rain);
   }
   function wxStart(mode) {
@@ -1112,6 +1210,7 @@ ${bulbs.join('')}
     if (document.body.classList.contains('wx-snow')) wxStart('snow');
     else if (document.body.classList.contains('wx-storm')) wxStart('storm');
     else if (document.body.classList.contains('wx-rain')) wxStart('rain');
+    else if (document.body.classList.contains('wx-fog')) wxStart('fog');
     else wxStop();
   }
   function paintWx() {
@@ -1141,6 +1240,12 @@ ${bulbs.join('')}
       draftCfg = msg.cfg || {};
       if (fontChanged || logoChanged) peekTitle();
       if (lastD) render(lastD), paint();
+      wxTick();
+    } else if (msg.type === 'marquee-wx') {
+      // Condition preview from the editor: force a weather look without
+      // touching any saved setting. null/undefined = back to live weather.
+      WX_FORCE = msg.wx || null;
+      DAY_FORCE = msg.day != null ? String(msg.day) : null;
       wxTick();
     } else if (msg.type === 'marquee-demo-next') {
       if (DEMO && DEMOS.length) {
@@ -1212,7 +1317,8 @@ ${bulbs.join('')}
     const off = Math.min(
       prog.offsetMs + (state === 'playing' ? Date.now() - fetchedAt : 0),
       prog.durationMs);
-    $('fill').style.width = (off / prog.durationMs * 100).toFixed(2) + '%';
+    $('fill').style.transform =
+      'scaleX(' + Math.min(1, off / prog.durationMs).toFixed(4) + ')';
     $('elapsed').textContent = fmt(off);
     $('remain').textContent = state === 'paused'
       ? 'Paused' : fmt(prog.durationMs - off) + ' left';

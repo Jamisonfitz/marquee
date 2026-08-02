@@ -1,4 +1,5 @@
 <!doctype html>
+<html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Marquee — Settings</title>
@@ -197,6 +198,14 @@
     box-shadow: 0 0 7px rgba(229,168,59,.7); }
   .metachips input:focus-visible + span { outline: 2px solid var(--amber);
     outline-offset: 2px; }
+  /* Weather condition preview: quiet tester chips; the active one is lit. */
+  .wx-preview { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+  .wx-preview button { border: 1px dashed var(--line); border-radius: 99px;
+    background: none; color: var(--mut); font-size: 12px; font-weight: 650;
+    padding: 7px 11px; cursor: pointer; }
+  .wx-preview button:hover { color: var(--text); border-color: rgba(229,168,59,.5); }
+  .wx-preview button.on { border-style: solid; border-color: var(--amber);
+    color: var(--amber); background: rgba(229,168,59,.07); }
   .sliders { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px;
     padding-top: 10px; border-top: 1px solid var(--line); margin-top: 4px; }
   .slider label { display: flex; justify-content: space-between;
@@ -299,8 +308,21 @@
     .editor { position: static; margin-top: 12px; }
     .editor.collapsed { display: none; }
     #editor-toggle { display: block; }
-    .chip > .chip-label { padding: 11px 6px 11px 15px; }
-    .chip.no-x > .chip-label, .chip.add > .chip-label { padding-right: 15px; }
+    /* Touch floor: every target ≥44px effective. The chip × is destructive —
+       it gets real width, not an invisible hit-halo that could eat label taps. */
+    .chip > .chip-label { padding: 13px 6px 13px 16px; }
+    .chip.no-x > .chip-label, .chip.add > .chip-label { padding-right: 16px; }
+    .chip > .chip-x { min-width: 44px; padding: 0 13px 0 7px; font-size: 16px; }
+    .tabs button { min-height: 44px; }
+    .secondary, .linkbtn { min-height: 44px; }
+    .tour .primary { min-height: 44px; padding: 10px 18px; }
+    .add-tray button { padding: 12px 16px; }
+    .metachips span { padding: 11px 15px; }
+    .swatches button, .swatches input[type=color] { width: 38px; height: 38px; }
+    .tcard .pdel { width: 28px; height: 28px; font-size: 15px; }
+    .slider input { height: 44px; }
+    select, input[type=text], input[type=password], input[type=number] {
+      min-height: 44px; }
     .row { flex-wrap: wrap; row-gap: 8px; }
     .row label { flex: 1 1 100%; }
     .row > *:not(label) { margin-left: auto; }
@@ -331,7 +353,7 @@
   </div>
 
   <!-- ═══════════ DESIGN ═══════════ -->
-  <div id="pane-design" role="tabpanel">
+  <div id="pane-design" role="tabpanel" aria-labelledby="tab-design">
     <div class="carousel" id="carousel">
       <button class="tcard" data-template="spotlight" type="button" title="Poster beside the full metadata stack — the classic look." aria-label="Spotlight template — Poster beside the full metadata stack — the classic look.">
         <img src="data:image/jpeg;base64,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" alt=""><b>Spotlight</b>
@@ -351,6 +373,9 @@
       <button class="tcard" data-template="bigclock" type="button" title="Ambient timepiece with a small now-playing strip." aria-label="Big Clock template — Ambient timepiece with a small now-playing strip.">
         <img src="data:image/jpeg;base64,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" alt=""><b>Big Clock</b>
       </button>
+      <button class="tcard" data-template="fanart" type="button" title="Rotating fanart.tv artwork fills the screen; starts empty — add only the blocks you want. Needs a free fanart.tv API key (Connection tab)." aria-label="Fanart template — Rotating fanart.tv artwork fills the screen; starts empty, add only the blocks you want. Needs a free fanart.tv API key.">
+        <img src='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><rect width="320" height="200" fill="%23222B36"/><circle cx="248" cy="52" r="22" fill="%23E8DFC8" opacity=".85"/><path d="M0 150 L70 90 L130 140 L190 80 L260 140 L320 110 V200 H0z" fill="%23151C26"/><path d="M0 170 L60 130 L140 175 L220 125 L320 165 V200 H0z" fill="%230C1017"/><rect x="244" y="0" width="76" height="200" fill="%233A2E3C" opacity=".5"/><rect x="286" y="0" width="34" height="200" fill="%23503A46" opacity=".55"/><g fill="%23C9973B"><circle cx="142" cy="186" r="4"/><circle cx="160" cy="186" r="4" opacity=".4"/><circle cx="178" cy="186" r="4" opacity=".4"/></g></svg>' alt=""><b>Fanart</b>
+      </button>
       <!-- preset cards render here -->
       <button class="tcard addcard" id="save-preset" type="button"
         title="Back up the current template + block layout as a preset"
@@ -368,7 +393,7 @@
 
     <div class="preview-row">
       <div class="mq-side">
-        <div class="frame-box"><iframe id="frame" title="Live card preview"></iframe></div>
+        <div class="frame-box"><iframe id="frame" title="Live card preview" tabindex="-1"></iframe></div>
         <p class="side-sub">Demo data — every change previews instantly; tap any block
           to edit it. Nothing reaches the Hub until you save.</p>
         <div class="chips" id="chips" role="toolbar" aria-label="Blocks on the card"></div>
@@ -449,6 +474,46 @@
                 <button data-v="f" type="button">&deg;F</button><button data-v="c" type="button">&deg;C</button>
               </div>
             </div>
+            <div class="ed-row wx-preview-row">
+              <span class="ed-lab">Try a condition<small>Preview only — never saved. Effects show on the Street template.</small></span>
+              <div class="wx-preview" id="wx-preview" role="group" aria-label="Preview a weather condition">
+                <button data-wx="" class="on" type="button" title="Back to your real local weather">Live</button>
+                <button data-wx="rain" type="button">Rain</button>
+                <button data-wx="snow" type="button">Snow</button>
+                <button data-wx="storm" type="button">Storm</button>
+                <button data-wx="fog" type="button">Fog</button>
+                <button data-wx="cloud" type="button">Cloudy</button>
+              </div>
+            </div>
+            <div class="ed-row wx-preview-row" id="row-daynight">
+              <span class="ed-lab">Time of day</span>
+              <div class="seg" id="dayfmt">
+                <button data-v="" class="on" type="button" title="Follow the real clock">Live</button>
+                <button data-v="1" type="button">Day</button>
+                <button data-v="0" type="button">Night</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="ctx-fanart" hidden>
+            <div class="ed-row">
+              <label for="fatype">Art type<small>Which fanart.tv art rotates on screen. Backgrounds fill the frame; posters, logos, clear art, and banners letterbox.</small></label>
+              <select id="fatype" class="mini">
+                <option value="background">Backgrounds</option>
+                <option value="poster">Posters</option>
+                <option value="logo">Logos</option>
+                <option value="clearart">Clear art</option>
+                <option value="banner">Banners</option>
+                <option value="thumb">Thumbs</option>
+              </select>
+            </div>
+            <div class="ed-row">
+              <label for="farotate">Rotate every<small>Seconds between artworks — the best-liked art for the playing title cycles through</small></label>
+              <input type="number" id="farotate" class="mini" min="5" max="3600" step="5" inputmode="numeric">
+            </div>
+            <div class="ed-row" id="fanart-key-note" hidden>
+              <span class="ed-lab">Needs a key<small>Add your free fanart.tv API key on the Connection tab — until then this template falls back to the regular backdrop.</small></span>
+            </div>
           </div>
 
           <div id="ctx-meta" class="ed-row" hidden>
@@ -490,7 +555,7 @@
   </div>
 
   <!-- ═══════════ CONNECTION ═══════════ -->
-  <div id="pane-connection" role="tabpanel" hidden>
+  <div id="pane-connection" role="tabpanel" aria-labelledby="tab-connection" hidden>
   <div class="panel" id="sec-connect">
       <h2>Media server</h2>
       <div class="row"><label for="backend">Backend<small>Which server Marquee watches. Nothing changes until you press Save; a saved change is picked up within ~5s, no restart.</small></label>
@@ -503,6 +568,8 @@
         <input type="text" id="mshost" class="mini" placeholder="http://server:8096" autocomplete="off"></div>
       <div class="row"><label for="mskey"><span id="mskey-name">API key</span><small>Stored on the server, never shown again. Blank keeps the saved one.</small></label>
         <input type="password" id="mskey" class="mini" placeholder="paste API key" autocomplete="new-password"></div>
+      <div class="row"><label for="fakey">fanart.tv key<small>Powers the Fanart template&rsquo;s rotating art. Free personal key at fanart.tv &rarr; Get an API key. Stored on the server, never shown again; blank keeps the saved one.</small></label>
+        <input type="password" id="fakey" class="mini" placeholder="paste fanart.tv API key" autocomplete="new-password"></div>
     </div>
   
     <div class="panel">
@@ -537,14 +604,14 @@
   </div>
 
   <!-- ═══════════ WHAT'S NEW ═══════════ -->
-  <div id="pane-notes" role="tabpanel" hidden>
+  <div id="pane-notes" role="tabpanel" aria-labelledby="tab-notes" hidden>
     <h2>What&rsquo;s new</h2>
     <div class="prosebox" id="notes">Loading&hellip;</div>
     <p><a href="https://github.com/Jamisonfitz/marquee/releases">All releases on GitHub</a></p>
   </div>
 
   <!-- ═══════════ ABOUT ═══════════ -->
-  <div id="pane-about" role="tabpanel" hidden>
+  <div id="pane-about" role="tabpanel" aria-labelledby="tab-about" hidden>
     <h2>About</h2>
     <div class="prosebox">
       <p>Marquee casts a cinematic now-playing card from your media server to a
@@ -565,8 +632,11 @@
           Korokithakis — the casting engine that actually puts the card on your
           Hub (BSD licensed, bundled stock).</li>
         <li>The weather effects adapt open CodePen techniques by sheepjs, Ivan
-          Odintsov, Braeden Craig, and Tiff Wong — full notes in
+          Odintsov, dburrell, and Tiff Wong — full notes in
           <a href="https://github.com/Jamisonfitz/marquee/blob/main/CREDITS.md">CREDITS.md</a>.</li>
+        <li>The Fanart template&rsquo;s artwork comes from
+          <a href="https://fanart.tv">fanart.tv</a> and its community of
+          contributors (bring your own free API key).</li>
       </ul>
       <b>Enjoying Marquee?</b>
       <p>It's free and stays that way. If it makes your living room a little
@@ -594,7 +664,7 @@
   const $ = s => document.querySelector(s);
   const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  const TEMPLATES = ['spotlight', 'split', 'hero', 'lowerthird', 'bigclock', 'street'];
+  const TEMPLATES = ['spotlight', 'split', 'hero', 'lowerthird', 'bigclock', 'street', 'fanart'];
   let cfg = { hubIp: '', template: 'spotlight', theme: 'amber', accent: '',
     titleFont: 'system', clockFormat: '12h', blockLayout: {},
     blockVisibility: {}, presets: [],
@@ -610,8 +680,9 @@
     split: ['backdrop', 'clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
     hero: ['backdrop', 'clock', 'identity', 'meta', 'ratings', 'progress'],
     lowerthird: ['backdrop', 'clock', 'identity', 'meta', 'ratings', 'progress'],
-    bigclock: ['backdrop', 'clock', 'identity', 'meta', 'plot', 'progress'],
-    street: ['backdrop', 'clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
+    bigclock: ['backdrop', 'clock', 'identity', 'progress'],
+    street: ['clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
+    fanart: [],
   };
   const BLOCK_LABEL = { backdrop: 'Backdrop', clock: 'Clock', weather: 'Weather',
     identity: 'Title', meta: 'Metadata', plot: 'Plot', ratings: 'Ratings',
@@ -622,6 +693,8 @@
     'ratings', 'progress', 'poster'];
   const TOGGLEABLE = ['backdrop', 'clock', 'weather', 'identity', 'meta', 'plot',
     'ratings', 'progress', 'poster'];
+  // Street's scene IS its backdrop; Fanart's rotating art is too.
+  const UNADDABLE = { street: ['backdrop'], fanart: ['backdrop'] };
   // Which blocks carry text (get the font select) / take a color at all.
   const TEXT_BLOCKS = ['clock', 'weather', 'identity', 'meta', 'plot', 'ratings', 'stinger'];
   const COLORABLE = ['clock', 'weather', 'identity', 'meta', 'plot', 'ratings',
@@ -726,7 +799,8 @@
     const tray = $('#add-tray');
     if (tray.hidden) return;
     const shown = visibleBlockSet(cfg.template);
-    const missing = TOGGLEABLE.filter(n => !shown.has(n));
+    const missing = TOGGLEABLE.filter(n => !shown.has(n)
+      && !(UNADDABLE[cfg.template] || []).includes(n));
     tray.innerHTML = '';
     if (!missing.length) {
       const note = document.createElement('span');
@@ -826,6 +900,9 @@
   }
   document.querySelectorAll('.tcard[data-template]').forEach(b => b.addEventListener('click', () => {
     cfg.template = b.dataset.template; markTemplates(); sendCfg();
+    // Fanart starts bare — the art layer is the only thing to edit, so land
+    // there instead of on a block that isn't on the card.
+    if (cfg.template === 'fanart') selectedBlock = 'backdrop';
     renderChips(); selectBlock(selectedBlock);
     // Clicking through templates also steps the demo film, so the preview
     // shows the reel instead of one movie forever.
@@ -847,6 +924,16 @@
   document.querySelectorAll('#unitfmt button').forEach(b => b.addEventListener('click', () => {
     cfg.weatherUnits = b.dataset.v; segSet('unitfmt', b.dataset.v); sendCfg();
   }));
+  $('#fatype').addEventListener('change', () => {
+    cfg.fanartType = $('#fatype').value; sendCfg();
+    $('#status').textContent = 'Art type changed — save to apply.';
+  });
+  $('#farotate').addEventListener('change', () => {
+    const v = Math.max(5, Math.min(3600, parseInt($('#farotate').value, 10) || 30));
+    $('#farotate').value = v;
+    cfg.fanartRotateSeconds = v; sendCfg();
+    $('#status').textContent = 'Rotation timer changed — save to apply.';
+  });
   $('#wxintensity').addEventListener('change', () => {
     cfg.weatherIntensity = parseInt($('#wxintensity').value, 10) || 2;
     sendCfg();
@@ -858,6 +945,40 @@
   });
   document.querySelectorAll('input[data-k]').forEach(i =>
     i.addEventListener('change', () => { syncFx(); sendCfg(); }));
+  // Weather condition preview — forces the card's look for testing, exactly
+  // like ?wx=/?day=, and never touches cfg. 'Live' hands back to reality.
+  const wxPreview = { wx: '', day: '' };
+  function postWxPreview() {
+    $('#frame').contentWindow?.postMessage({ type: 'marquee-wx',
+      wx: wxPreview.wx || null,
+      day: wxPreview.day === '' ? null : wxPreview.day }, location.origin);
+  }
+  document.querySelectorAll('#wx-preview button').forEach(b =>
+    b.addEventListener('click', () => {
+      wxPreview.wx = b.dataset.wx;
+      document.querySelectorAll('#wx-preview button').forEach(x =>
+        x.classList.toggle('on', x === b));
+      postWxPreview();
+      $('#status').textContent = b.dataset.wx
+        ? 'Previewing ' + b.textContent.toLowerCase() + ' — testing only, nothing is saved.'
+        : 'Back to your real local weather.';
+    }));
+  document.querySelectorAll('#dayfmt button').forEach(b =>
+    b.addEventListener('click', () => {
+      wxPreview.day = b.dataset.v;
+      segSet('dayfmt', b.dataset.v);
+      postWxPreview();
+    }));
+  // A reloaded frame forgets the force; re-arm if a preview is active.
+  ;(function keepWxPreviewOnReload(){
+    const f = $('#frame');
+    const orig = f.onload;
+    // loadFrame() reassigns onload; wrap at message time instead — cheap:
+    window.addEventListener('message', e => {
+      if (e.origin === location.origin && (e.data||{}).type === 'marquee-selection'
+          && (wxPreview.wx || wxPreview.day !== '')) postWxPreview();
+    });
+  })();
   // Intensity only matters while the FX layer is on.
   function syncFx() {
     const ok = $('#ck-weatherfx').checked;
@@ -885,7 +1006,11 @@
 
   // ── Contextual editor: show only what the selected block owns ──
   function showEditorFor(name) {
-    $('#ed-title').textContent = 'Editing: ' + (BLOCK_LABEL[name] || name);
+    // On Fanart the background IS the feature: tapping it edits the art.
+    const faCtx = name === 'backdrop' && cfg.template === 'fanart';
+    $('#ed-title').textContent = 'Editing: ' + (faCtx ? 'Fanart' : (BLOCK_LABEL[name] || name));
+    $('#ctx-fanart').hidden = !faCtx;
+    if (faCtx) $('#fanart-key-note').hidden = !!cfg.fanartKeySet;
     $('#ctx-title').hidden = name !== 'identity';
     $('#ctx-clock').hidden = name !== 'clock';
     $('#ctx-weather').hidden = name !== 'weather';
@@ -965,6 +1090,9 @@
     if ('weatherFX' in x) { cfg.weatherFX = x.weatherFX; const el = document.getElementById('ck-weatherfx'); if (el) el.checked = x.weatherFX; syncFx(); }
     if (x.weatherIntensity) { cfg.weatherIntensity = x.weatherIntensity; $('#wxintensity').value = String(x.weatherIntensity); }
     if (x.weatherUnits) { cfg.weatherUnits = x.weatherUnits; segSet('unitfmt', x.weatherUnits); }
+    if (x.fanartType) { cfg.fanartType = x.fanartType; $('#fatype').value = x.fanartType; }
+    if (x.fanartRotateSeconds) { cfg.fanartRotateSeconds = x.fanartRotateSeconds; $('#farotate').value = x.fanartRotateSeconds; }
+    if (cfg.template === 'fanart') selectedBlock = 'backdrop';
     markTemplates(); sendCfg(); sendLayout();
     renderChips(); selectBlock(selectedBlock);
     $('#frame').contentWindow?.postMessage({ type: 'marquee-demo-next' }, location.origin);
@@ -1001,7 +1129,9 @@
         clockSeconds: cfg.clockSeconds === true,
         weatherFX: cfg.weatherFX !== false,
         weatherIntensity: cfg.weatherIntensity || 2,
-        weatherUnits: cfg.weatherUnits || 'f' },
+        weatherUnits: cfg.weatherUnits || 'f',
+        fanartType: cfg.fanartType || 'background',
+        fanartRotateSeconds: cfg.fanartRotateSeconds || 30 },
     };
   }
   function setupToPreset(doc) {
@@ -1312,6 +1442,10 @@
     $('#rotate').value = cfg.rotateSeconds ?? 30;
     $('#zip').value = cfg.weatherZip || '';
     $('#wxintensity').value = String(cfg.weatherIntensity || 2);
+    $('#fatype').value = ['background', 'poster', 'logo', 'clearart', 'banner', 'thumb']
+      .includes(cfg.fanartType) ? cfg.fanartType : 'background';
+    $('#farotate').value = cfg.fanartRotateSeconds ?? 30;
+    if (cfg.fanartKeySet) $('#fakey').placeholder = 'saved — blank keeps it';
     segSet('unitfmt', cfg.weatherUnits || 'f');
     segSet('clockfmt', cfg.clockFormat || '12h');
     cfg.blockLayout ||= {}; cfg.blockVisibility ||= {}; cfg.presets ||= [];
@@ -1331,6 +1465,7 @@
     Object.entries(pendingKeys).forEach(([b, v]) => {
       if (v.trim()) body[MS[b].key] = v.trim();
     });
+    if ($('#fakey').value.trim()) body.fanartKey = $('#fakey').value.trim();
     const r = await (await fetch('/save', { method: 'POST',
       body: JSON.stringify(body) })).json();
     $('#status').textContent = r.ok
@@ -1339,6 +1474,11 @@
       Object.keys(pendingKeys).forEach(b => {
         if (pendingKeys[b].trim()) { cfg[MS[b].set] = true; pendingKeys[b] = ''; }
       });
+      if ($('#fakey').value.trim()) {
+        cfg.fanartKeySet = true; $('#fakey').value = '';
+        $('#fakey').placeholder = 'saved — blank keeps it';
+        $('#fanart-key-note').hidden = true;
+      }
       msShow();
     }
   });
