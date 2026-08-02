@@ -6,12 +6,13 @@
 [![Docker Pulls](https://img.shields.io/docker/pulls/jamisonfitz/marquee?logo=docker)](https://hub.docker.com/r/jamisonfitz/marquee)
 [![Docker Image Version](https://img.shields.io/docker/v/jamisonfitz/marquee?sort=semver&logo=docker)](https://hub.docker.com/r/jamisonfitz/marquee/tags)
 [![License](https://img.shields.io/github/license/Jamisonfitz/marquee)](LICENSE)
+[![Buy me a coffee](https://img.shields.io/badge/%E2%98%95%20Buy%20me%20a%20coffee-E5A83B?logoColor=white)](https://buymeacoffee.com/jamisonfitz)
 
 Marquee turns a Google Nest Hub into a clean now-playing display for Plex, Emby, or Jellyfin. It shows artwork, title, plot, genres, ratings, media details, progress, and a clock, then returns the Hub to ambient mode when playback stops.
 
 ![One app, many looks — templates × themes × fonts](docs/screenshots/variety.jpg)
 
-*Same app, nine looks: six templates × eight themes × six fonts × any accent color.*
+*Same app, nine looks: six templates, per-block colors and fonts, and every block movable — your setup will not look like anyone else&rsquo;s.*
 
 With your own library it looks like this — real posters, backdrops, and clear-logos straight from Plex:
 
@@ -29,9 +30,41 @@ Six designed layouts, switchable live from the settings page:
 | ![Lower Third](docs/screenshots/lowerthird.jpg) **Lower Third** — broadcast-style chyron over full-bleed art | ![Big Clock](docs/screenshots/bigclock.jpg) **Big Clock** — ambient timepiece with a now-playing strip |
 | ![Street](docs/screenshots/street.jpg) **Street** — a living night scene: your poster glowing in a bulb-lit marquee, the movie logo sprayed on brick, real weather on the wall | ![Split](docs/screenshots/split.jpg) **Split** — hard split: full-height art wall beside the info column |
 
-Every template is built from the same set of blocks — title/logo identity, weather, grouped ratings, metadata chips, plot, progress, clock, poster — so themes, custom accent color, and fonts carry across all of them. Which blocks appear, and where, is set per template: add or remove any block from any template independently, and reposition them without affecting the others.
+Every template is built from the same set of blocks — backdrop, clock, weather,
+title, metadata, plot, ratings, progress, poster — and every block is yours:
+its own position, size, font, and color, set per template, so a nudge in
+Spotlight never moves anything in Street.
 
-![Settings UI](docs/screenshots/settings.jpg)
+## The settings page is the card
+
+Settings v2 has no wall of options. The card fills the page; you edit what
+you're looking at.
+
+![Settings v2 — the card is the page](docs/screenshots/settings-design.jpg)
+
+- **Tap anything.** Tap a block on the live preview — or its chip below — and
+  the editor shows just that block's controls: font, color, position, width,
+  size, plus whatever it owns (clock style and seconds, weather effects and
+  intensity, which metadata pieces show, logo art vs text title). Tap the
+  card's empty background to edit the backdrop.
+- **The chips tell the truth.** One pill per block on the card: × takes it
+  off, "+ Add" brings anything back. When a block is on your card but has
+  nothing to show for the current title — no scores yet, an emptied metadata
+  line — its chip goes dim and the editor says so, instead of letting you
+  adjust an element that isn't on screen.
+- **Bottle a look, share it, credit travels.** "Save preset" snapshots your
+  whole layout onto the template carousel. "Share this look" copies it as a
+  small setup file — credited to you — and anyone who imports it gets it on
+  their carousel tagged with your name, one tap from applied. Locations and
+  credentials never ride along.
+- **A guided tour, once.** First run walks you through the six things that
+  matter, spotlighting the real interface — then gets out of the way.
+- **Phones are first-class.** The preview pins to the top at a size that
+  leaves room to work, and the on-screen keyboard can never cover it.
+
+| | |
+|:---:|:---:|
+| ![Contextual editor](docs/screenshots/settings-editor.jpg) | ![Guided tour](docs/screenshots/settings-tutorial.jpg) |
 
 ## Features
 
@@ -42,19 +75,22 @@ Every template is built from the same set of blocks — title/logo identity, wea
   storms that follow your real local conditions, with an **Effect intensity**
   (1–4) control so they stay ambient rather than distracting. Optional and
   separate from the temperature readout.
-- Eight themes, one-tap Vibe presets, a custom accent color, five title
-  fonts, 12/24-hour clock styles, and per-block show/hide toggles.
+- Per-block color and fonts — every block carries its own, per template, so
+  one template can run amber while another goes ice. Saved themes from
+  earlier versions keep tinting until you recolor.
 - Add or remove any block — clock, weather, title, plot, ratings, progress,
   poster — from any template independently, and reposition it without
   affecting the others. Nothing changes until you actually add or remove
   something; every template still ships with its original layout.
 - Session filters: limit casting to your Plex users and your devices, live
   from the settings page — shared users no longer take over the display.
-- A drag-and-slider editor for moving, sizing, justifying, and scaling each
-  card block, with an instant demo preview featuring original fictional
-  films (no copyrighted art). On phones, the template and vibe pickers
-  collapse into one swipeable strip so the editor doesn't fight the screen
-  for room.
+- A direct-manipulation editor: tap a block on the live preview (original
+  fictional demo films — no copyrighted art), drag to move, and its own
+  controls appear beside it. Savable presets ride the template carousel, and
+  "Share this look" exports your setup as a small credited file others can
+  import in one tap.
+- A first-run guided tour that spotlights the real interface, six steps,
+  then never bothers you again.
 - Persisted settings, health checks, and a Docker-first deployment path.
 - Google Nest Hub casting with clean idle handoff back to ambient mode.
 
@@ -130,7 +166,7 @@ Only `PAGE_URL` is required at startup: a container with no media-server
 credentials boots to the settings page, where they can be entered.
 
 The backends emit the same now-playing shape, so everything downstream —
-templates, themes, toggles, `/now-playing.json` — behaves identically.
+templates, blocks, layouts, `/now-playing.json` — behaves identically.
 Verified against Emby 4.9 and Jellyfin 10.11.
 
 Cast device: open the settings page and press **Scan** — Marquee discovers
@@ -243,6 +279,19 @@ Marquee checks that DashCast is active, casts the `/image` URL when playback sta
 
 ## Credits
 
-The Street template's weather effects were built with technique and
-inspiration from several open CodePens — rain, snow, fog, and the neon sign
-flicker. See [CREDITS.md](CREDITS.md) for the authors and sources.
+Marquee stands on generous shoulders:
+
+- **[TRusselo](https://github.com/TRusselo)** — the Emby & Jellyfin backends,
+  session filters and rotation, the dead-card heartbeat, the content filter,
+  and a steady stream of sharp fixes.
+- **[catt](https://github.com/skorokithakis/catt)** by Stavros Korokithakis —
+  the casting engine that actually puts the card on your Hub (BSD, bundled
+  stock).
+- The Street template's weather effects adapt open CodePen techniques by
+  sheepjs, Ivan Odintsov, Braeden Craig, and Tiff Wong — full notes and
+  sources in [CREDITS.md](CREDITS.md).
+
+## Support
+
+Marquee is free and stays that way. If it makes your living room a little
+more cinematic, you can [buy me a coffee](https://buymeacoffee.com/jamisonfitz) ☕
