@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+- Every block-presence bug of the 'chip says on, card says nothing' kind is
+  gone: the block tables are now the single authority (the card's per-template
+  CSS no longer overrules them), so adding a block to any template actually
+  shows it — including Metadata, Plot, Ratings, and Poster on Big Clock, and
+  Plot/Poster on Hero and Lower Third, which had been silently impossible.
+  Chips also now verify a block really painted, not just that it isn't
+  flagged hidden.
+- The Weather editor grew a 'Try a condition' row: preview rain, snow, storm,
+  fog, or cloudy — and force day or night — right in the settings preview, so
+  you know exactly what to expect before the sky delivers it. Testing only;
+  nothing is saved, and 'Live' hands back to your real local weather.
+
 ## 2.1.0 — 2026-08-01
 
 Two ideas from living with Settings v2 for a day.

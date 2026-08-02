@@ -198,6 +198,14 @@
     box-shadow: 0 0 7px rgba(229,168,59,.7); }
   .metachips input:focus-visible + span { outline: 2px solid var(--amber);
     outline-offset: 2px; }
+  /* Weather condition preview: quiet tester chips; the active one is lit. */
+  .wx-preview { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+  .wx-preview button { border: 1px dashed var(--line); border-radius: 99px;
+    background: none; color: var(--mut); font-size: 12px; font-weight: 650;
+    padding: 7px 11px; cursor: pointer; }
+  .wx-preview button:hover { color: var(--text); border-color: rgba(229,168,59,.5); }
+  .wx-preview button.on { border-style: solid; border-color: var(--amber);
+    color: var(--amber); background: rgba(229,168,59,.07); }
   .sliders { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px;
     padding-top: 10px; border-top: 1px solid var(--line); margin-top: 4px; }
   .slider label { display: flex; justify-content: space-between;
@@ -461,6 +469,25 @@
               <span class="ed-lab">Units</span>
               <div class="seg" id="unitfmt">
                 <button data-v="f" type="button">&deg;F</button><button data-v="c" type="button">&deg;C</button>
+              </div>
+            </div>
+            <div class="ed-row wx-preview-row">
+              <span class="ed-lab">Try a condition<small>Preview only — never saved. Effects show on the Street template.</small></span>
+              <div class="wx-preview" id="wx-preview" role="group" aria-label="Preview a weather condition">
+                <button data-wx="" class="on" type="button" title="Back to your real local weather">Live</button>
+                <button data-wx="rain" type="button">Rain</button>
+                <button data-wx="snow" type="button">Snow</button>
+                <button data-wx="storm" type="button">Storm</button>
+                <button data-wx="fog" type="button">Fog</button>
+                <button data-wx="cloud" type="button">Cloudy</button>
+              </div>
+            </div>
+            <div class="ed-row wx-preview-row" id="row-daynight">
+              <span class="ed-lab">Time of day</span>
+              <div class="seg" id="dayfmt">
+                <button data-v="" class="on" type="button" title="Follow the real clock">Live</button>
+                <button data-v="1" type="button">Day</button>
+                <button data-v="0" type="button">Night</button>
               </div>
             </div>
           </div>
@@ -875,6 +902,40 @@
   });
   document.querySelectorAll('input[data-k]').forEach(i =>
     i.addEventListener('change', () => { syncFx(); sendCfg(); }));
+  // Weather condition preview — forces the card's look for testing, exactly
+  // like ?wx=/?day=, and never touches cfg. 'Live' hands back to reality.
+  const wxPreview = { wx: '', day: '' };
+  function postWxPreview() {
+    $('#frame').contentWindow?.postMessage({ type: 'marquee-wx',
+      wx: wxPreview.wx || null,
+      day: wxPreview.day === '' ? null : wxPreview.day }, location.origin);
+  }
+  document.querySelectorAll('#wx-preview button').forEach(b =>
+    b.addEventListener('click', () => {
+      wxPreview.wx = b.dataset.wx;
+      document.querySelectorAll('#wx-preview button').forEach(x =>
+        x.classList.toggle('on', x === b));
+      postWxPreview();
+      $('#status').textContent = b.dataset.wx
+        ? 'Previewing ' + b.textContent.toLowerCase() + ' — testing only, nothing is saved.'
+        : 'Back to your real local weather.';
+    }));
+  document.querySelectorAll('#dayfmt button').forEach(b =>
+    b.addEventListener('click', () => {
+      wxPreview.day = b.dataset.v;
+      segSet('dayfmt', b.dataset.v);
+      postWxPreview();
+    }));
+  // A reloaded frame forgets the force; re-arm if a preview is active.
+  ;(function keepWxPreviewOnReload(){
+    const f = $('#frame');
+    const orig = f.onload;
+    // loadFrame() reassigns onload; wrap at message time instead — cheap:
+    window.addEventListener('message', e => {
+      if (e.origin === location.origin && (e.data||{}).type === 'marquee-selection'
+          && (wxPreview.wx || wxPreview.day !== '')) postWxPreview();
+    });
+  })();
   // Intensity only matters while the FX layer is on.
   function syncFx() {
     const ok = $('#ck-weatherfx').checked;

@@ -973,8 +973,10 @@ ${bulbs.join('')}
   // / ?day= test override) triggers the fetch; neither is coupled to the
   // other, so you can have the chip without effects or vice-versa.
   let lastWx = null;
-  const WX_FORCE = new URLSearchParams(location.search).get('wx');
-  const DAY_FORCE = new URLSearchParams(location.search).get('day');
+  // let, not const: the settings editor can retune the force live via the
+  // marquee-wx message — same semantics as ?wx=/?day=, preview-only.
+  let WX_FORCE = new URLSearchParams(location.search).get('wx');
+  let DAY_FORCE = new URLSearchParams(location.search).get('day');
   const wxWord = c =>
     c == null ? '' :
     c >= 95 ? 'storms' :
@@ -1142,6 +1144,12 @@ ${bulbs.join('')}
       draftCfg = msg.cfg || {};
       if (fontChanged || logoChanged) peekTitle();
       if (lastD) render(lastD), paint();
+      wxTick();
+    } else if (msg.type === 'marquee-wx') {
+      // Condition preview from the editor: force a weather look without
+      // touching any saved setting. null/undefined = back to live weather.
+      WX_FORCE = msg.wx || null;
+      DAY_FORCE = msg.day != null ? String(msg.day) : null;
       wxTick();
     } else if (msg.type === 'marquee-demo-next') {
       if (DEMO && DEMOS.length) {
