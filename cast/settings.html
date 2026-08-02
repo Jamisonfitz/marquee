@@ -133,6 +133,13 @@
     padding: 8px 14px; cursor: pointer; }
   .add-tray button:hover { border-color: var(--amber); color: var(--amber); }
   .add-tray .empty { color: var(--mut); font-size: 13px; padding: 6px 2px; }
+  /* Truth accounting: on the card but not on screen right now (no content). */
+  .chip.ghost { border-style: dashed; opacity: .55; }
+  .share-row { display: flex; gap: 8px; margin: 2px 0 10px; }
+  .ed-note { color: var(--mut); font-size: 12.5px; margin: 0 0 8px;
+    padding: 7px 10px; border: 1px dashed var(--line); border-radius: 8px; }
+  .tcard .by { display: block; color: var(--mut); font-size: 9px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   /* ── Block editor ── */
   .editor { background: linear-gradient(180deg, #171B21, #12151A);
@@ -230,6 +237,23 @@
   .prosebox b { display: block; margin-top: 14px; color: var(--amber); }
   .about-rows { display: grid; gap: 8px; max-width: 520px; }
   .about-rows .row { border-bottom: 1px solid var(--line); }
+  .credits { margin: 6px 0 0; padding-left: 20px; display: grid; gap: 8px; }
+  .credits li { line-height: 1.5; }
+  .bmc { display: inline-flex; align-items: center; gap: 8px;
+    background: var(--amber); color: #0B0D10; text-decoration: none;
+    font-weight: 800; border-radius: 9px; padding: 9px 16px; margin-top: 4px;
+    box-shadow: 0 0 14px rgba(229,168,59,.28); }
+  .bmc:hover { box-shadow: 0 0 20px rgba(229,168,59,.45); color: #0B0D10; }
+  .notes-feed { display: grid; gap: 14px; max-width: 720px; }
+  .notes-feed section { background: linear-gradient(180deg, #171B21, #12151A);
+    border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+  .notes-feed h3 { font-family: var(--display); font-size: 19px; font-weight: 400;
+    letter-spacing: .06em; text-transform: uppercase; color: var(--amber);
+    margin: 0 0 8px; }
+  .notes-feed ul { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 7px; }
+  .notes-feed li { line-height: 1.55; }
+  .notes-feed li b, .notes-feed p b { display: inline; margin: 0; color: var(--text); }
+  .notes-feed p { margin: 6px 0 0; line-height: 1.55; color: var(--mut); }
 
   /* ── Tutorial ── */
   .tut-hl { outline: 2px dashed var(--amber) !important; outline-offset: 4px;
@@ -335,6 +359,13 @@
       </button>
     </div>
 
+    <div class="share-row">
+      <button class="secondary" id="share-look" type="button"
+        title="Copy this screen setup as a file to share — credited to you">Share this look</button>
+      <button class="secondary" id="import-look" type="button"
+        title="Paste a shared setup — it rides your carousel, credited to its maker">Import a look</button>
+    </div>
+
     <div class="preview-row">
       <div class="mq-side">
         <div class="frame-box"><iframe id="frame" title="Live card preview"></iframe></div>
@@ -348,6 +379,7 @@
         <button class="secondary" id="editor-toggle" type="button"
           aria-expanded="false">Edit blocks</button>
         <div class="editor" id="editor">
+          <p class="ed-note" id="ed-note" hidden></p>
           <p id="no-blocks-note" hidden>This template has no blocks — use + Add below the preview.</p>
           <div class="ed-head">
             <span class="ed-title" id="ed-title">Editing: Title</span>
@@ -523,6 +555,24 @@
         <div class="row"><label>Source</label><a href="https://github.com/Jamisonfitz/marquee">github.com/Jamisonfitz/marquee</a></div>
         <div class="row"><label>Backup</label><span>Export on the Connection tab copies your whole setup (presets included)</span></div>
       </div>
+      <b>Credits</b>
+      <p>Marquee stands on generous shoulders:</p>
+      <ul class="credits">
+        <li><a href="https://github.com/TRusselo">TRusselo</a> — Emby &amp; Jellyfin
+          backends, session filters and rotation, the dead-card heartbeat, the
+          content filter, and a steady stream of sharp fixes.</li>
+        <li><a href="https://github.com/skorokithakis/catt">catt</a> by Stavros
+          Korokithakis — the casting engine that actually puts the card on your
+          Hub (BSD licensed, bundled stock).</li>
+        <li>The weather effects adapt open CodePen techniques by sheepjs, Ivan
+          Odintsov, Braeden Craig, and Tiff Wong — full notes in
+          <a href="https://github.com/Jamisonfitz/marquee/blob/main/CREDITS.md">CREDITS.md</a>.</li>
+      </ul>
+      <b>Enjoying Marquee?</b>
+      <p>It's free and stays that way. If it makes your living room a little
+        more cinematic, you can
+        <a class="bmc" href="https://buymeacoffee.com/jamisonfitz">&#9749; Buy me a coffee</a>
+      </p>
     </div>
   </div>
 
@@ -586,6 +636,32 @@
   ];
 
   let selectedBlock = 'identity';
+  // Truth accounting: what the card ACTUALLY rendered last frame (a block can
+  // be on the card yet off screen — no scores, empty meta line, no poster).
+  // null until the card first reports; chips ghost + the editor says so, so
+  // nobody adjusts an element that isn't there.
+  let renderedBlocks = null;
+
+  function refreshChipTruth() {
+    document.querySelectorAll('#chips .chip[data-block]').forEach(c => {
+      const name = c.dataset.block;
+      const ghost = !!renderedBlocks && !renderedBlocks.has(name);
+      c.classList.toggle('ghost', ghost);
+      const label = c.querySelector('.chip-label');
+      if (label) label.title = ghost
+        ? BLOCK_LABEL[name] + ' — on the card, but nothing to show right now'
+        : 'Select ' + BLOCK_LABEL[name] + ' block';
+    });
+    syncEdNote();
+  }
+  function syncEdNote() {
+    const note = $('#ed-note');
+    const ghost = !!renderedBlocks && !renderedBlocks.has(selectedBlock);
+    note.hidden = !ghost;
+    if (ghost) note.textContent = 'Not on screen right now — the current demo has '
+      + 'nothing for this block. Your changes still save; it appears the moment '
+      + 'there is something to show.';
+  }
 
   function visibleBlockSet(tpl) {
     const shown = new Set(TEMPLATE_DEFAULT_BLOCKS[tpl] || []);
@@ -625,6 +701,7 @@
     };
     onCard.forEach(name => strip.appendChild(buildChip(name, true)));
     strip.appendChild(buildChip('stinger', false));
+    refreshChipTruth();
     const add = document.createElement('span');
     add.className = 'chip add';
     const addBtn = document.createElement('button');
@@ -825,6 +902,7 @@
       c.querySelector('.chip-label')?.setAttribute('aria-pressed', String(on));
     });
     updateRemoveButton();
+    syncEdNote();
   }
 
   // ── Presets: the current look, bottled, riding the carousel ──
@@ -846,6 +924,11 @@
       const img = document.createElement('img');
       img.src = thumbSrc; img.alt = '';
       const b = document.createElement('b'); b.textContent = p.name;
+      if (p.author) {
+        const by = document.createElement('span');
+        by.className = 'by'; by.textContent = 'by ' + p.author;
+        b.appendChild(by);
+      }
       const del = document.createElement('span');
       del.className = 'pdel'; del.textContent = '×';
       del.title = 'Delete preset ' + p.name;
@@ -876,10 +959,16 @@
       const el = document.getElementById(id);
       if (el) el.checked = m[key] !== false;
     });
+    const x = p.extras || {};
+    if (x.clockFormat) { cfg.clockFormat = x.clockFormat; segSet('clockfmt', x.clockFormat); }
+    if ('clockSeconds' in x) { cfg.clockSeconds = x.clockSeconds; const el = document.getElementById('ck-clocksec'); if (el) el.checked = x.clockSeconds; }
+    if ('weatherFX' in x) { cfg.weatherFX = x.weatherFX; const el = document.getElementById('ck-weatherfx'); if (el) el.checked = x.weatherFX; syncFx(); }
+    if (x.weatherIntensity) { cfg.weatherIntensity = x.weatherIntensity; $('#wxintensity').value = String(x.weatherIntensity); }
+    if (x.weatherUnits) { cfg.weatherUnits = x.weatherUnits; segSet('unitfmt', x.weatherUnits); }
     markTemplates(); sendCfg(); sendLayout();
     renderChips(); selectBlock(selectedBlock);
     $('#frame').contentWindow?.postMessage({ type: 'marquee-demo-next' }, location.origin);
-    $('#status').textContent = '“' + p.name + '” applied — save to keep it.';
+    $('#status').textContent = '“' + p.name + '”' + (p.author ? ' by ' + p.author : '') + ' applied — save to keep it.';
   }
   $('#save-preset').addEventListener('click', () => {
     cfg.presets ||= [];
@@ -894,6 +983,66 @@
       metaOpts: metaOptsSnapshot() });
     renderPresets();
     $('#status').textContent = 'Preset saved — it rides the carousel and Export backs it up.';
+  });
+
+  // ── Shared screen setups: a small JSON document that maps the whole look.
+  //    Export credits you; Import rides the carousel credited to its maker.
+  //    Format is versioned so a community repo of these stays readable. ──
+  function currentSetupDoc(name, author) {
+    const tpl = cfg.template;
+    return {
+      format: 'marquee-setup', version: 1,
+      name, author, created: new Date().toISOString().slice(0, 10),
+      template: tpl,
+      blockLayout: structuredClone((cfg.blockLayout || {})[tpl] || {}),
+      blockVisibility: structuredClone((cfg.blockVisibility || {})[tpl] || {}),
+      metaOpts: metaOptsSnapshot(),
+      extras: { clockFormat: cfg.clockFormat || '12h',
+        clockSeconds: cfg.clockSeconds === true,
+        weatherFX: cfg.weatherFX !== false,
+        weatherIntensity: cfg.weatherIntensity || 2,
+        weatherUnits: cfg.weatherUnits || 'f' },
+    };
+  }
+  function setupToPreset(doc) {
+    if (!doc || doc.format !== 'marquee-setup' || !TEMPLATES.includes(doc.template)) return null;
+    return {
+      name: String(doc.name || 'Shared look').slice(0, 40),
+      author: doc.author ? String(doc.author).slice(0, 40) : undefined,
+      template: doc.template,
+      blockLayout: { [doc.template]: doc.blockLayout || {} },
+      blockVisibility: { [doc.template]: doc.blockVisibility || {} },
+      metaOpts: doc.metaOpts || {},
+      extras: doc.extras || {},
+    };
+  }
+  $('#share-look').addEventListener('click', async () => {
+    const name = window.prompt('Name this look:', 'My look');
+    if (name === null) return;
+    let author = localStorage.marqueeAuthor || '';
+    author = window.prompt('Credit it to (your name/handle — travels with the file):', author);
+    if (author === null) return;
+    localStorage.marqueeAuthor = author;
+    const text = JSON.stringify(currentSetupDoc(name.trim() || 'My look', author.trim()), null, 2);
+    try { await navigator.clipboard.writeText(text);
+      $('#status').textContent = 'Setup copied — share the text anywhere; imports credit you.'; }
+    catch (e) { window.prompt('Copy your setup:', text); }
+  });
+  $('#import-look').addEventListener('click', () => {
+    const text = window.prompt('Paste a shared Marquee setup:');
+    if (!text) return;
+    try {
+      const preset = setupToPreset(JSON.parse(text));
+      if (!preset) throw new Error('not a marquee-setup file');
+      cfg.presets ||= [];
+      if (cfg.presets.length >= 20) throw new Error('preset limit reached (20) — delete one first');
+      cfg.presets.push(preset);
+      renderPresets();
+      applyPreset(preset);
+      $('#status').textContent = '“' + preset.name + '”'
+        + (preset.author ? ' by ' + preset.author : '')
+        + ' imported — riding your carousel. Save to keep it.';
+    } catch (e) { $('#status').textContent = 'Import failed: ' + e.message; }
   });
 
   // ── Tabs ──
@@ -915,11 +1064,33 @@
   document.querySelectorAll('.tabs button').forEach(b =>
     b.addEventListener('click', () => activateTab(b.dataset.tab)));
 
+  // The changelog rendered as release cards — versions as headings, features
+  // as a proper list with their lead phrase bolded — instead of a wall of
+  // monospace text. The CHANGELOG itself stays the single source of truth.
   async function loadNotes() {
     try {
       const md = await (await fetch('/release-notes')).text();
-      $('#notes').innerHTML = md.replace(/&/g, '&amp;').replace(/</g, '&lt;')
-        .replace(/^## (.*)$/gm, '<b>$1</b>').replace(/^# .*$/gm, '');
+      const escd = md.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+      const sections = escd.split(/^## /m).slice(1).map(chunk => {
+        const nl = chunk.indexOf('\n');
+        const head = chunk.slice(0, nl).trim();
+        const bullets = [];
+        const paras = [];
+        let current = null;
+        chunk.slice(nl + 1).split('\n').forEach(line => {
+          if (/^- /.test(line)) { if (current) bullets.push(current); current = line.slice(2); }
+          else if (/^ {2,}\S/.test(line) && current !== null) { current += ' ' + line.trim(); }
+          else if (line.trim() && current === null && !/^#/.test(line)) { paras.push(line.trim()); }
+          else if (!line.trim() && current) { bullets.push(current); current = null; }
+        });
+        if (current) bullets.push(current);
+        const emph = s => s.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+        return '<section><h3>' + head + '</h3>'
+          + (paras.length ? '<p>' + paras.map(emph).join(' ') + '</p>' : '')
+          + (bullets.length ? '<ul>' + bullets.map(b => '<li>' + emph(b) + '</li>').join('') + '</ul>' : '')
+          + '</section>';
+      });
+      $('#notes').innerHTML = '<div class="notes-feed">' + sections.join('') + '</div>';
       notesLoaded = true;
     } catch (e) { $('#notes').textContent = 'Release notes unavailable.'; }
   }
@@ -1193,6 +1364,9 @@
       segSet('align', (msg.values || {}).align || '');
       showEditorFor(msg.name);
       if (msg.tap) openEditorMobile();
+    } else if (msg.type === 'marquee-blocks') {
+      renderedBlocks = new Set(msg.rendered || []);
+      refreshChipTruth();
     }
   });
 
