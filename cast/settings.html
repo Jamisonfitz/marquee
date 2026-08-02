@@ -508,8 +508,14 @@
               </select>
             </div>
             <div class="ed-row">
-              <label for="farotate">Rotate every<small>Seconds between artworks — the best-liked art for the playing title cycles through</small></label>
-              <input type="number" id="farotate" class="mini" min="5" max="3600" step="5" inputmode="numeric">
+              <label for="farotate">Rotate every<small>The best-liked art for the playing title cycles through. The preview rotates faster so you can see it.</small></label>
+              <select id="farotate" class="mini">
+                <option value="300">5 minutes</option>
+                <option value="600">10 minutes</option>
+                <option value="900">15 minutes</option>
+                <option value="1800">30 minutes</option>
+                <option value="3600">60 minutes</option>
+              </select>
             </div>
             <div class="ed-row" id="fanart-key-note" hidden>
               <span class="ed-lab">Needs a key<small>Add your free fanart.tv API key on the Connection tab — until then this template falls back to the regular backdrop.</small></span>
@@ -731,9 +737,10 @@
     const note = $('#ed-note');
     const ghost = !!renderedBlocks && !renderedBlocks.has(selectedBlock);
     note.hidden = !ghost;
-    if (ghost) note.textContent = 'Not on screen right now — the current demo has '
-      + 'nothing for this block. Your changes still save; it appears the moment '
-      + 'there is something to show.';
+    if (ghost) note.textContent = 'Not on screen right now — either there’s '
+      + 'nothing to show for the current title, or the block sits off the card’s '
+      + 'edge. Your changes still save; it appears the moment there’s something '
+      + 'to show where you put it.';
   }
 
   function visibleBlockSet(tpl) {
@@ -745,6 +752,10 @@
 
   // ── Chip strip: presence + selection, one pill per block on the card ──
   function renderChips() {
+    // Structural change (template switch, add/remove, preset) — the last
+    // rendered-report is from the OLD arrangement. Unknown until the card
+    // reports again (next frame), rather than ghosting off stale truth.
+    renderedBlocks = null;
     const shown = visibleBlockSet(cfg.template);
     const strip = $('#chips');
     strip.innerHTML = '';
@@ -929,11 +940,17 @@
     $('#status').textContent = 'Art type changed — save to apply.';
   });
   $('#farotate').addEventListener('change', () => {
-    const v = Math.max(5, Math.min(3600, parseInt($('#farotate').value, 10) || 30));
-    $('#farotate').value = v;
-    cfg.fanartRotateSeconds = v; sendCfg();
+    cfg.fanartRotateSeconds = parseInt($('#farotate').value, 10) || 600;
+    sendCfg();
     $('#status').textContent = 'Rotation timer changed — save to apply.';
   });
+  // Snap any stored value onto the dropdown's steps (imports may carry
+  // arbitrary seconds; a <select> can't show a value it has no option for).
+  function faRotateSnap(v) {
+    const steps = [300, 600, 900, 1800, 3600];
+    const n = Number(v) || 600;
+    return String(steps.reduce((a, b) => Math.abs(b - n) < Math.abs(a - n) ? b : a));
+  }
   $('#wxintensity').addEventListener('change', () => {
     cfg.weatherIntensity = parseInt($('#wxintensity').value, 10) || 2;
     sendCfg();
@@ -1091,7 +1108,7 @@
     if (x.weatherIntensity) { cfg.weatherIntensity = x.weatherIntensity; $('#wxintensity').value = String(x.weatherIntensity); }
     if (x.weatherUnits) { cfg.weatherUnits = x.weatherUnits; segSet('unitfmt', x.weatherUnits); }
     if (x.fanartType) { cfg.fanartType = x.fanartType; $('#fatype').value = x.fanartType; }
-    if (x.fanartRotateSeconds) { cfg.fanartRotateSeconds = x.fanartRotateSeconds; $('#farotate').value = x.fanartRotateSeconds; }
+    if (x.fanartRotateSeconds) { cfg.fanartRotateSeconds = x.fanartRotateSeconds; $('#farotate').value = faRotateSnap(x.fanartRotateSeconds); }
     if (cfg.template === 'fanart') selectedBlock = 'backdrop';
     markTemplates(); sendCfg(); sendLayout();
     renderChips(); selectBlock(selectedBlock);
@@ -1131,7 +1148,7 @@
         weatherIntensity: cfg.weatherIntensity || 2,
         weatherUnits: cfg.weatherUnits || 'f',
         fanartType: cfg.fanartType || 'background',
-        fanartRotateSeconds: cfg.fanartRotateSeconds || 30 },
+        fanartRotateSeconds: cfg.fanartRotateSeconds || 600 },
     };
   }
   function setupToPreset(doc) {
@@ -1444,7 +1461,7 @@
     $('#wxintensity').value = String(cfg.weatherIntensity || 2);
     $('#fatype').value = ['background', 'poster', 'logo', 'clearart', 'banner', 'thumb']
       .includes(cfg.fanartType) ? cfg.fanartType : 'background';
-    $('#farotate').value = cfg.fanartRotateSeconds ?? 30;
+    $('#farotate').value = faRotateSnap(cfg.fanartRotateSeconds);
     if (cfg.fanartKeySet) $('#fakey').placeholder = 'saved — blank keeps it';
     segSet('unitfmt', cfg.weatherUnits || 'f');
     segSet('clockfmt', cfg.clockFormat || '12h');

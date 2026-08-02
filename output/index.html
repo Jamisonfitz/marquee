@@ -813,14 +813,7 @@ ${bulbs.join('')}
     paintWx();
     faApply(c, d);
     applyBlockLayout();
-    if (EDIT) {
-      const rendered = [...document.querySelectorAll('[data-layout]')]
-        .filter(el => !el.hidden && el.getClientRects().length > 0
-          && el.getBoundingClientRect().height > 1)
-        .map(el => el.dataset.layout);
-      if ($('bg').classList.contains('on')) rendered.push('backdrop');
-      parent.postMessage({ type: 'marquee-blocks', rendered }, location.origin);
-    }
+    if (EDIT) reportRendered();
     if (EDIT && !announced) {
       // First render: blocks finally have real sizes, so the settings sliders
       // can show true values instead of zeros.
@@ -855,7 +848,11 @@ ${bulbs.join('')}
       else if (d.fanart && d.fanart.length) urls = d.fanart;
       else if (d.backdrop) urls = ['/backdrop.jpg?k=' + d.key];
     }
-    const secs = Math.max(5, Number(c.fanartRotateSeconds) || 30);
+    // Real cards rotate no faster than every 5 minutes (fanart.tv courtesy +
+    // the Hub is ambient, not a slideshow). The demo preview speeds up to
+    // 10s so the settings page can actually show the behavior.
+    const secs = DEMO ? 10
+      : Math.min(3600, Math.max(300, Number(c.fanartRotateSeconds) || 600));
     const sig = urls.join('|') + '@' + secs;
     if (sig === faSig) return;
     faSig = sig;
@@ -929,6 +926,23 @@ ${bulbs.join('')}
       width: p.width || Math.round(rect.width / innerWidth * 100),
       scale: p.scale || 1, align: p.align || '', font: p.font || 'system',
       color: p.color || '' };
+  }
+
+  // Truth accounting: a block only counts as rendered if it painted real
+  // pixels INSIDE the card — "on the card but dragged off the edge" must
+  // ghost its chip the same as "nothing to show".
+  function reportRendered() {
+    const vw = innerWidth, vh = innerHeight;
+    const rendered = [...document.querySelectorAll('[data-layout]')]
+      .filter(el => {
+        if (el.hidden || el.getClientRects().length === 0) return false;
+        const r = el.getBoundingClientRect();
+        return r.height > 1 && r.width > 1
+          && r.bottom > 2 && r.right > 2 && r.top < vh - 2 && r.left < vw - 2;
+      })
+      .map(el => el.dataset.layout);
+    if ($('bg').classList.contains('on')) rendered.push('backdrop');
+    parent.postMessage({ type: 'marquee-blocks', rendered }, location.origin);
   }
 
   function announceSelection(el, name, tap) {
@@ -1222,8 +1236,14 @@ ${bulbs.join('')}
   }
   async function wxTick() {
     const c = activeCfg();
-    const wanted = c.showWeather
-      || (c.weatherFX !== false && document.body.dataset.template === 'street')
+    const tpl = document.body.dataset.template;
+    // Weather only activates when the current template actually shows it:
+    // the weather block on THIS template, or Street's scene effects. A
+    // weather block added to one template must not keep the fetch running
+    // on every other.
+    const wanted = (c.showWeather
+        && visibleBlockSet(tpl, c.blockVisibility).has('weather'))
+      || (c.weatherFX !== false && tpl === 'street')
       || WX_FORCE || DAY_FORCE !== null;
     if (!wanted) { paintWx(); return; }
     try { lastWx = await (await fetch('/weather')).json(); } catch (e) {}
@@ -1279,6 +1299,7 @@ ${bulbs.join('')}
         ? String(msg.value) : Number(msg.value);
       if (msg.field === 'font' && selectedLayout === 'identity') peekTitle();
       applyBlockLayout();
+      reportRendered();  // a drag off the card's edge must ghost the chip now
       parent.postMessage({ type: 'marquee-layout', layout }, location.origin);
       announceSelection(el, selectedLayout);
     } else if (msg.type === 'marquee-snap') {
@@ -1296,6 +1317,7 @@ ${bulbs.join('')}
       p.x = clamp((p.x || 0) + Math.round(left / G) * G - left);
       p.y = clamp((p.y || 0) + Math.round(top / G) * G - top);
       applyBlockLayout();
+      reportRendered();
       parent.postMessage({ type: 'marquee-layout', layout }, location.origin);
       announceSelection(el, selectedLayout);
     }
