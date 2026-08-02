@@ -9,6 +9,14 @@
   Plot/Poster on Hero and Lower Third, which had been silently impossible.
   Chips also now verify a block really painted, not just that it isn't
   flagged hidden.
+- Fog got real: the drifting gradient haze is now rising smoke — canvas
+  particles that climb from the street, drift, swell, and thin out, adapted
+  from dburrell's Particle Fog Generator (credited in CREDITS.md) and rebuilt
+  sprite-free so the card stays self-contained. Density follows Effect
+  intensity, and reduced-motion still gets a single still frame. Hunting its
+  frame rate also uncovered that fog had always dragged a whole-scene blur
+  with it (7fps in software rendering) — the blur is gone, and every
+  condition now runs at full speed.
 - The Weather editor grew a 'Try a condition' row: preview rain, snow, storm,
   fog, or cloudy — and force day or night — right in the settings preview, so
   you know exactly what to expect before the sky delivers it. Testing only;
