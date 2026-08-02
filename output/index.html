@@ -266,29 +266,9 @@
     display: none; }
   body[data-template="street"].wx-rain .wx-canvas,
   body[data-template="street"].wx-snow .wx-canvas,
+  body[data-template="street"].wx-fog .wx-canvas,
   body[data-template="street"].wx-storm .wx-canvas { display: block; }
 
-  /* Fog: three soft layers that drift on their own speeds and pulse opacity
-     independently, under a blur so it reads as haze rather than a flat wash.
-     Technique adapted from Braeden Craig's CSS fog (which uses Daniel
-     Stuart's fog PNGs); rebuilt PNG-free with gradient tiles so the card
-     stays self-contained. */
-  @keyframes fog-move { from { background-position: 0 0; } to { background-position: -64vw 0; } }
-  @keyframes fog-op1 { 0%,100% { opacity: .12; } 22% { opacity: .5; } 40% { opacity: .3; } 58% { opacity: .42; } 80% { opacity: .18; } }
-  @keyframes fog-op2 { 0%,100% { opacity: .5; } 25% { opacity: .22; } 50% { opacity: .14; } 80% { opacity: .34; } }
-  @keyframes fog-op3 { 0%,100% { opacity: .78; } 27% { opacity: .24; } 52% { opacity: .6; } 68% { opacity: .32; } }
-  .fog { position: fixed; inset: 0; pointer-events: none; z-index: 3; display: none;
-    opacity: var(--wx-layer, .72); filter: blur(2px) saturate(1.05); }
-  body[data-template="street"].wx-fog .fog { display: block; }
-  .fog span { position: absolute; inset: 0; background-repeat: repeat-x;
-    background-image: radial-gradient(ellipse 50% 62% at 50% 55%,
-      rgba(216,224,236,.85), rgba(216,224,236,0) 72%); }
-  .fog span:nth-child(1) { background-size: 64vw 130vh;
-    animation: fog-move 34s linear infinite, fog-op1 10s ease-in-out infinite; }
-  .fog span:nth-child(2) { background-size: 52vw 150vh;
-    animation: fog-move 23s linear infinite, fog-op2 21s ease-in-out infinite; }
-  .fog span:nth-child(3) { background-size: 78vw 120vh;
-    animation: fog-move 44s linear infinite, fog-op3 17s ease-in-out infinite; }
 
   /* Overcast: a slow, subtle cloud-shadow drift instead of flat dimming alone. */
   @keyframes cloud-drift { 0%, 100% { transform: translateX(-4%); } 50% { transform: translateX(4%); } }
@@ -302,7 +282,7 @@
   .scene svg { filter: brightness(var(--sb, 1)) blur(var(--sblur, 0px)); }
   body[data-template="street"].wx-cloud { --sb: .82; }
   body[data-template="street"].wx-storm { --sb: .74; }
-  body[data-template="street"].wx-fog { --sb: .96; --sblur: 2.6px; }
+  body[data-template="street"].wx-fog { --sb: .93; }
   body[data-template="street"].street-day { --sb: 1.75; }
   body[data-template="street"].street-day.wx-cloud { --sb: 1.35; }
   body[data-template="street"].street-day.wx-storm { --sb: 1.2; }
@@ -402,7 +382,6 @@
 <div class="bg-shade"></div>
 <div class="scene" id="scene"></div>
 <canvas class="wx-canvas" id="wxcanvas" aria-hidden="true"></canvas>
-<div class="fog" id="fog" aria-hidden="true"><span></span><span></span><span></span></div>
 <div class="stage hidden">
   <div class="block b-clock" data-layout="clock"><div class="clock" id="clock"></div></div>
   <div class="block b-weather" data-layout="weather"><div class="wx" id="wx"></div></div>
@@ -1004,10 +983,10 @@ ${bulbs.join('')}
   // particle opacity, and the CSS opacity of the fog/cloud layers. Level 2
   // is the default — present but easy to ignore in peripheral vision.
   const WX_LEVELS = {
-    1: { rain: 90,  storm: 150, snow: 65,  alpha: .34, layer: .5 },
-    2: { rain: 160, storm: 240, snow: 110, alpha: .5,  layer: .72 },
-    3: { rain: 250, storm: 360, snow: 165, alpha: .64, layer: .9 },
-    4: { rain: 360, storm: 480, snow: 230, alpha: .82, layer: 1 },
+    1: { rain: 90,  storm: 150, snow: 65,  fog: 9,  alpha: .34, layer: .5 },
+    2: { rain: 160, storm: 240, snow: 110, fog: 14, alpha: .5,  layer: .72 },
+    3: { rain: 250, storm: 360, snow: 165, fog: 20, alpha: .64, layer: .9 },
+    4: { rain: 360, storm: 480, snow: 230, fog: 27, alpha: .82, layer: 1 },
   };
   const WXI_FORCE = new URLSearchParams(location.search).get('wxi');
   let wxAlpha = WX_LEVELS[2].alpha, wxLevelUsed = 0;
@@ -1029,6 +1008,47 @@ ${bulbs.join('')}
       vy: rnd(6, 15), vx: rnd(-0.4, 0.9), len: 0 });
     drops.forEach(d => d.len = d.vy * 1.6);
   }
+  // Fog adapts dburrell's "Particle Fog Generator" (canvas smoke puffs that
+  // rise from the bottom, drift, grow, and fade — credited in CREDITS.md).
+  // His smoke PNG is replaced by a procedural sprite (layered soft radial
+  // blobs on an offscreen canvas) so the card stays self-contained, and the
+  // one-shot burst becomes a looping field: a particle past its life
+  // respawns at the bottom with fresh randoms.
+  // Sprites are baked at five fixed sizes per variant and always drawn
+  // unscaled: a continuously-rescaled canvas-source drawImage forces a full
+  // resample every frame in software rasterizers (measured 7fps vs 50).
+  const FOG_SIZES = [120, 150, 180, 210, 240];
+  let fogSprites = null;
+  function makeFogSprites() {
+    fogSprites = [0, 1].map(v => FOG_SIZES.map(size => {
+      const c = document.createElement('canvas'); c.width = c.height = size;
+      const g = c.getContext('2d'), h = size / 2, k = size / 192;
+      for (let i = 0; i < 5; i++) {
+        const x = h + rnd(-34, 34) * k, y = h + rnd(-26, 26) * k,
+          r = rnd(40, 78 - v * 12) * k;
+        const grad = g.createRadialGradient(x, y, 0, x, y, r);
+        grad.addColorStop(0, 'rgba(212,220,232,.16)');
+        grad.addColorStop(1, 'rgba(212,220,232,0)');
+        g.fillStyle = grad;
+        g.beginPath(); g.arc(x, y, r, 0, 6.2832); g.fill();
+      }
+      return c;
+    }));
+  }
+  function seedFog(n) {
+    if (!fogSprites) makeFogSprites();
+    drops = []; splashes = [];
+    for (let i = 0; i < n; i++) drops.push(fogParticle(Math.random()));
+  }
+  function fogParticle(frac) {
+    // frac staggers the field at seed time so fog never starts empty.
+    const life = rnd(9, 15) * 60;                       // frames (~60fps)
+    return { sprite: Math.random() < 0.5 ? 0 : 1,
+      x: rnd(-wxW * 0.2, wxW), y: wxH - rnd(0, wxH * 0.12),
+      rise: rnd(0.22, 0.55), drift: rnd(0.08, 0.45),
+      size: rnd(120, 210), grow: rnd(0.06, 0.14),
+      maxA: rnd(0.75, 1.3), age: frac * life, life };
+  }
   function seedSnow(n) {
     drops = []; splashes = [];
     for (let i = 0; i < n; i++) drops.push({
@@ -1045,6 +1065,25 @@ ${bulbs.join('')}
         f.y += f.vy; f.x += f.wind + Math.sin((f.ph += 0.01)) * 0.4;
         if (f.y > wxH + 4) { f.y = -4; f.x = rnd(0, wxW); }
         if (f.x > wxW + 4) f.x = -4; else if (f.x < -4) f.x = wxW + 4;
+      }
+      wxCtx.globalAlpha = 1;
+    } else if (wxMode === 'fog') {
+      const boost = wxAlpha * 2;                       // intensity → density
+      for (let i = 0; i < drops.length; i++) {
+        const f = drops[i];
+        const frac = f.age / f.life;
+        if (frac >= 1) { drops[i] = fogParticle(0); continue; }
+        // fade in fast, fade out across the back half (pen fades linearly;
+        // the fade-in stops respawn pops)
+        const a = Math.min(frac / 0.15, (1 - frac) / 0.55, 1) * f.maxA * boost;
+        wxCtx.globalAlpha = Math.max(0, Math.min(0.85, a));
+        const s = f.size + f.grow * f.age;
+        const step = Math.max(0, Math.min(FOG_SIZES.length - 1,
+          Math.round((s - FOG_SIZES[0]) / 30)));
+        const sprite = fogSprites[f.sprite][step];
+        wxCtx.drawImage(sprite, (f.x - sprite.width / 2) | 0,
+          (f.y - sprite.width / 2) | 0);
+        f.x += f.drift; f.y -= f.rise; f.age++;
       }
       wxCtx.globalAlpha = 1;
     } else {
@@ -1078,6 +1117,7 @@ ${bulbs.join('')}
   function wxSeed() {
     const L = WX_LEVELS[wxLevelUsed]; wxAlpha = L.alpha;
     if (wxMode === 'snow') seedSnow(L.snow);
+    else if (wxMode === 'fog') seedFog(L.fog);
     else seedRain(wxMode === 'storm' ? L.storm : L.rain);
   }
   function wxStart(mode) {
@@ -1115,6 +1155,7 @@ ${bulbs.join('')}
     if (document.body.classList.contains('wx-snow')) wxStart('snow');
     else if (document.body.classList.contains('wx-storm')) wxStart('storm');
     else if (document.body.classList.contains('wx-rain')) wxStart('rain');
+    else if (document.body.classList.contains('wx-fog')) wxStart('fog');
     else wxStop();
   }
   function paintWx() {
