@@ -161,7 +161,8 @@ SETTINGS_PATH = os.path.join(DATA_DIR, "settings.json")
 
 THEMES = ("amber", "ice", "crimson", "emerald",
           "campaign", "concrete", "trophy", "bsides")
-TEMPLATES = ("spotlight", "split", "hero", "lowerthird", "bigclock", "street")
+TEMPLATES = ("spotlight", "split", "hero", "lowerthird", "bigclock", "street",
+             "fanart")
 TITLE_FONTS = ("system", "bebas", "oswald", "playfair", "cinzel", "grotesk")
 ACCENT_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 IP_RE = re.compile(r"^\d{1,3}(\.\d{1,3}){3}$")
@@ -183,6 +184,7 @@ DEFAULT_SETTINGS = {
     "rotateSeconds": 30,
     "showWeather": False, "weatherZip": "", "weatherUnits": "f",
     "weatherFX": True, "weatherIntensity": 2,
+    "fanartKey": "", "fanartType": "background", "fanartRotateSeconds": 30,
     "blockLayout": {},       # {template: {block: {x,y,width,scale,align,font,color}}}
     "presets": [],           # user-saved looks: {name, template, blockLayout, blockVisibility, metaOpts}
     "blockVisibility": {},  # {template: {block: bool}}, sparse — only overrides
@@ -194,7 +196,7 @@ DEFAULT_SETTINGS = {
 
 # Keys/tokens are write-only: stored in settings.json but never served back to
 # a browser — /settings.json replaces each with a saved/not-saved hint.
-SECRET_SETTINGS = ("plexToken", "embyKey", "jellyfinKey")
+SECRET_SETTINGS = ("plexToken", "embyKey", "jellyfinKey", "fanartKey")
 
 
 def served_settings(settings=None):
@@ -224,7 +226,60 @@ TEMPLATE_DEFAULT_BLOCKS = {
     "lowerthird": ("backdrop", "clock", "identity", "meta", "ratings", "progress"),
     "bigclock": ("backdrop", "clock", "identity", "progress"),
     "street": ("clock", "identity", "meta", "plot", "ratings", "progress", "poster"),
+    # Fanart ships bare on purpose: the rotating art is the whole card until
+    # the user adds blocks. Its art layer replaces backdrop (like street).
+    "fanart": (),
 }
+
+# fanart.tv v3 art types, user-facing name -> (movie key, tv key).
+FANART_KEY_ENV = os.environ.get("FANART_API_KEY", "")
+FANART_TYPES = {
+    "background": ("moviebackground", "showbackground"),
+    "poster": ("movieposter", "tvposter"),
+    "logo": ("hdmovielogo", "hdtvlogo"),
+    "clearart": ("hdmovieclearart", "hdclearart"),
+    "banner": ("moviebanner", "tvbanner"),
+    "thumb": ("moviethumb", "tvthumb"),
+}
+
+
+def fanart_api_key(settings=None):
+    s = settings if settings is not None else load_settings()
+    return s.get("fanartKey") or FANART_KEY_ENV
+
+
+def fanart_fetch(kind, fid, key):
+    """Raw fanart.tv doc for /movies/{tmdb|imdb} or /tv/{tvdb}; {} on miss."""
+    try:
+        url = f"https://webservice.fanart.tv/v3/{kind}/{fid}?api_key={key}"
+        with urllib.request.urlopen(url, timeout=10) as r:
+            return json.loads(r.read())
+    except Exception as e:
+        print(f"fanart.tv fetch failed ({kind}/{fid}): {e}", flush=True)
+        return {}
+
+
+def fanart_urls(doc, is_movie, settings=None):
+    """Best-liked art URLs of the configured type, ready for the card.
+
+    Picked per poll (not at cache time) so changing the art type in settings
+    takes effect on the next tick instead of the next title."""
+    if not doc:
+        return []
+    s = settings if settings is not None else load_settings()
+    kind = s.get("fanartType")
+    if kind not in FANART_TYPES:
+        kind = "background"
+    arts = doc.get(FANART_TYPES[kind][0 if is_movie else 1]) or []
+    arts = [a for a in arts if isinstance(a, dict) and a.get("url")]
+
+    def likes(a):
+        try:
+            return int(a.get("likes") or 0)
+        except (TypeError, ValueError):
+            return 0
+    arts.sort(key=likes, reverse=True)
+    return [a["url"] for a in arts[:12]]
 
 _meta_cache = {}  # ratingKey -> extras dict
 
@@ -466,7 +521,8 @@ def library_extras(rating_key, is_movie=False):
     if rating_key in _meta_cache:
         return _meta_cache[rating_key]
     x = {"genres": [], "imdb": None, "stinger": [],
-         "poster": False, "backdrop": False, "logo": False}
+         "poster": False, "backdrop": False, "logo": False,
+         "fanartDoc": {}, "fanartMovie": is_movie}
     try:
         root = fetch_xml(f"/library/metadata/{rating_key}?includeRatings=1")
         item = root.find("./*")
@@ -481,6 +537,27 @@ def library_extras(rating_key, is_movie=False):
                         x["stinger"] = tmdb_stinger(g.get("id")[7:])
                         break
             x.update(download_art(item, rating_key))
+            fkey = fanart_api_key()
+            if fkey:
+                if is_movie:
+                    guids = [(g.get("id") or "") for g in item.findall("Guid")]
+                    fid = next((g[7:] for g in guids if g.startswith("tmdb://")),
+                               None) or next((g[7:] for g in guids
+                                              if g.startswith("imdb://")), None)
+                    if fid:
+                        x["fanartDoc"] = fanart_fetch("movies", fid, fkey)
+                else:
+                    # fanart.tv keys TV on the SHOW's TheTVDB id; an episode's
+                    # own tvdb guid is the episode, so read the grandparent.
+                    show = item
+                    if item.get("grandparentRatingKey"):
+                        show = fetch_xml("/library/metadata/"
+                                         + item.get("grandparentRatingKey")).find("./*")
+                    guids = ([(g.get("id") or "") for g in show.findall("Guid")]
+                             if show is not None else [])
+                    fid = next((g[7:] for g in guids if g.startswith("tvdb://")), None)
+                    if fid:
+                        x["fanartDoc"] = fanart_fetch("tv", fid, fkey)
     except Exception as e:
         print(f"metadata fetch failed for {rating_key}: {e}", flush=True)
     _meta_cache.clear()  # only ever need the current item
@@ -569,6 +646,9 @@ def parse_emby_session(session, extras):
     x = extras(item)
     if x.get("stinger"):
         info["stinger"] = x["stinger"]
+    fa = fanart_urls(x.get("fanartDoc"), x.get("fanartMovie", True))
+    if fa:
+        info["fanart"] = fa
     info["poster"] = x.get("poster", False)
     info["backdrop"] = x.get("backdrop", False)
     info["logo"] = x.get("logo", False)
@@ -592,6 +672,9 @@ def parse_session(video, extras=library_extras):
     x = (extras(a("ratingKey"), a("type") == "movie") if a("ratingKey")
          else {"genres": [], "imdb": None, "stinger": [],
                "poster": False, "backdrop": False, "logo": False})
+    fa = fanart_urls(x.get("fanartDoc"), x.get("fanartMovie", True))
+    if fa:
+        info["fanart"] = fa
 
     player = video.find("Player")
     if player is not None and player.get("state"):
@@ -810,13 +893,36 @@ def emby_extras(item):
     key = item.get("Id")
     if key and key in _emby_meta_cache:
         return _emby_meta_cache[key]
-    x = {"stinger": [], "poster": False, "backdrop": False, "logo": False}
+    is_movie = item.get("Type") == "Movie"
+    x = {"stinger": [], "poster": False, "backdrop": False, "logo": False,
+         "fanartDoc": {}, "fanartMovie": is_movie}
     try:
         tmdb_id = (item.get("ProviderIds") or {}).get("Tmdb")
-        if TMDB_KEY and item.get("Type") == "Movie" and tmdb_id:
+        if TMDB_KEY and is_movie and tmdb_id:
             x["stinger"] = tmdb_stinger(tmdb_id)
     except Exception as e:
         print(f"emby stinger failed: {e}", flush=True)
+    fkey = fanart_api_key()
+    if fkey:
+        try:
+            ids = item.get("ProviderIds") or {}
+            if is_movie:
+                fid = ids.get("Tmdb") or ids.get("Imdb")
+                if fid:
+                    x["fanartDoc"] = fanart_fetch("movies", fid, fkey)
+            else:
+                # fanart.tv keys TV on the show's TheTVDB id — an episode's
+                # own Tvdb provider id is the episode, so look up the series.
+                fid = None
+                if item.get("SeriesId"):
+                    got = emby_fetch_json(f"/Items?Ids={item['SeriesId']}"
+                                          "&Fields=ProviderIds")
+                    series = (got.get("Items") or [{}])[0]
+                    fid = (series.get("ProviderIds") or {}).get("Tvdb")
+                if fid:
+                    x["fanartDoc"] = fanart_fetch("tv", fid, fkey)
+        except Exception as e:
+            print(f"emby fanart lookup failed: {e}", flush=True)
     try:
         x.update(emby_download_art(item))
     except Exception as e:
@@ -987,7 +1093,8 @@ def clean_block_visibility(value):
 
 # Display-only keys a shared setup may carry along (never location or creds).
 PRESET_EXTRA_KEYS = ("clockFormat", "clockSeconds", "weatherFX",
-                     "weatherIntensity", "weatherUnits")
+                     "weatherIntensity", "weatherUnits",
+                     "fanartType", "fanartRotateSeconds")
 
 
 def clean_presets(value):
@@ -1030,6 +1137,11 @@ def clean_presets(value):
             for boolean in ("clockSeconds", "weatherFX"):
                 if boolean in kept and not isinstance(kept[boolean], bool):
                     kept.pop(boolean, None)
+            if kept.get("fanartType") not in FANART_TYPES:
+                kept.pop("fanartType", None)
+            if not (isinstance(kept.get("fanartRotateSeconds"), int)
+                    and 5 <= kept["fanartRotateSeconds"] <= 3600):
+                kept.pop("fanartRotateSeconds", None)
             if kept:
                 item["extras"] = kept
         cleaned.append(item)
@@ -1197,6 +1309,9 @@ class WebHandler(BaseHTTPRequestHandler):
             merged["showWeather"] = bool(merged["showWeather"])
             merged["weatherFX"] = bool(merged["weatherFX"])
             merged["weatherIntensity"] = clean_intensity(merged["weatherIntensity"])
+            if merged["fanartType"] not in FANART_TYPES:
+                merged["fanartType"] = "background"
+            merged["fanartRotateSeconds"] = clamp_rotate(merged["fanartRotateSeconds"])
             merged["clockSeconds"] = bool(merged["clockSeconds"])
             if not (isinstance(merged["accent"], str)
                     and (merged["accent"] == "" or ACCENT_RE.match(merged["accent"]))):
@@ -1336,6 +1451,18 @@ def selftest():
     assert "secret" not in json.dumps(served)
     assert served["envBackend"] == ENV_BACKEND   # page shows the env default
 
+    # fanart: bare template, best-liked-first URL pick, type picked per poll
+    assert "fanart" in TEMPLATES and TEMPLATE_DEFAULT_BLOCKS["fanart"] == ()
+    _fa = {"moviebackground": [{"url": "u1", "likes": "2"},
+                               {"url": "u2", "likes": "9"}, {"nourl": 1}],
+           "tvposter": [{"url": "tv1"}]}
+    assert fanart_urls(_fa, True, {"fanartType": "background"}) == ["u2", "u1"]
+    assert fanart_urls(_fa, False, {"fanartType": "poster"}) == ["tv1"]
+    assert fanart_urls(_fa, True, {"fanartType": "bogus"}) == ["u2", "u1"]
+    assert fanart_urls({}, True, {"fanartType": "background"}) == []
+    assert fanart_api_key({"fanartKey": "abc"}) == "abc"
+    assert "fanartKey" in SECRET_SETTINGS  # write-only, never served or exported
+
     # plex creds: settings page wins, env is the fallback
     _saved_plex = {k: os.environ.get(k) for k in ("PLEX_HOST", "PLEX_TOKEN")}
     try:
@@ -1410,7 +1537,8 @@ def selftest():
     assert mig["blockVisibility"]["split"]["plot"] is False
     assert "plot" not in mig["blockVisibility"].get("hero", {})  # hero has no plot
     assert mig["blockVisibility"]["hero"]["backdrop"] is False
-    assert all("backdrop" in TEMPLATE_DEFAULT_BLOCKS[t] for t in TEMPLATES if t != "street")
+    assert all("backdrop" in TEMPLATE_DEFAULT_BLOCKS[t] for t in TEMPLATES
+               if t not in ("street", "fanart"))  # their art layer IS the backdrop
     assert "backdrop" not in TEMPLATE_DEFAULT_BLOCKS["street"]
     assert TEMPLATE_DEFAULT_BLOCKS["bigclock"] == ("backdrop", "clock", "identity", "progress")
     assert "backdrop" in TOGGLEABLE_BLOCKS
