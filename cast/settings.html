@@ -299,8 +299,21 @@
     .editor { position: static; margin-top: 12px; }
     .editor.collapsed { display: none; }
     #editor-toggle { display: block; }
-    .chip > .chip-label { padding: 11px 6px 11px 15px; }
-    .chip.no-x > .chip-label, .chip.add > .chip-label { padding-right: 15px; }
+    /* Touch floor: every target ≥44px effective. The chip × is destructive —
+       it gets real width, not an invisible hit-halo that could eat label taps. */
+    .chip > .chip-label { padding: 13px 6px 13px 16px; }
+    .chip.no-x > .chip-label, .chip.add > .chip-label { padding-right: 16px; }
+    .chip > .chip-x { min-width: 44px; padding: 0 13px 0 7px; font-size: 16px; }
+    .tabs button { min-height: 44px; }
+    .secondary, .linkbtn { min-height: 44px; }
+    .tour .primary { min-height: 44px; padding: 10px 18px; }
+    .add-tray button { padding: 12px 16px; }
+    .metachips span { padding: 11px 15px; }
+    .swatches button, .swatches input[type=color] { width: 38px; height: 38px; }
+    .tcard .pdel { width: 28px; height: 28px; font-size: 15px; }
+    .slider input { height: 44px; }
+    select, input[type=text], input[type=password], input[type=number] {
+      min-height: 44px; }
     .row { flex-wrap: wrap; row-gap: 8px; }
     .row label { flex: 1 1 100%; }
     .row > *:not(label) { margin-left: auto; }
