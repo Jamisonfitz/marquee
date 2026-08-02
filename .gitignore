@@ -13,3 +13,9 @@ output/logo.png
 output/settings.json
 output/now-playing.png
 AI_NOTES.md
+
+# Internal working docs — local only, not for the public repo
+PRODUCT.md
+DESIGN.md
+.impeccable/
+docs/drafts/
