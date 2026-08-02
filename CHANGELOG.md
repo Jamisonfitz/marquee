@@ -1,5 +1,32 @@
 # Changelog
 
+## 2.1.0 — 2026-08-01
+
+Two ideas from living with Settings v2 for a day.
+
+- **The chips stopped assuming.** A block can be on your card yet have nothing
+  to show — no scores for this title, an emptied metadata line, no poster art.
+  The old page let you select it and drag sliders at a block that wasn't on
+  screen, which felt broken even though it wasn't. Now the card reports what it
+  actually rendered after every frame: chips for absent blocks go dashed and
+  dim, and the editor says plainly that there's nothing to show right now and
+  that your changes still save for when there is.
+- **Looks are shareable now.** "Share this look" (Design tab) copies your
+  current screen setup as a small, versioned JSON file — the template, every
+  block's position, size, font, and color, plus the display settings that
+  travel well (clock style, weather effects — never your location or
+  credentials). It's credited to whatever name you choose, and the credit
+  travels: when someone imports it, it lands on their carousel as a preset
+  tagged "by you", one tap from applied. If people start trading these, the
+  format is ready for a community repo.
+- **About grew a memory.** The people who built pieces of this are now named
+  where users can see them: TRusselo's backends and filters, catt (the casting
+  engine underneath everything), and the CodePen artists behind the weather.
+  And if Marquee makes your living room better, there's a Buy Me a Coffee
+  button — entirely optional, it changes nothing.
+- **What's new reads like this now** — release cards that explain what changed
+  and why, instead of a wall of changelog text.
+
 ## 2.0.0 — 2026-08-01
 
 Settings v2 — a ground-up rebuild of the settings page from a commissioned
