@@ -6,12 +6,13 @@
 [![Docker Pulls](https://img.shields.io/docker/pulls/jamisonfitz/marquee?logo=docker)](https://hub.docker.com/r/jamisonfitz/marquee)
 [![Docker Image Version](https://img.shields.io/docker/v/jamisonfitz/marquee?sort=semver&logo=docker)](https://hub.docker.com/r/jamisonfitz/marquee/tags)
 [![License](https://img.shields.io/github/license/Jamisonfitz/marquee)](LICENSE)
+[![Buy me a coffee](https://img.shields.io/badge/%E2%98%95%20Buy%20me%20a%20coffee-E5A83B?logoColor=white)](https://buymeacoffee.com/jamisonfitz)
 
 Marquee turns a Google Nest Hub into a clean now-playing display for Plex, Emby, or Jellyfin. It shows artwork, title, plot, genres, ratings, media details, progress, and a clock, then returns the Hub to ambient mode when playback stops.
 
 ![One app, many looks — templates × themes × fonts](docs/screenshots/variety.jpg)
 
-*Same app, nine looks: six templates × eight themes × six fonts × any accent color.*
+*Same app, many looks: seven templates, per-block colors and fonts, and every block movable — your setup will not look like anyone else&rsquo;s.*
 
 With your own library it looks like this — real posters, backdrops, and clear-logos straight from Plex:
 
@@ -21,7 +22,7 @@ With your own library it looks like this — real posters, backdrops, and clear-
 
 ## Templates
 
-Six designed layouts, switchable live from the settings page:
+Seven layouts, switchable live from the settings page:
 
 | | |
 |:---:|:---:|
@@ -29,34 +30,64 @@ Six designed layouts, switchable live from the settings page:
 | ![Lower Third](docs/screenshots/lowerthird.jpg) **Lower Third** — broadcast-style chyron over full-bleed art | ![Big Clock](docs/screenshots/bigclock.jpg) **Big Clock** — ambient timepiece with a now-playing strip |
 | ![Street](docs/screenshots/street.jpg) **Street** — a living night scene: your poster glowing in a bulb-lit marquee, the movie logo sprayed on brick, real weather on the wall | ![Split](docs/screenshots/split.jpg) **Split** — hard split: full-height art wall beside the info column |
 
-Every template is built from the same set of blocks — title/logo identity, weather, grouped ratings, metadata chips, plot, progress, clock, poster — so themes, custom accent color, and fonts carry across all of them. Which blocks appear, and where, is set per template: add or remove any block from any template independently, and reposition them without affecting the others.
+Plus **Fanart** — a blank canvas where [fanart.tv](https://fanart.tv) artwork
+for whatever's playing crossfades on a timer (backgrounds, posters, logos,
+clear art, banners, or thumbs). It ships with no blocks; add only what you
+want over the art. Needs a free fanart.tv API key (Connection tab, or
+`FANART_API_KEY`).
 
-![Settings UI](docs/screenshots/settings.jpg)
+Every template is built from the same set of blocks — backdrop, clock, weather,
+title, metadata, plot, ratings, progress, poster — and every block carries its
+own position, size, font, and color per template, so a nudge in Spotlight
+never moves anything in Street.
+
+## The settings page is the card
+
+Settings v2 has no wall of options. The card fills the page; you edit what
+you're looking at.
+
+![Settings v2 — the card is the page](docs/screenshots/settings-design.jpg)
+
+- **Tap anything.** Tap a block on the live preview — or its chip below — and
+  the editor shows just that block's controls: font, color, position, width,
+  size, plus whatever it owns (clock style and seconds, weather effects and
+  intensity, which metadata pieces show, logo art vs text title). Tap the
+  card's empty background to edit the backdrop.
+- **The chips tell the truth.** One pill per block on the card: × takes it
+  off, "+ Add" brings anything back. When a block is on your card but has
+  nothing to show for the current title — no scores yet, an emptied metadata
+  line — its chip goes dim and the editor says so, instead of letting you
+  adjust an element that isn't on screen.
+- **Bottle a look, share it, credit travels.** "Save preset" snapshots your
+  whole layout onto the template carousel. "Share this look" copies it as a
+  small setup file — credited to you — and anyone who imports it gets it on
+  their carousel tagged with your name, one tap from applied. Locations and
+  credentials never ride along.
+- **A guided tour, once.** First run walks you through the six things that
+  matter, spotlighting the real interface — then gets out of the way.
+- **Phones are first-class.** The preview pins to the top at a size that
+  leaves room to work, and the on-screen keyboard can never cover it.
+
+| | |
+|:---:|:---:|
+| ![Contextual editor](docs/screenshots/settings-editor.jpg) | ![Guided tour](docs/screenshots/settings-tutorial.jpg) |
 
 ## Features
 
-- Live now-playing card — from Plex, Emby, or Jellyfin — with six designed
-  templates: Spotlight, Split, Hero, Lower Third, Big Clock, and Street
-  (animated marquee bulbs, real weather, and day/night, all included).
-- Street weather effects — canvas rain and snow, drifting fog, overcast, and
-  storms that follow your real local conditions, with an **Effect intensity**
-  (1–4) control so they stay ambient rather than distracting. Optional and
-  separate from the temperature readout.
-- Eight themes, one-tap Vibe presets, a custom accent color, five title
-  fonts, 12/24-hour clock styles, and per-block show/hide toggles.
-- Add or remove any block — clock, weather, title, plot, ratings, progress,
-  poster — from any template independently, and reposition it without
-  affecting the others. Nothing changes until you actually add or remove
-  something; every template still ships with its original layout.
-- Session filters: limit casting to your Plex users and your devices, live
-  from the settings page — shared users no longer take over the display.
-- A drag-and-slider editor for moving, sizing, justifying, and scaling each
-  card block, with an instant demo preview featuring original fictional
-  films (no copyrighted art). On phones, the template and vibe pickers
-  collapse into one swipeable strip so the editor doesn't fight the screen
-  for room.
-- Persisted settings, health checks, and a Docker-first deployment path.
-- Google Nest Hub casting with clean idle handoff back to ambient mode.
+- Live now-playing card from Plex, Emby, or Jellyfin; casts to a Nest Hub
+  and hands it back to ambient mode when playback stops.
+- Seven templates, including Street (animated night scene with rain, snow,
+  smoke-fog, and storms that follow your real weather, intensity 1–4) and
+  Fanart (rotating fanart.tv art on a blank canvas).
+- Every block — clock, weather, title, plot, ratings, progress, poster —
+  addable, removable, and movable per template, each with its own font and
+  color. Tap it on the live preview to edit it.
+- Presets and "Share this look": snapshot a layout, or export it as a small
+  credited file others import in one tap. Credentials never ride along.
+- Session filters (users, devices, a "do not cast" word list) and rotation
+  when multiple sessions play.
+- A six-step guided tour on first run; settings persist in `/config`;
+  `/healthz` for monitoring.
 
 ## What You Need
 
@@ -105,33 +136,15 @@ Required environment variables:
 ### Choosing the media backend
 
 Plex is the default. Marquee can poll an **Emby** or **Jellyfin** server
-instead — same card, same settings page, same session filters and rotation.
-Pick the backend either place; the settings page wins, env is the container
-default (the same rule the cast device follows):
-
-- **Settings page** — a *Media server* panel: one backend dropdown (Plex /
-  Emby / Jellyfin), one server-address field, one key field. The dropdown
-  picks which backend the two fields edit, and each backend keeps its own
-  stored pair, so switching loses nothing. Nothing changes until you press
-  **Save**; a saved change is picked up on the next poll (~5s), no container
-  restart. Keys and tokens are stored server-side and never sent back to a
-  browser — the page only shows *saved*; a blank field keeps the stored
-  value, and Export/Import never includes them.
-- **Env** — `MEDIA_BACKEND=emby` with `EMBY_HOST` (e.g.
-  `http://localhost:8096`) and `EMBY_API_KEY` (Emby dashboard → Advanced →
-  API Keys), or `MEDIA_BACKEND=jellyfin` with `JELLYFIN_HOST` and
-  `JELLYFIN_API_KEY` (Jellyfin dashboard → API Keys). Jellyfin is an
-  API-compatible fork of Emby and rides the same code path; either env pair
-  works with either backend, and the pair matching the backend name wins
-  when both are set. `PLEX_HOST`/`PLEX_TOKEN` are not required when the
-  backend is emby or jellyfin.
-
-Only `PAGE_URL` is required at startup: a container with no media-server
-credentials boots to the settings page, where they can be entered.
-
-The backends emit the same now-playing shape, so everything downstream —
-templates, themes, toggles, `/now-playing.json` — behaves identically.
-Verified against Emby 4.9 and Jellyfin 10.11.
+instead — same card, same settings, same filters. Pick it on the settings
+page (*Media server* panel: backend dropdown + address + key; each backend
+keeps its own stored pair, changes apply ~5s after Save, no restart), or via
+env: `MEDIA_BACKEND=emby` with `EMBY_HOST`/`EMBY_API_KEY`, or
+`MEDIA_BACKEND=jellyfin` with `JELLYFIN_HOST`/`JELLYFIN_API_KEY`.
+Keys and tokens are write-only: stored server-side, never sent back to a
+browser, never in Export. Only `PAGE_URL` is required at startup — a
+container with no credentials boots to the settings page. Verified against
+Emby 4.9 and Jellyfin 10.11.
 
 Cast device: open the settings page and press **Scan** — Marquee discovers
 Google Cast devices on your LAN and you pick your Hub from a dropdown.
@@ -146,21 +159,19 @@ Optional settings:
 - `PLEX_DEVICES` — comma-separated player/device names that trigger the
   marquee; empty allows any device. Both filters are also editable live on
   the settings page, which shows the exact names of active sessions.
-- `BLOCK_TAGS` — comma-separated **do-not-cast** words, checked against each
-  session's genres, tags, and content rating. A match means that session is
-  never cast, so the marquee cannot overshare what someone is watching —
-  e.g. `adult, xxx, 18+, nc-17, tv-ma`. Matching is case-insensitive; words
-  of three or more characters match inside terms (`adult` also blocks
-  "Adult Animation"), shorter words must match a term exactly (`r` blocks
-  the R rating without blocking Horror). Works on all three backends; also
-  editable on the settings page.
+- `BLOCK_TAGS` — comma-separated **do-not-cast** words checked against each
+  session's genres, tags, and content rating (e.g. `adult, xxx, 18+, nc-17,
+  tv-ma`); a match is never cast. Case-insensitive; words of 3+ characters
+  match inside terms, shorter ones match exactly. Also on the settings page.
 
 When more than one allowed session is playing, each takes the display in turn.
 **Rotate between sessions** on the settings page sets how long each gets
 (default 30 seconds; 0 pins the first, ordered by user then device). Sessions
 are always sorted before one is picked, so the card never flips at random
 because the server reordered its session list.
-- `TMDB_API_KEY`
+- `TMDB_API_KEY` — enables the credits-scene badge
+- `FANART_API_KEY` — container default for the Fanart template's key
+  (the settings page value wins)
 - `POLL_SECONDS` default `5`
 - `SERVE_PORT` default `8084`
 - `REPO_DIR` — the container sets `/app` (the code's own default is `/repo`)
@@ -185,12 +196,6 @@ rather than *nothing is set*, and typing a value (then clearing it later)
 behaves the way you'd expect. The placeholders come from `/env-defaults`,
 which serves those values and nothing else — an allowlist, so nothing
 credential-shaped can leak to a browser.
-
-(Older versions **merged** the user/device env filters with the settings page
-instead: the env list was invisible in the UI and clearing the field could
-never lift it. If `PLEX_USERS=jamison` was set, the Users field showed up
-*empty* while every session except `jamison`'s was silently ignored, and
-clearing the field changed nothing.)
 
 Health status is available at `/healthz` and includes the version.
 
@@ -243,6 +248,19 @@ Marquee checks that DashCast is active, casts the `/image` URL when playback sta
 
 ## Credits
 
-The Street template's weather effects were built with technique and
-inspiration from several open CodePens — rain, snow, fog, and the neon sign
-flicker. See [CREDITS.md](CREDITS.md) for the authors and sources.
+Marquee stands on generous shoulders:
+
+- **[TRusselo](https://github.com/TRusselo)** — the Emby & Jellyfin backends,
+  session filters and rotation, the dead-card heartbeat, the content filter,
+  and a steady stream of sharp fixes.
+- **[catt](https://github.com/skorokithakis/catt)** by Stavros Korokithakis —
+  the casting engine that actually puts the card on your Hub (BSD, bundled
+  stock).
+- The Street template's weather effects adapt open CodePen techniques by
+  sheepjs, Ivan Odintsov, Braeden Craig, and Tiff Wong — full notes and
+  sources in [CREDITS.md](CREDITS.md).
+
+## Support
+
+Marquee is free and stays that way. If it makes your living room a little
+more cinematic, you can [buy me a coffee](https://buymeacoffee.com/jamisonfitz) ☕
