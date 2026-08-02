@@ -57,6 +57,7 @@
   .stage.fade { opacity: 0; }
   .stage.hidden { display: none; }
   .block { min-width: 0; position: relative; padding: 1.2vh 0; }
+  .stage [data-layout][hidden] { display: none !important; }
   .block[hidden] { display: none !important; }
   /* per-block justify: left / center / right */
   .block.al-left   { justify-self: start;  text-align: left; }
@@ -194,7 +195,6 @@
     grid-template-areas: "." "identity" "meta" "ratings" "." "progress";
     justify-items: center; text-align: center; }
   body[data-template="hero"] .b-identity { justify-items: center; row-gap: 2.2vh; }
-  body[data-template="hero"] .b-plot, body[data-template="hero"] .b-poster { display: none; }
   body[data-template="hero"] .logo { max-height: 32vh; max-width: 56vw; }
   body[data-template="hero"] .title { font-size: 7vw; }
   body[data-template="hero"] .subtitle { font-size: 2.5vw; }
@@ -212,7 +212,6 @@
   body[data-template="lowerthird"] .stage::before { content: ""; position: absolute;
     left: 0; right: 0; bottom: 0; height: 44vh; pointer-events: none;
     background: linear-gradient(transparent, rgba(4, 5, 7, .88) 62%); }
-  body[data-template="lowerthird"] .b-plot, body[data-template="lowerthird"] .b-poster { display: none; }
   body[data-template="lowerthird"] .b-identity { margin-left: 5vw; row-gap: .8vh; }
   body[data-template="lowerthird"] .b-meta { margin-left: 5vw; }
   body[data-template="lowerthird"] .b-ratings { margin-right: 5vw; align-self: end; }
@@ -233,8 +232,6 @@
   body[data-template="bigclock"] .clock { font-size: 15vw; font-weight: 800;
     color: var(--accent); letter-spacing: -.02em;
     text-shadow: 0 0 6vh var(--accent-glow), 0 1vh 5vh rgba(0,0,0,.6); }
-  body[data-template="bigclock"] .b-meta, body[data-template="bigclock"] .b-plot,
-  body[data-template="bigclock"] .b-ratings, body[data-template="bigclock"] .b-poster { display: none; }
   body[data-template="bigclock"] .b-identity { justify-items: center; row-gap: .6vh; }
   body[data-template="bigclock"] .logo { max-height: 9vh; max-width: 24vw; }
   body[data-template="bigclock"] .title { font-size: 2.4vw; color: var(--text-soft); }
@@ -441,8 +438,8 @@
     split: ['backdrop', 'clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
     hero: ['backdrop', 'clock', 'identity', 'meta', 'ratings', 'progress'],
     lowerthird: ['backdrop', 'clock', 'identity', 'meta', 'ratings', 'progress'],
-    bigclock: ['backdrop', 'clock', 'identity', 'meta', 'plot', 'progress'],
-    street: ['backdrop', 'clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
+    bigclock: ['backdrop', 'clock', 'identity', 'progress'],
+    street: ['clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
   };
   // A block outside its template's default set has no grid-area or template
   // CSS anchor to offset from, so it needs a real starting position the
@@ -825,7 +822,9 @@ ${bulbs.join('')}
     applyBlockLayout();
     if (EDIT) {
       const rendered = [...document.querySelectorAll('[data-layout]')]
-        .filter(el => !el.hidden).map(el => el.dataset.layout);
+        .filter(el => !el.hidden && el.getClientRects().length > 0
+          && el.getBoundingClientRect().height > 1)
+        .map(el => el.dataset.layout);
       if ($('bg').classList.contains('on')) rendered.push('backdrop');
       parent.postMessage({ type: 'marquee-blocks', rendered }, location.origin);
     }

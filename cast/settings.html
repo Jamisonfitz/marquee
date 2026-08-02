@@ -624,8 +624,8 @@
     split: ['backdrop', 'clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
     hero: ['backdrop', 'clock', 'identity', 'meta', 'ratings', 'progress'],
     lowerthird: ['backdrop', 'clock', 'identity', 'meta', 'ratings', 'progress'],
-    bigclock: ['backdrop', 'clock', 'identity', 'meta', 'plot', 'progress'],
-    street: ['backdrop', 'clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
+    bigclock: ['backdrop', 'clock', 'identity', 'progress'],
+    street: ['clock', 'identity', 'meta', 'plot', 'ratings', 'progress', 'poster'],
   };
   const BLOCK_LABEL = { backdrop: 'Backdrop', clock: 'Clock', weather: 'Weather',
     identity: 'Title', meta: 'Metadata', plot: 'Plot', ratings: 'Ratings',
@@ -636,6 +636,8 @@
     'ratings', 'progress', 'poster'];
   const TOGGLEABLE = ['backdrop', 'clock', 'weather', 'identity', 'meta', 'plot',
     'ratings', 'progress', 'poster'];
+  // Street's scene IS its backdrop — the block doesn't exist there.
+  const UNADDABLE = { street: ['backdrop'] };
   // Which blocks carry text (get the font select) / take a color at all.
   const TEXT_BLOCKS = ['clock', 'weather', 'identity', 'meta', 'plot', 'ratings', 'stinger'];
   const COLORABLE = ['clock', 'weather', 'identity', 'meta', 'plot', 'ratings',
@@ -740,7 +742,8 @@
     const tray = $('#add-tray');
     if (tray.hidden) return;
     const shown = visibleBlockSet(cfg.template);
-    const missing = TOGGLEABLE.filter(n => !shown.has(n));
+    const missing = TOGGLEABLE.filter(n => !shown.has(n)
+      && !(UNADDABLE[cfg.template] || []).includes(n));
     tray.innerHTML = '';
     if (!missing.length) {
       const note = document.createElement('span');
