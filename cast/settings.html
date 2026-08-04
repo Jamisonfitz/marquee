@@ -104,12 +104,19 @@
   .preview-row { display: grid; grid-template-columns: minmax(0,1fr) 360px;
     gap: 22px; align-items: start; }
   .mq-side { min-width: 0; }
-  .frame-box { width: 100%; max-width: 1000px; aspect-ratio: 16 / 10;
+  .frame-box { width: 100%; max-width: 1000px; aspect-ratio: 16 / 10; position: relative;
     border: 2px solid #1D2229; border-radius: 12px; overflow: hidden;
     background: #07090C;
     box-shadow: 0 0 0 1px #060809, 0 18px 44px -18px rgba(0,0,0,.85),
       0 10px 60px -12px rgba(229,168,59,.14); }
   .frame-box iframe { width: 1280px; height: 800px; border: 0; transform-origin: 0 0; }
+  /* Card preview loads async (iframe doc + postMessage cfg) — a blank box for ~2s
+     reads as broken given "always see the preview" is the whole point. */
+  .frame-box.loading iframe { opacity: 0; }
+  .frame-box.loading::after { content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, #0B0F14 25%, #161C24 37%, #0B0F14 63%);
+    background-size: 400% 100%; animation: mq-pulse 1.4s ease infinite; }
+  @keyframes mq-pulse { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
   .side-sub { color: var(--mut); font-size: 12.5px; margin: 8px 2px 6px; }
 
   /* Chip strip: block presence + selection */
@@ -896,6 +903,7 @@
   }
 
   function loadFrame() {
+    $('.frame-box').classList.add('loading');
     $('#frame').onload = () => {
       sendCfg(); sendLayout();
       selectBlock(selectedBlock);
@@ -1524,6 +1532,7 @@
     } else if (msg.type === 'marquee-blocks') {
       renderedBlocks = new Set(msg.rendered || []);
       refreshChipTruth();
+      $('.frame-box').classList.remove('loading'); // real first paint, not just iframe onload
     }
   });
 
