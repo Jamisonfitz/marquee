@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.2 — 2026-08-18
+
+- **Settings preview no longer flashes blank on load.** While the card iframe
+  boots and paints, the frame shows a subtle shimmer and swaps to the live
+  preview on the real first paint — not just when the iframe reports loaded.
+
 ## 2.2.1 — 2026-08-02
 
 - **Fanart rotation now floors at 5 minutes** (up to 60), picked from a
