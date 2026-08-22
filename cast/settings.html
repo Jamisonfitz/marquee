@@ -104,6 +104,19 @@
   .preview-row { display: grid; grid-template-columns: minmax(0,1fr) 360px;
     gap: 22px; align-items: start; }
   .mq-side { min-width: 0; }
+  .display-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 10px;
+    max-width: 1000px; margin: 0 0 10px; }
+  .display-toolbar label { display: grid; gap: 4px; color: var(--mut);
+    font-size: 11px; font-weight: 700; letter-spacing: .05em;
+    text-transform: uppercase; }
+  .display-toolbar select, .display-toolbar input { min-height: 38px;
+    border: 1px solid var(--line); border-radius: 8px; background: #0B0D10;
+    color: var(--text); padding: 7px 10px; font: inherit; }
+  .display-toolbar select { min-width: 250px; }
+  .display-custom { display: flex; align-items: end; gap: 8px; }
+  .display-custom input { width: 82px; }
+  .display-times { color: var(--mut); padding-bottom: 9px; }
+  .display-size-note { color: var(--mut); font-size: 12px; padding-bottom: 10px; }
   .frame-box { width: 100%; max-width: 1000px; aspect-ratio: 16 / 10; position: relative;
     border: 2px solid #1D2229; border-radius: 12px; overflow: hidden;
     background: #07090C;
@@ -309,6 +322,9 @@
       padding: 6px 0 8px; border-bottom: 1px solid var(--line);
       box-shadow: 0 10px 24px -18px rgba(0,0,0,.8); }
     .frame-box { max-width: min(100%, 42dvh); margin: 0 auto; }
+    .display-toolbar { margin-bottom: 7px; }
+    .display-toolbar select { min-width: min(100%, 250px); }
+    .display-size-note { display: none; }
     .tcard { width: 74px; padding: 5px; }
     .tcard img, .tcard .pthumb { width: 60px; }
     .tcard b { font-size: 9.5px; }
@@ -400,6 +416,29 @@
 
     <div class="preview-row">
       <div class="mq-side">
+        <div class="display-toolbar" aria-label="Target display preview size">
+          <label for="display-preset">Target display
+            <select id="display-preset">
+              <option value="1024x600">Google Nest Hub — 1024 × 600</option>
+              <option value="1280x800" selected>Google Nest Hub Max — 1280 × 800</option>
+              <option value="1280x720">HD 16:9 — 1280 × 720</option>
+              <option value="1920x1080">Full HD 16:9 — 1920 × 1080</option>
+              <option value="800x600">4:3 — 800 × 600</option>
+              <option value="800x480">Small panel — 800 × 480</option>
+              <option value="custom">Custom size</option>
+            </select>
+          </label>
+          <div class="display-custom" id="display-custom" hidden>
+            <label for="display-width">Width
+              <input id="display-width" type="number" min="320" max="3840" step="1" value="1280">
+            </label>
+            <span class="display-times" aria-hidden="true">×</span>
+            <label for="display-height">Height
+              <input id="display-height" type="number" min="240" max="2160" step="1" value="800">
+            </label>
+          </div>
+          <span class="display-size-note" id="display-size-note">Previewing 1280 × 800 · 16:10</span>
+        </div>
         <div class="frame-box"><iframe id="frame" title="Live card preview" tabindex="-1"></iframe></div>
         <p class="side-sub">Demo data — every change previews instantly; tap any block
           to edit it. Nothing reaches the Hub until you save.</p>
@@ -681,6 +720,7 @@
   let cfg = { hubIp: '', template: 'spotlight', theme: 'amber', accent: '',
     titleFont: 'system', clockFormat: '12h', blockLayout: {},
     blockVisibility: {}, presets: [],
+    displayWidth: 1280, displayHeight: 800,
     showWeather: false, weatherFX: true, weatherIntensity: 2 };
   const cardBase = '/image';
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -885,10 +925,71 @@
       !(TOGGLEABLE.includes(selectedBlock) && visibleBlockSet(cfg.template).has(selectedBlock));
   }
 
-  function scaleFrame() {
-    const box = $('.frame-box');
-    $('#frame').style.transform = `scale(${box.clientWidth / 1280})`;
+  // Target-display presets: preview the card at the size of the real display
+  // it will run on. Only the settings preview is affected — the card served to
+  // the Hub/panel is responsive and reflows to whatever loads it.
+  const DISPLAY_PRESETS = new Set([
+    '1024x600', '1280x800', '1280x720', '1920x1080', '800x600', '800x480'
+  ]);
+  const clampDisplay = (value, low, high, fallback) => {
+    const n = Math.round(Number(value));
+    return Number.isFinite(n) ? Math.max(low, Math.min(high, n)) : fallback;
+  };
+  function targetDisplay() {
+    return {
+      width: clampDisplay(cfg.displayWidth, 320, 3840, 1280),
+      height: clampDisplay(cfg.displayHeight, 240, 2160, 800),
+    };
   }
+  function ratioLabel(width, height) {
+    let a = width, b = height;
+    while (b) [a, b] = [b, a % b];
+    return `${width / a}:${height / a}`;
+  }
+  function scaleFrame() {
+    const box = $('.frame-box'), frame = $('#frame');
+    const { width, height } = targetDisplay();
+    box.style.aspectRatio = `${width} / ${height}`;
+    frame.style.width = `${width}px`;
+    frame.style.height = `${height}px`;
+    frame.style.transform = `scale(${box.clientWidth / width})`;
+    $('#display-size-note').textContent =
+      `Previewing ${width} × ${height} · ${ratioLabel(width, height)}`;
+  }
+  function syncDisplayControls() {
+    const { width, height } = targetDisplay();
+    cfg.displayWidth = width; cfg.displayHeight = height;
+    const key = `${width}x${height}`;
+    $('#display-preset').value = DISPLAY_PRESETS.has(key) ? key : 'custom';
+    $('#display-custom').hidden = $('#display-preset').value !== 'custom';
+    $('#display-width').value = width;
+    $('#display-height').value = height;
+    scaleFrame();
+  }
+  $('#display-preset').addEventListener('change', () => {
+    const value = $('#display-preset').value;
+    if (value === 'custom') {
+      $('#display-custom').hidden = false;
+      const { width, height } = targetDisplay();
+      $('#display-width').value = width; $('#display-height').value = height;
+      scaleFrame();
+      $('#status').textContent = 'Enter a custom target display size.';
+      return;
+    }
+    if (DISPLAY_PRESETS.has(value)) {
+      const [width, height] = value.split('x').map(Number);
+      cfg.displayWidth = width; cfg.displayHeight = height;
+    }
+    syncDisplayControls(); sendCfg();
+    $('#status').textContent = 'Target display changed — save to keep it.';
+  });
+  ['display-width', 'display-height'].forEach(id =>
+    $('#' + id).addEventListener('input', () => {
+      cfg.displayWidth = clampDisplay($('#display-width').value, 320, 3840, cfg.displayWidth || 1280);
+      cfg.displayHeight = clampDisplay($('#display-height').value, 240, 2160, cfg.displayHeight || 800);
+      scaleFrame(); sendCfg();
+      $('#status').textContent = 'Custom display size changed — save to keep it.';
+    }));
   window.addEventListener('resize', scaleFrame);
   new ResizeObserver(scaleFrame).observe(document.querySelector('.mq-side'));
 
@@ -1262,7 +1363,7 @@
     { s: '#carousel', t: 'Pick a template',
       b: 'Tap a card to change the whole layout. Your saved presets ride here too — "+ Save preset" backs up the current look.' },
     { s: '.frame-box', t: 'This is your card',
-      b: 'Every change previews instantly. Tap any block on the card to select it — drag to move it.' },
+      b: 'Choose the target display size above it. Every change previews instantly — tap any block on the card to select it, drag to move it.' },
     { s: '#chips', t: 'Blocks on the card',
       b: 'Tap a chip to edit that block, × to take it off the card, and "+ Add" brings anything back.' },
     { s: '#editor', t: 'Make it yours',
@@ -1438,6 +1539,7 @@
     try {
       const s = await (await fetch('/settings.json')).json();
       cfg = { ...cfg, ...s };
+      syncDisplayControls();
     } catch (e) {}
     try {
       // Container-level defaults (allowlisted server-side). Shown as greyed
