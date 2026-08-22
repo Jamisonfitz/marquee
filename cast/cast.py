@@ -188,6 +188,7 @@ DEFAULT_SETTINGS = {
     "blockLayout": {},       # {template: {block: {x,y,width,scale,align,font,color}}}
     "presets": [],           # user-saved looks: {name, template, blockLayout, blockVisibility, metaOpts}
     "blockVisibility": {},  # {template: {block: bool}}, sparse — only overrides
+    "displayWidth": 1280, "displayHeight": 800,  # settings-preview target size (px)
     "mediaBackend": "",       # "" = inherit MEDIA_BACKEND env (plex when unset)
     "plexHost": "", "plexToken": "",
     "embyHost": "", "embyKey": "",
@@ -1034,6 +1035,22 @@ def migrate_block_layout(value, current_template):
     return {current_template: value}
 
 
+def clamp_setting(value, low, high, default):
+    """Coerce value to an int within [low, high]; fall back to default on junk."""
+    try:
+        n = int(round(float(value)))
+    except (TypeError, ValueError):
+        return default
+    return max(low, min(high, n))
+
+
+def clean_display_settings(settings):
+    """Clamp the settings-preview target display size to sane pixel bounds."""
+    settings["displayWidth"] = clamp_setting(settings.get("displayWidth"), 320, 3840, 1280)
+    settings["displayHeight"] = clamp_setting(settings.get("displayHeight"), 240, 2160, 800)
+    return settings
+
+
 def load_settings():
     try:
         with open(SETTINGS_PATH) as f:
@@ -1041,6 +1058,7 @@ def load_settings():
         merged = {**DEFAULT_SETTINGS, **{k: v for k, v in saved.items() if k in DEFAULT_SETTINGS}}
         merged["blockLayout"] = migrate_block_layout(
             merged["blockLayout"], merged.get("template") or "spotlight")
+        clean_display_settings(merged)
         return migrate_show_flags(merged)
     except Exception:
         return dict(DEFAULT_SETTINGS)
@@ -1332,6 +1350,7 @@ class WebHandler(BaseHTTPRequestHandler):
             merged["blockLayout"] = clean_block_layout(merged["blockLayout"])
             merged["blockVisibility"] = clean_block_visibility(merged["blockVisibility"])
             merged["presets"] = clean_presets(merged["presets"])
+            clean_display_settings(merged)
             atomic_write(SETTINGS_PATH, json.dumps(merged))
             self._send(json.dumps({"ok": True}), "application/json")
         except Exception as e:
@@ -1541,6 +1560,11 @@ def selftest():
     assert "bogus" not in DEFAULT_SETTINGS and "posterSide" not in DEFAULT_SETTINGS \
         and merged["showPlot"] is False and merged["showClock"] is True \
         and merged["template"] == "spotlight"
+    # target-display size: out-of-range clamped, junk falls back to defaults.
+    disp = clean_display_settings({"displayWidth": 9999, "displayHeight": "200"})
+    assert disp["displayWidth"] == 3840 and disp["displayHeight"] == 240, disp
+    disp = clean_display_settings({"displayWidth": "oops"})
+    assert disp["displayWidth"] == 1280 and disp["displayHeight"] == 800, disp
     # show*-flag migration: off-flags become per-template visibility overrides
     # (only on templates that carry the block), explicit overrides win, flags
     # neutralize to True so the migration is idempotent.
