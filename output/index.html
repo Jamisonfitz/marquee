@@ -47,6 +47,12 @@
     object-position: 50% 50%; opacity: 0;
     transition: opacity 1s ease, transform .35s ease, filter .35s ease; }
   .bg.on { opacity: .22; }
+  body.custom-backdrop .bg {
+    transform: scale(var(--custom-bg-zoom, 1));
+    transform-origin: var(--custom-bg-x, 50%) var(--custom-bg-y, 50%);
+    filter: blur(var(--custom-bg-blur, 0px))
+      brightness(var(--custom-bg-brightness, 100%)); }
+  body.custom-backdrop .bg.on { opacity: var(--custom-bg-opacity, .35) !important; }
   .bg-shade { position: fixed; inset: 0; background:
     linear-gradient(90deg, var(--bg) 8%, transparent 130%); opacity: .92; }
   body.flip .bg-shade { transform: scaleX(-1); }
@@ -1089,8 +1095,31 @@ ${chase.join('')}
     if (useLogo) {
       loadLogoArt(DEMO ? demoM().logo : '/logo.png?k=' + d.key);
     }
-    const useBg = shown.has('backdrop') && c.backdrop !== false && d.backdrop;
-    if (useBg) { $('bg').src = DEMO ? demoM().backdrop : '/backdrop.jpg?k=' + d.key; }
+    const customBg = shown.has('backdrop') && c.customBackdropEnabled === true
+      && c.customBackdropAvailable === true;
+    const useBg = customBg || (shown.has('backdrop') && c.backdrop !== false && d.backdrop);
+    if (customBg) {
+      $('bg').src = '/custom-backdrop?v=' + encodeURIComponent(c.customBackdropVersion || '1');
+    } else if (useBg) {
+      $('bg').src = DEMO ? demoM().backdrop : '/backdrop.jpg?k=' + d.key;
+    }
+    document.body.classList.toggle('custom-backdrop', customBg);
+    if (customBg) {
+      const fit = ['cover', 'contain', 'fill'].includes(c.customBackdropFit)
+        ? c.customBackdropFit : 'cover';
+      $('bg').style.objectFit = fit;
+      $('bg').style.objectPosition = `${Number(c.customBackdropX ?? 50)}% ${Number(c.customBackdropY ?? 50)}%`;
+      root.setProperty('--custom-bg-x', `${Number(c.customBackdropX ?? 50)}%`);
+      root.setProperty('--custom-bg-y', `${Number(c.customBackdropY ?? 50)}%`);
+      root.setProperty('--custom-bg-zoom', String(Number(c.customBackdropZoom ?? 100) / 100));
+      root.setProperty('--custom-bg-opacity', String(Number(c.customBackdropOpacity ?? 35) / 100));
+      root.setProperty('--custom-bg-blur', `${Number(c.customBackdropBlur ?? 0)}px`);
+      root.setProperty('--custom-bg-brightness', `${Number(c.customBackdropBrightness ?? 100)}%`);
+    } else {
+      $('bg').style.objectFit = ''; $('bg').style.objectPosition = '';
+      ['--custom-bg-x', '--custom-bg-y', '--custom-bg-zoom', '--custom-bg-opacity',
+       '--custom-bg-blur', '--custom-bg-brightness'].forEach(p => root.removeProperty(p));
+    }
     $('bg').classList.toggle('on', useBg);
 
     const meta = [ d.year,

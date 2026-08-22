@@ -158,6 +158,32 @@ OUTPUT = os.path.join(REPO, "output")
 JSON_PATH = os.path.join(OUTPUT, "now-playing.json")
 DATA_DIR = os.environ.get("DATA_DIR", OUTPUT)
 SETTINGS_PATH = os.path.join(DATA_DIR, "settings.json")
+CUSTOM_BACKDROP_PATH = os.path.join(DATA_DIR, "custom-backdrop.img")
+MAX_CUSTOM_BACKDROP_BYTES = 15 * 1024 * 1024
+
+
+def image_mime(data):
+    """Supported custom-backdrop type from magic bytes; None for anything else."""
+    if data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    if data.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if len(data) >= 12 and data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "image/webp"
+    return None
+
+
+def custom_backdrop_info():
+    """(path, MIME type, cache version) for the persisted custom image."""
+    try:
+        with open(CUSTOM_BACKDROP_PATH, "rb") as f:
+            mime = image_mime(f.read(16))
+        if not mime:
+            return None
+        stat = os.stat(CUSTOM_BACKDROP_PATH)
+        return CUSTOM_BACKDROP_PATH, mime, str(stat.st_mtime_ns)
+    except (OSError, ValueError):
+        return None
 
 THEMES = ("amber", "ice", "crimson", "emerald",
           "campaign", "concrete", "trophy", "bsides")
@@ -186,6 +212,14 @@ DEFAULT_SETTINGS = {
     "displayWidth": 1280, "displayHeight": 800,  # settings-preview target size (px)
     "showDeviceLocation": True,
     "streetRainAnimation": True,
+    "customBackdropEnabled": False,
+    "customBackdropFit": "cover",
+    "customBackdropZoom": 100,
+    "customBackdropX": 50,
+    "customBackdropY": 50,
+    "customBackdropOpacity": 35,
+    "customBackdropBlur": 0,
+    "customBackdropBrightness": 100,
     "plexUsers": "", "plexDevices": "",
     "blockTags": "",
     "rotateSeconds": 30,
@@ -215,6 +249,9 @@ def served_settings(settings=None):
     for k in SECRET_SETTINGS:
         s[k + "Set"] = bool(s.pop(k, ""))
     s["envBackend"] = ENV_BACKEND
+    custom = custom_backdrop_info()
+    s["customBackdropAvailable"] = bool(custom)
+    s["customBackdropVersion"] = custom[2] if custom else ""
     return s
 
 EDITABLE_BLOCKS = ("clock", "weather", "category", "identity", "meta", "plot", "ratings",
@@ -1353,6 +1390,7 @@ def load_settings():
         merged = {**DEFAULT_SETTINGS, **{k: v for k, v in saved.items() if k in DEFAULT_SETTINGS}}
         merged["blockLayout"] = migrate_block_layout(
             merged["blockLayout"], merged.get("template") or "spotlight")
+        clean_custom_backdrop_settings(merged)
         clean_display_settings(merged)
         return migrate_show_flags(merged)
     except Exception:
@@ -1383,6 +1421,22 @@ def clean_block_position(position):
         if isinstance(position.get(key), bool):
             item[key] = position[key]
     return item
+
+
+def clean_custom_backdrop_settings(settings):
+    """Clamp custom-art controls that are consumed directly by CSS."""
+    settings["customBackdropEnabled"] = bool(settings.get("customBackdropEnabled"))
+    if settings.get("customBackdropFit") not in ("cover", "contain", "fill"):
+        settings["customBackdropFit"] = "cover"
+    for key, low, high, default in (
+            ("customBackdropZoom", 50, 300, 100),
+            ("customBackdropX", 0, 100, 50),
+            ("customBackdropY", 0, 100, 50),
+            ("customBackdropOpacity", 5, 100, 35),
+            ("customBackdropBlur", 0, 20, 0),
+            ("customBackdropBrightness", 25, 150, 100)):
+        settings[key] = clamp_setting(settings.get(key), low, high, default)
+    return settings
 
 
 def clean_block_layout(value):
@@ -1556,6 +1610,16 @@ class WebHandler(BaseHTTPRequestHandler):
             self._send(json.dumps(weather()), "application/json")
         elif path == "/sessions":
             self._send(json.dumps({"sessions": LAST_SESSIONS}), "application/json")
+        elif path == "/custom-backdrop":
+            custom = custom_backdrop_info()
+            if not custom:
+                self._send("not found", "text/plain", 404)
+            else:
+                try:
+                    with open(custom[0], "rb") as f:
+                        self._send(f.read(), custom[1])
+                except OSError:
+                    self._send("not found", "text/plain", 404)
         elif path == "/now-playing.json":
             # Served explicitly rather than through the static fallthrough so we
             # can timestamp the card's heartbeat -- see card_alive().
@@ -1583,8 +1647,36 @@ class WebHandler(BaseHTTPRequestHandler):
             name = os.path.basename(urllib.parse.unquote(path))  # no traversal
             self._send_file(os.path.join(OUTPUT, name))
 
+    def _upload_custom_backdrop(self):
+        """Persist one validated JPEG, PNG, or WebP in the /config volume."""
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            length = 0
+        if length <= 0:
+            return self._send(json.dumps({"ok": False, "error": "empty upload"}),
+                              "application/json", 400)
+        if length > MAX_CUSTOM_BACKDROP_BYTES:
+            return self._send(json.dumps({"ok": False,
+                                          "error": "image exceeds the 15 MB limit"}),
+                              "application/json", 413)
+        data = self.rfile.read(length)
+        mime = image_mime(data[:16])
+        if not mime:
+            return self._send(json.dumps({"ok": False,
+                                          "error": "use a JPEG, PNG, or WebP image"}),
+                              "application/json", 415)
+        os.makedirs(DATA_DIR, exist_ok=True)
+        atomic_write(CUSTOM_BACKDROP_PATH, data, "wb")
+        custom = custom_backdrop_info()
+        self._send(json.dumps({"ok": True, "mime": mime,
+                               "version": custom[2] if custom else ""}),
+                   "application/json")
+
     def do_POST(self):
         path = self.path.split("?")[0]
+        if path == "/custom-backdrop":
+            return self._upload_custom_backdrop()
         if path != "/save":
             return self._send("not found", "text/plain", 404)
         try:
@@ -1654,11 +1746,24 @@ class WebHandler(BaseHTTPRequestHandler):
             merged["blockLayout"] = clean_block_layout(merged["blockLayout"])
             merged["blockVisibility"] = clean_block_visibility(merged["blockVisibility"])
             merged["presets"] = clean_presets(merged["presets"])
+            clean_custom_backdrop_settings(merged)
             clean_display_settings(merged)
             atomic_write(SETTINGS_PATH, json.dumps(merged))
             self._send(json.dumps({"ok": True}), "application/json")
         except Exception as e:
             self._send(json.dumps({"ok": False, "error": str(e)}), "application/json", 400)
+
+    def do_DELETE(self):
+        if self.path.split("?")[0] != "/custom-backdrop":
+            return self._send("not found", "text/plain", 404)
+        try:
+            os.unlink(CUSTOM_BACKDROP_PATH)
+        except FileNotFoundError:
+            pass
+        except OSError as e:
+            return self._send(json.dumps({"ok": False, "error": str(e)}),
+                              "application/json", 500)
+        self._send(json.dumps({"ok": True}), "application/json")
 
 
 def serve_web():
@@ -1993,12 +2098,26 @@ def selftest():
     assert visible_blocks("hero", {"hero": {"plot": True, "clock": False}}) == \
         {"backdrop", "category", "identity", "meta", "ratings", "progress",
          "stinger", "plot"}
+    custom = clean_custom_backdrop_settings({
+        "customBackdropEnabled": 1, "customBackdropFit": "nonsense",
+        "customBackdropZoom": 999, "customBackdropX": -20,
+        "customBackdropY": "75", "customBackdropOpacity": 0,
+        "customBackdropBlur": "8", "customBackdropBrightness": 999})
+    assert custom == {
+        "customBackdropEnabled": True, "customBackdropFit": "cover",
+        "customBackdropZoom": 300, "customBackdropX": 0,
+        "customBackdropY": 75, "customBackdropOpacity": 5,
+        "customBackdropBlur": 8, "customBackdropBrightness": 150}
     display = clean_display_settings({
         "displayWidth": 9999, "displayHeight": "200",
         "showDeviceLocation": 0, "streetRainAnimation": 1})
     assert display == {"displayWidth": 3840, "displayHeight": 240,
                        "showDeviceLocation": False,
                        "streetRainAnimation": True}
+    assert image_mime(b"\x89PNG\r\n\x1a\nrest") == "image/png"
+    assert image_mime(b"\xff\xd8\xffrest") == "image/jpeg"
+    assert image_mime(b"RIFF1234WEBPrest") == "image/webp"
+    assert image_mime(b"<svg></svg>") is None
     assert ACCENT_RE.match("#A1b2C3") and not ACCENT_RE.match("red") \
         and not ACCENT_RE.match("#12345")
     v = ET.fromstring(SAMPLE_SESSION)

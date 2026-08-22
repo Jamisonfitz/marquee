@@ -240,6 +240,9 @@
     border: 1px solid var(--line); border-radius: 9px; padding: 8px 13px;
     font-weight: 700; font-size: 13px; cursor: pointer; }
   .secondary:hover { border-color: rgba(229,168,59,.5); }
+  .backdrop-actions { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+  .backdrop-sliders { margin-top: 8px; }
+  #custom-backdrop-controls[hidden] { display:none !important; }
   #no-blocks-note { color: var(--mut); font-size: 13px; margin: 0 0 8px; }
   #editor-toggle { display: none; width: 100%; margin-top: 10px; }
 
@@ -537,6 +540,47 @@
             </div>
           </div>
 
+          <div id="ctx-backdrop" hidden>
+            <div class="ed-row">
+              <span class="ed-lab">Custom backdrop<small id="custom-backdrop-state">No custom image uploaded</small></span>
+              <div class="backdrop-actions">
+                <input type="file" id="custom-backdrop-file"
+                  accept="image/jpeg,image/png,image/webp" hidden>
+                <button class="secondary" id="upload-backdrop" type="button">Upload image</button>
+                <button class="secondary" id="remove-backdrop-image" type="button" hidden>Delete image</button>
+              </div>
+            </div>
+            <div class="ed-row">
+              <label for="ck-custom-backdrop">Use custom image<small>Replaces the current movie/show backdrop</small></label>
+              <input type="checkbox" class="switch" id="ck-custom-backdrop"
+                data-k="customBackdropEnabled" role="switch">
+            </div>
+            <div id="custom-backdrop-controls">
+              <div class="ed-row">
+                <label for="custom-backdrop-fit">Fit / resize mode</label>
+                <select id="custom-backdrop-fit" class="mini" data-backdrop-field="customBackdropFit">
+                  <option value="cover">Cover frame</option>
+                  <option value="contain">Contain whole image</option>
+                  <option value="fill">Stretch to frame</option>
+                </select>
+              </div>
+              <div class="sliders backdrop-sliders">
+                <div class="slider"><label>Zoom / scale <output data-backdrop-value="customBackdropZoom">100</output>%</label>
+                  <input data-backdrop-field="customBackdropZoom" type="range" min="50" max="300" step="1" value="100"></div>
+                <div class="slider"><label>Horizontal focus <output data-backdrop-value="customBackdropX">50</output>%</label>
+                  <input data-backdrop-field="customBackdropX" type="range" min="0" max="100" step="1" value="50"></div>
+                <div class="slider"><label>Vertical focus <output data-backdrop-value="customBackdropY">50</output>%</label>
+                  <input data-backdrop-field="customBackdropY" type="range" min="0" max="100" step="1" value="50"></div>
+                <div class="slider"><label>Opacity <output data-backdrop-value="customBackdropOpacity">35</output>%</label>
+                  <input data-backdrop-field="customBackdropOpacity" type="range" min="5" max="100" step="1" value="35"></div>
+                <div class="slider"><label>Blur <output data-backdrop-value="customBackdropBlur">0</output>px</label>
+                  <input data-backdrop-field="customBackdropBlur" type="range" min="0" max="20" step="1" value="0"></div>
+                <div class="slider"><label>Brightness <output data-backdrop-value="customBackdropBrightness">100</output>%</label>
+                  <input data-backdrop-field="customBackdropBrightness" type="range" min="25" max="150" step="1" value="100"></div>
+              </div>
+            </div>
+          </div>
+
           <div id="ctx-clock" hidden>
             <div class="ed-row">
               <span class="ed-lab">Clock style</span>
@@ -775,7 +819,11 @@
     blockVisibility: {}, presets: [],
     displayWidth: 1280, displayHeight: 800,
     showWeather: false, weatherFX: true, weatherIntensity: 2,
-    showDeviceLocation: true, streetRainAnimation: true };
+    showDeviceLocation: true, streetRainAnimation: true,
+    customBackdropEnabled: false, customBackdropAvailable: false,
+    customBackdropFit: 'cover', customBackdropZoom: 100,
+    customBackdropX: 50, customBackdropY: 50, customBackdropOpacity: 35,
+    customBackdropBlur: 0, customBackdropBrightness: 100 };
   const cardBase = '/image';
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -1136,9 +1184,92 @@
   });
   document.querySelectorAll('input[data-k]').forEach(i =>
     i.addEventListener('change', () => {
-      syncFx(); sendCfg();
+      syncFx(); syncBackdropControls(); sendCfg();
     }));
 
+  // ── Persistent custom backdrop ──
+  const BACKDROP_DEFAULTS = {
+    customBackdropFit: 'cover', customBackdropZoom: 100,
+    customBackdropX: 50, customBackdropY: 50, customBackdropOpacity: 35,
+    customBackdropBlur: 0, customBackdropBrightness: 100
+  };
+  function loadBackdropControls() {
+    document.querySelectorAll('[data-backdrop-field]').forEach(input => {
+      const field = input.dataset.backdropField;
+      const value = cfg[field] ?? BACKDROP_DEFAULTS[field];
+      input.value = String(value);
+      const out = document.querySelector(`[data-backdrop-value="${field}"]`);
+      if (out) out.value = value;
+    });
+    syncBackdropControls();
+  }
+  function syncBackdropControls() {
+    const available = cfg.customBackdropAvailable === true;
+    if (!available) {
+      cfg.customBackdropEnabled = false;
+      $('#ck-custom-backdrop').checked = false;
+    }
+    const enabled = available && $('#ck-custom-backdrop').checked;
+    $('#custom-backdrop-state').textContent = available
+      ? 'Image uploaded — use the controls below to crop and position it'
+      : 'No custom image uploaded';
+    $('#upload-backdrop').textContent = available ? 'Replace image' : 'Upload image';
+    $('#remove-backdrop-image').hidden = !available;
+    $('#ck-custom-backdrop').disabled = !available;
+    $('#custom-backdrop-controls').hidden = !enabled;
+  }
+  document.querySelectorAll('[data-backdrop-field]').forEach(input =>
+    input.addEventListener('input', () => {
+      const field = input.dataset.backdropField;
+      cfg[field] = input.type === 'range' ? Number(input.value) : input.value;
+      const out = document.querySelector(`[data-backdrop-value="${field}"]`);
+      if (out) out.value = input.value;
+      sendCfg();
+      $('#status').textContent = 'Custom backdrop adjusted — save to apply.';
+    }));
+  $('#upload-backdrop').addEventListener('click', () => $('#custom-backdrop-file').click());
+  $('#custom-backdrop-file').addEventListener('change', async () => {
+    const file = $('#custom-backdrop-file').files[0];
+    if (!file) return;
+    if (file.size > 15 * 1024 * 1024) {
+      $('#status').textContent = 'Upload failed: the image exceeds 15 MB.';
+      return;
+    }
+    $('#status').textContent = 'Uploading custom backdrop…';
+    try {
+      const response = await fetch('/custom-backdrop', {
+        method: 'POST', headers: { 'Content-Type': file.type || 'application/octet-stream' },
+        body: file
+      });
+      const result = await response.json();
+      if (!result.ok) throw new Error(result.error || 'upload failed');
+      cfg.customBackdropAvailable = true;
+      cfg.customBackdropVersion = result.version || String(Date.now());
+      cfg.customBackdropEnabled = true;
+      $('#ck-custom-backdrop').checked = true;
+      loadBackdropControls(); sendCfg();
+      $('#status').textContent = 'Custom backdrop uploaded — save to keep it enabled.';
+    } catch (error) {
+      $('#status').textContent = 'Upload failed: ' + error.message;
+    } finally {
+      $('#custom-backdrop-file').value = '';
+    }
+  });
+  $('#remove-backdrop-image').addEventListener('click', async () => {
+    if (!confirm('Delete the uploaded custom backdrop?')) return;
+    try {
+      const result = await (await fetch('/custom-backdrop', { method: 'DELETE' })).json();
+      if (!result.ok) throw new Error(result.error || 'delete failed');
+      cfg.customBackdropAvailable = false;
+      cfg.customBackdropVersion = '';
+      cfg.customBackdropEnabled = false;
+      $('#ck-custom-backdrop').checked = false;
+      syncBackdropControls(); sendCfg();
+      $('#status').textContent = 'Custom backdrop deleted — save to apply.';
+    } catch (error) {
+      $('#status').textContent = 'Delete failed: ' + error.message;
+    }
+  });
   // Weather condition preview — forces the card's look for testing, exactly
   // like ?wx=/?day=, and never touches cfg. 'Live' hands back to reality.
   const wxPreview = { wx: '', day: '' };
@@ -1202,8 +1333,10 @@
   function showEditorFor(name) {
     // On Fanart the background IS the feature: tapping it edits the art.
     const faCtx = name === 'backdrop' && cfg.template === 'fanart';
+    const backdropCtx = name === 'backdrop' && cfg.template !== 'fanart';
     $('#ed-title').textContent = 'Editing: ' + (faCtx ? 'Fanart' : (BLOCK_LABEL[name] || name));
     $('#ctx-fanart').hidden = !faCtx;
+    $('#ctx-backdrop').hidden = !backdropCtx;
     $('#ctx-session-style').hidden = !SESSION_BLOCKS.includes(name);
     $('#ctx-device').hidden = name !== 'device';
     $('#ctx-street').hidden = cfg.template !== 'street';
@@ -1218,6 +1351,7 @@
     $('#block-sliders').hidden = !positionable;
     $('#align').hidden = !positionable;
     $('#snap').hidden = !positionable;
+    if (backdropCtx) syncBackdropControls();
     document.querySelectorAll('#chips .chip').forEach(c => {
       const on = c.dataset.block === name;
       c.classList.toggle('on', on);
@@ -1650,7 +1784,7 @@
     segSet('unitfmt', cfg.weatherUnits || 'f');
     segSet('clockfmt', cfg.clockFormat || '12h');
     cfg.blockLayout ||= {}; cfg.blockVisibility ||= {}; cfg.presets ||= [];
-    syncFx(); syncDisplayControls();
+    syncFx(); loadBackdropControls(); syncDisplayControls();
     markTemplates(); renderChips(); renderPresets();
     showEditorFor(selectedBlock);
     loadFrame();
