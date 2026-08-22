@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.2.3 — 2026-08-21
+
+- **Preview at your display's real size.** A "Target display" picker above the
+  settings preview sizes the card to the screen it'll actually run on — Nest Hub,
+  Nest Hub Max, HD, Full HD, 4:3, a small panel, or a custom size — so what you
+  design is what you'll see on the Hub. Preview-only; the card served stays
+  responsive. Thanks to [@TRusselo](https://github.com/TRusselo) (#41).
+
 ## 2.2.2 — 2026-08-18
 
 - **Settings preview no longer flashes blank on load.** While the card iframe

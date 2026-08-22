@@ -241,7 +241,7 @@ Marquee stands on generous shoulders:
 
 - **[TRusselo](https://github.com/TRusselo)** — the Emby & Jellyfin backends,
   session filters and rotation, the dead-card heartbeat, the content filter,
-  and a steady stream of sharp fixes.
+  target-display preview presets, and a steady stream of sharp fixes.
 - **[catt](https://github.com/skorokithakis/catt)** by Stavros Korokithakis —
   the casting engine that actually puts the card on your Hub (BSD, bundled
   stock).
