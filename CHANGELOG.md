@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.4.1 — 2026-08-25
+
+- **Clearer logs.** Connection problems now say what's actually wrong and where —
+  e.g. "can't reach plex at http://…:32400 — connection refused (is it
+  running?)" instead of a raw errno — and they're colour-coded. Repeated
+  failures collapse to a single line and print a "recovered" note when the server
+  comes back, instead of spamming the log every few seconds.
+- **Fix: metadata no longer refetched constantly** when two people stream at
+  once — the per-title cache kept only one title, so rotation re-pulled art and
+  ratings on every flip.
+- **Fix: a blocked title no longer hides the other stream.** With a do-not-cast
+  filter set and two people watching, a blocked title could blank the whole card;
+  now it just skips that title.
+- **Fix: false "Atmos" badge** on audio tracks whose name merely contained
+  "atmos".
+
 ## 2.4.0 — 2026-08-23
 
 - **New: persistent custom backdrop.** Upload your own image (JPEG/PNG/WebP, up
