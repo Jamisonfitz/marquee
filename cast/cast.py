@@ -38,6 +38,8 @@ import sys
 import tempfile
 import threading
 import time
+import socket
+import urllib.error
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -344,6 +346,16 @@ def fanart_urls(doc, is_movie, settings=None):
 _meta_cache = {}  # ratingKey -> extras dict
 
 
+def _cache_put(cache, key, value, cap=8):
+    """Bounded FIFO insert. Keeps a few rotating titles cached (rotate_pick
+    alternates the current title across concurrent sessions) without letting the
+    dict grow unbounded over a long uptime. Re-putting a present key never evicts."""
+    if key not in cache and len(cache) >= cap:
+        cache.pop(next(iter(cache)))       # dicts are insertion-ordered: oldest out
+    cache[key] = value
+    return value
+
+
 def plex_creds(settings=None):
     """(host, token) for Plex: the settings page wins, PLEX_HOST/PLEX_TOKEN
     env is the fallback — the same rule hub_ip() follows."""
@@ -619,9 +631,11 @@ def library_extras(rating_key, is_movie=False):
                     if fid:
                         x["fanartDoc"] = fanart_fetch("tv", fid, fkey)
     except Exception as e:
-        print(f"metadata fetch failed for {rating_key}: {e}", flush=True)
-    _meta_cache.clear()  # only ever need the current item
-    _meta_cache[rating_key] = x
+        log_warn(f"metadata fetch failed for {rating_key}: {e}")
+    # Cap rather than clear: with 2+ concurrent sessions rotate_pick alternates
+    # the "current" title each bucket, so clearing evicted the other one → a full
+    # metadata + art + TMDB/fanart refetch on every rotation flip. Keep a few.
+    _cache_put(_meta_cache, rating_key, x)
     return x
 
 
@@ -730,7 +744,11 @@ def playback_decision(*values):
 def track_payload(language=None, codec=None, channels=None, layout=None,
                   title=None, display=None, spatial=None):
     """Common audio/subtitle shape used by every media backend."""
-    spatial_text = " ".join(str(v) for v in (title, display, spatial) if v)
+    # Atmos is signalled in the codec profile or the display title (Plex encodes
+    # it in extendedDisplayTitle, e.g. "…Dolby Atmos") — a user-entered track
+    # *title* is not authoritative, so keep it out or "Atmospheric Score" reads
+    # as Atmos.
+    spatial_text = " ".join(str(v) for v in (display, spatial) if v)
     return {
         "language": language or None,
         "codec": str(codec).upper() if codec else None,
@@ -1259,14 +1277,14 @@ def emby_extras(item):
                 if fid:
                     x["fanartDoc"] = fanart_fetch("tv", fid, fkey)
         except Exception as e:
-            print(f"emby fanart lookup failed: {e}", flush=True)
+            log_warn(f"emby fanart lookup failed: {e}")
     try:
         x.update(emby_download_art(item))
     except Exception as e:
-        print(f"emby art failed: {e}", flush=True)
+        log_warn(f"emby art failed: {e}")
     if key:
-        _emby_meta_cache.clear()  # only ever need the current item
-        _emby_meta_cache[key] = x
+        # See _meta_cache above: cap, don't clear, so rotating titles stay cached.
+        _cache_put(_emby_meta_cache, key, x)
     return x
 
 
@@ -1334,11 +1352,20 @@ def emby_current_session():
     match = rotate_pick(candidates, clamp_rotate(s.get("rotateSeconds")))
     if match is None:
         return None
-    item = match.get("NowPlayingItem") or {}
-    emby_enrich(item)
-    # /Sessions sometimes omits Genres; the enriched record is authoritative.
-    # Better a blank display than an overshare the pre-filter couldn't see.
-    if content_blocked(block, emby_item_terms(item)):
+    # /Sessions sometimes omits Genres, so the pre-filter may have passed a title
+    # the enriched record reveals as blocked. Skip just that one and rotate on
+    # through the rest, rather than dropping every innocent sibling session this
+    # poll. Enrich lazily from the clock's pick; with no block set the first
+    # candidate always passes, so this stays one enrich in the common case.
+    start = candidates.index(match)
+    match = None
+    for i in range(len(candidates)):
+        cand = candidates[(start + i) % len(candidates)]
+        emby_enrich(cand.get("NowPlayingItem") or {})
+        if not content_blocked(block, emby_item_terms(cand.get("NowPlayingItem") or {})):
+            match = cand
+            break
+    if match is None:
         return None
     info = parse_emby_session(match, extras=emby_extras,
                               position=(candidates.index(match) + 1,
@@ -1770,6 +1797,53 @@ def serve_web():
     ThreadingHTTPServer(("", SERVE_PORT), WebHandler).serve_forever()
 
 
+# --- Log helpers -------------------------------------------------------------
+# Color-coded, operator-actionable log lines. Unraid's Docker log viewer renders
+# ANSI even though `docker logs` isn't a TTY; honor the NO_COLOR convention for
+# anyone piping the logs elsewhere.
+_NO_COLOR = bool(os.environ.get("NO_COLOR"))
+
+def _color(code, s):
+    return s if _NO_COLOR else f"\033[{code}m{s}\033[0m"
+
+def log_ok(s):   print(_color("32", f"✓ {s}"), flush=True)   # green
+def log_warn(s): print(_color("33", f"⚠ {s}"), flush=True)   # yellow
+def log_err(s):  print(_color("31", f"✗ {s}"), flush=True)   # red
+
+def current_host():
+    """Configured host for the active backend, for diagnostic messages."""
+    b = media_backend()
+    host = plex_creds()[0] if b == "plex" else emby_creds(b)[0]
+    return host or "(no host set)"
+
+def explain_error(e):
+    """Turn a raw poll-loop exception into one operator-actionable line, so
+    'loop error: <urlopen error [Errno 111] Connection refused>' becomes
+    'can't reach plex at http://…:32400 — connection refused (is it running?)'."""
+    backend = media_backend()
+    host = current_host()
+    reason = getattr(e, "reason", e)              # URLError wraps the real cause
+    errno = getattr(e, "errno", None) or getattr(reason, "errno", None)
+    if isinstance(e, urllib.error.HTTPError):
+        if e.code in (401, 403):
+            return (f"{backend} rejected the credentials (HTTP {e.code}) — check "
+                    f"the token / API key on the settings page")
+        if e.code == 404:
+            return f"{backend} path not found (HTTP 404) at {host} — wrong host?"
+        return f"{backend} returned HTTP {e.code} from {host}"
+    if isinstance(reason, socket.gaierror) or errno in (-2, -3, -5):
+        return (f"can't resolve {host} — check the {backend.upper()}_HOST setting "
+                f"(DNS lookup failed)")
+    if isinstance(reason, (TimeoutError, socket.timeout)):
+        return f"{backend} at {host} timed out — server slow or unreachable"
+    if isinstance(reason, ConnectionRefusedError) or errno == 111:
+        return (f"can't reach {backend} at {host} — connection refused "
+                f"(is the media server running?)")
+    if isinstance(reason, ConnectionResetError) or errno == 104:
+        return f"{backend} at {host} dropped the connection (reset) — retrying"
+    return f"{backend} poll failed: {e}"
+
+
 def loop():
     os.makedirs(DATA_DIR, exist_ok=True)
     # Only PAGE_URL is fatal: every media-server credential can be entered on
@@ -1783,13 +1857,12 @@ def loop():
         names = {"plex": "PLEX_HOST/PLEX_TOKEN",
                  "emby": "EMBY_HOST/EMBY_API_KEY",
                  "jellyfin": "JELLYFIN_HOST/JELLYFIN_API_KEY"}[backend]
-        print(f"{backend}: no server configured yet — set {names}, or enter "
-              "them on the settings page", flush=True)
+        log_warn(f"{backend}: no server configured yet — set {names}, or enter "
+                 "them on the settings page")
     if not os.path.exists(SETTINGS_PATH):
         atomic_write(SETTINGS_PATH, json.dumps(DEFAULT_SETTINGS))
     threading.Thread(target=serve_web, daemon=True).start()
-    print(f"Marquee {VERSION} ready on :{SERVE_PORT} (card: /image, settings: /)",
-          flush=True)
+    log_ok(f"Marquee {VERSION} ready on :{SERVE_PORT} (card: /image, settings: /)")
     # A card cast before this restart gets one window to check in, so restarting
     # the container does not needlessly re-cast a perfectly good page. This must
     # not touch LAST_CARD_POLL, or /healthz would report it as alive.
@@ -1797,6 +1870,10 @@ def loop():
     # Poll sessions fast (5s) so json/poster/hub flip together on play/stop;
     # talk to the hub only on transitions, plus a slow reconcile pass.
     last_playing, tick = None, 0
+    # A dead media server logs the same failure every POLL (5s) — thousands of
+    # identical lines. Print a helpful line once, count the repeats quietly, and
+    # announce recovery when the next poll succeeds.
+    err = {"msg": None, "n": 0}
     while True:
         try:
             backend = media_backend()
@@ -1806,8 +1883,8 @@ def loop():
             if playing != last_playing or tick % 6 == 0:
                 if not hub_ip():
                     if playing and playing != last_playing:
-                        print("no cast device configured — pick one on the "
-                              "settings page or set HUB_IP", flush=True)
+                        log_warn("no cast device configured — pick one on the "
+                                 "settings page or set HUB_IP")
                 else:
                     dash = dashcast_active()
                     # `dash` only means the DashCast app is loaded. A Hub whose
@@ -1822,16 +1899,25 @@ def loop():
                     elif playing and not ok:
                         last = LAST_CARD_POLL["at"]
                         gone = f"{time.time() - last:.0f}s" if last else "ever"
-                        print(f"hub claims to be showing but the card has not "
-                              f"polled in {gone} -> re-casting", flush=True)
+                        log_warn(f"hub claims to be showing but the card has not "
+                                 f"polled in {gone} -> re-casting")
                         cast_card()
                     elif not playing and dash:
                         print(f"{backend} idle -> releasing hub", flush=True)
                         catt("stop")
             last_playing = playing
             tick += 1
+            if err["msg"]:                    # first clean poll after failures
+                log_ok(f"recovered — {backend} reachable again "
+                       f"(after {err['n']} failed poll{'s' if err['n'] != 1 else ''})")
+                err["msg"], err["n"] = None, 0
         except Exception as e:
-            print(f"loop error: {e}", flush=True)
+            msg = explain_error(e)
+            if msg == err["msg"]:
+                err["n"] += 1                 # same failure — count it quietly
+            else:
+                err["msg"], err["n"] = msg, 1
+                log_err(msg + "  — silencing repeats until it changes or clears")
         time.sleep(POLL)
 
 
@@ -2507,6 +2593,46 @@ def selftest():
     # weather intensity clamps to 1..4 with a sane default
     assert clean_intensity(3) == 3 and clean_intensity(0) == 1
     assert clean_intensity(9) == 4 and clean_intensity("x") == 2
+
+    # Metadata cache is bounded FIFO, not single-entry: rotating titles across
+    # concurrent sessions must stay cached instead of refetching every flip.
+    _c = {}
+    for i in range(10):
+        _cache_put(_c, str(i), i, cap=8)
+    assert len(_c) == 8 and "0" not in _c and "9" in _c   # oldest evicted, cap held
+    _cache_put(_c, "9", 99, cap=8)                        # re-put present key: no evict
+    assert len(_c) == 8 and _c["9"] == 99
+
+    # Atmos badge comes from the codec profile / display title, never a track's
+    # human title — "Atmospheric Score" must not read as Atmos.
+    assert track_payload(display="English (TrueHD Atmos 7.1)")["spatial"] == "Atmos"
+    assert track_payload(spatial="Atmos")["spatial"] == "Atmos"
+    assert track_payload(title="Atmospheric Score")["spatial"] is None
+    assert track_payload(codec="eac3", channels=6)["spatial"] is None
+
+    # explain_error turns raw urlopen failures into operator-actionable lines
+    # (the whole point of the log rework). Cover each mapped cause.
+    _saved = os.environ.get("PLEX_HOST")
+    try:
+        globals()["load_settings"] = lambda: {"mediaBackend": "plex",
+                                              "plexHost": "http://box:32400",
+                                              "plexToken": "tk"}
+        refused = urllib.error.URLError(ConnectionRefusedError(111, "refused"))
+        assert "connection refused" in explain_error(refused)
+        assert "box:32400" in explain_error(refused)          # names the host
+        dns = urllib.error.URLError(socket.gaierror(-2, "Name or service not known"))
+        assert "can't resolve" in explain_error(dns) and "PLEX_HOST" in explain_error(dns)
+        timed = urllib.error.URLError(socket.timeout("timed out"))
+        assert "timed out" in explain_error(timed)
+        unauth = urllib.error.HTTPError("http://box", 401, "Unauthorized", {}, None)
+        assert "rejected the credentials" in explain_error(unauth)
+        # unmapped errors still surface, never crash the logger
+        assert "poll failed" in explain_error(ValueError("weird"))
+    finally:
+        if _saved is None:
+            os.environ.pop("PLEX_HOST", None)
+        else:
+            os.environ["PLEX_HOST"] = _saved
     print("selftest ok")
 
 
