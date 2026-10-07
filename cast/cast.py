@@ -519,8 +519,20 @@ def emby_url(path, creds=None):
     return f"{base}{'&' if '?' in base else '?'}api_key={key}"
 
 
+def emby_auth_header(key):
+    """Newer Jellyfin (verified against 12.2.0) rejects the ?api_key= query
+    param outright — 401 even with a freshly-minted, never-used key — and
+    only accepts the token via this header. emby_url()'s api_key query param
+    is harmless to leave in place (Emby still honors it, Jellyfin just
+    ignores the dupe) so this header is additive, not a replacement."""
+    return {"Authorization": f'MediaBrowser Token="{key}"'}
+
+
 def emby_fetch_json(path):
-    with urllib.request.urlopen(emby_url(path), timeout=10) as r:
+    creds = emby_creds()
+    req = urllib.request.Request(emby_url(path, creds=creds),
+                                  headers=emby_auth_header(creds[1]))
+    with urllib.request.urlopen(req, timeout=10) as r:
         return json.load(r)
 
 
@@ -532,7 +544,8 @@ def emby_image_url(host, key, item_id, kind, w=600, h=900):
 def emby_save_image(item_id, kind, out_name, w, h):
     host, key = emby_creds()
     url = emby_image_url(host, key, item_id, kind, w, h)
-    with urllib.request.urlopen(url, timeout=15) as r:
+    req = urllib.request.Request(url, headers=emby_auth_header(key))
+    with urllib.request.urlopen(req, timeout=15) as r:
         atomic_write(os.path.join(OUTPUT, out_name), r.read(), "wb")
 
 
